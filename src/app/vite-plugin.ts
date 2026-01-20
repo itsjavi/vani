@@ -48,7 +48,7 @@ function rebasePublicAssetUrls(html: string, base: string) {
     url.startsWith('/@fs/') ||
     url.startsWith('/src/')
 
-  return html.replace(/\b(?:src|href)=(['"])([^'"]+)\1/gi, (match, quote: string, url: string) => {
+  return html.replace(/\b(?:src|href)=(['"])([^'"]+)\1/gi, (match, _quote: string, url: string) => {
     if (url.startsWith(doubleBasePrefix)) {
       return match.replace(url, `${normalizedBase}${url.slice(doubleBasePrefix.length)}`)
     }

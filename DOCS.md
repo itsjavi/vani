@@ -12,7 +12,7 @@ DOM subtree delimited by anchors and only update when you explicitly ask them to
 ## Install
 
 ```bash
-pnpm add vani
+pnpm add @vanijs/vani
 ```
 
 ---
@@ -63,7 +63,9 @@ const Hello = component(() => {
 
 ### 2) Explicit updates
 
-Nothing re‑renders unless you call `handle.update()`:
+Re-renders are always explicit: call `handle.update()` to refresh a component’s subtree. The only
+automatic update is the initial mount (or `clientOnly` during hydration), which schedules the first
+render for you.
 
 ```ts
 import { component, div, button, type Handle } from '@vanijs/vani'
@@ -97,6 +99,466 @@ Each component owns a DOM range delimited by anchors:
 ```
 
 Updates replace only the DOM between anchors.
+
+### 4) Lists and item-level updates
+
+Lists are efficient in Vani when each item is its own component. Every item owns a tiny subtree and
+can update itself (or be updated via a ref) without touching siblings. Use `key` to preserve
+identity across reorders.
+
+Key ideas:
+
+- Represent list data by id (Map or array + id).
+- Render each row as a keyed component.
+- Store a `ComponentRef` per id so you can call `ref.current?.update()` for that item only.
+- Call the list handle only when the list structure changes (add/remove/reorder).
+
+Example:
+
+```ts
+import { component, ul, li, input, button, type Handle, type ComponentRef } from '@vanijs/vani'
+
+type Todo = { id: string; text: string; done: boolean }
+
+const Row = component<{
+  id: string
+  getItem: (id: string) => Todo | undefined
+  onToggle: (id: string) => void
+  onRename: (id: string, text: string) => void
+}>((props) => {
+  return () => {
+    const item = props.getItem(props.id)
+    if (!item) return null
+    return li(
+      input({
+        type: 'checkbox',
+        checked: item.done,
+        onchange: () => props.onToggle(item.id),
+      }),
+      input({
+        value: item.text,
+        oninput: (event) => {
+          const value = (event.currentTarget as HTMLInputElement).value
+          props.onRename(item.id, value)
+        },
+      }),
+    )
+  }
+})
+
+const List = component((_, handle: Handle) => {
+  let order = ['a', 'b']
+  const items = new Map<string, Todo>([
+    ['a', { id: 'a', text: 'Ship Vani', done: false }],
+    ['b', { id: 'b', text: 'Write docs', done: true }],
+  ])
+
+  const refs = new Map<string, ComponentRef>()
+  const getRef = (id: string) => {
+    let ref = refs.get(id)
+    if (!ref) {
+      ref = { current: null }
+      refs.set(id, ref)
+    }
+    return ref
+  }
+
+  const getItem = (id: string) => items.get(id)
+
+  const updateItem = (id: string, next: Partial<Todo>) => {
+    const current = items.get(id)
+    if (!current) return
+    items.set(id, { ...current, ...next })
+    refs.get(id)?.current?.update()
+  }
+
+  const toggle = (id: string) => {
+    const current = items.get(id)
+    if (!current) return
+    updateItem(id, { done: !current.done })
+  }
+
+  const rename = (id: string, text: string) => updateItem(id, { text })
+
+  const add = (text: string) => {
+    const id = String(order.length + 1)
+    items.set(id, { id, text, done: false })
+    order = [...order, id]
+    handle.update()
+  }
+
+  const remove = (id: string) => {
+    items.delete(id)
+    refs.delete(id)
+    order = order.filter((value) => value !== id)
+    handle.update()
+  }
+
+  return () =>
+    ul(
+      order.map((id) =>
+        Row({
+          key: id,
+          ref: getRef(id),
+          id,
+          getItem,
+          onToggle: toggle,
+          onRename: rename,
+        }),
+      ),
+      button({ onclick: () => add('New item') }, 'Add'),
+      button(
+        {
+          onclick: () => {
+            const first = order[0]
+            if (first) remove(first)
+          },
+        },
+        'Remove first',
+      ),
+    )
+})
+```
+
+This pattern keeps updates local: changing an item triggers only that row’s subtree update, while
+structural list changes re-render the list container and reuse keyed rows.
+
+---
+
+### 5) Forms with explicit submit
+
+For forms, you can keep input values in local variables and update the DOM only on submit. This
+matches Vani’s model: read input changes without re-rendering, then call `handle.update()` when the
+user explicitly submits.
+
+Example:
+
+```ts
+import { component, form, label, input, button, div, type Handle } from '@vanijs/vani'
+
+const ContactForm = component((_, handle: Handle) => {
+  let name = ''
+  let email = ''
+  let submitted = false
+
+  const onSubmit = (event: SubmitEvent) => {
+    event.preventDefault()
+    submitted = true
+    handle.update()
+  }
+
+  return () =>
+    form(
+      { onsubmit: onSubmit },
+      label('Name'),
+      input({
+        name: 'name',
+        value: name,
+        oninput: (event) => {
+          name = (event.currentTarget as HTMLInputElement).value
+        },
+      }),
+      label('Email'),
+      input({
+        name: 'email',
+        type: 'email',
+        value: email,
+        oninput: (event) => {
+          email = (event.currentTarget as HTMLInputElement).value
+        },
+      }),
+      button({ type: 'submit' }, 'Send'),
+      submitted ? div(`Submitted: ${name} <${email}>`) : null,
+    )
+})
+```
+
+The DOM only updates on submit. Input changes mutate local variables but do not trigger a render
+until the user confirms.
+
+---
+
+### 6) Conditional rendering
+
+Conditional rendering is just normal control flow inside the render function. You compute a boolean
+from your local state and return either the element or `null`. Updates are still explicit: call
+`handle.update()` when you want the condition to be re-evaluated and the DOM to change.
+
+Example:
+
+```ts
+import { component, div, button, type Handle } from '@vanijs/vani'
+
+const TogglePanel = component((_, handle: Handle) => {
+  let open = false
+
+  const toggle = () => {
+    open = !open
+    handle.update()
+  }
+
+  return () =>
+    div(
+      button({ onclick: toggle }, open ? 'Hide details' : 'Show details'),
+      open ? div('Now you see me') : null,
+    )
+})
+```
+
+The `open` flag is local state. When it changes, you call `handle.update()` to re-render the
+component’s subtree; the conditional element is added or removed accordingly.
+
+---
+
+### 7) Scheduling across independent regions
+
+In large apps, keep each UI region as its own component root, and schedule updates explicitly. Use
+microtasks for immediate batching and `startTransition()` for non‑urgent work. This lets you control
+_when_ updates happen without hidden dependencies.
+
+Strategy:
+
+- Give each region its own `handle`.
+- Coalesce multiple changes in the same tick into a single update per region.
+- Use microtasks for urgent updates (input, selection).
+- Use `startTransition()` for expensive or non‑urgent work (filters, reorders).
+- Avoid cascading updates by keeping regions independent and coordinating through explicit APIs.
+
+Example scheduler:
+
+```ts
+import { startTransition, type Handle } from '@vanijs/vani'
+
+type RegionId = 'sidebar' | 'content' | 'status'
+
+const pending = new Set<RegionId>()
+const handles = new Map<RegionId, Handle>()
+
+export const registerRegion = (id: RegionId, handle: Handle) => {
+  handles.set(id, handle)
+}
+
+export const scheduleRegionUpdate = (id: RegionId, opts?: { transition?: boolean }) => {
+  pending.add(id)
+
+  if (opts?.transition) {
+    startTransition(flush)
+    return
+  }
+
+  queueMicrotask(flush)
+}
+
+const flush = () => {
+  for (const id of pending) {
+    handles.get(id)?.update()
+  }
+  pending.clear()
+}
+```
+
+This design keeps scheduling predictable: each region updates at most once per flush, and you can
+decide which updates are urgent vs. deferred. If a region needs data from another, call its public
+API first, then schedule both regions explicitly in the same flush.
+
+---
+
+## Advanced patterns
+
+These patterns stay explicit while scaling across larger apps.
+
+### Global state with subscriptions
+
+Use a small store with `getState`, `setState`, and `subscribe`. Components subscribe once and call
+`handle.update()` on changes.
+
+```ts
+// store.ts
+type Listener = () => void
+type AppState = { count: number }
+
+let state: AppState = { count: 0 }
+const listeners = new Set<Listener>()
+
+export const getState = () => state
+export const setState = (next: AppState) => {
+  state = next
+  for (const listener of listeners) listener()
+}
+export const subscribe = (listener: Listener) => {
+  listeners.add(listener)
+  return () => listeners.delete(listener)
+}
+```
+
+```ts
+import { component, div, button, type Handle } from '@vanijs/vani'
+import { getState, setState, subscribe } from './store'
+
+const Counter = component((_, handle: Handle) => {
+  handle.effect(() => subscribe(() => handle.update()))
+
+  return () => {
+    const { count } = getState()
+    return div(`Count: ${count}`, button({ onclick: () => setState({ count: count + 1 }) }, 'Inc'))
+  }
+})
+```
+
+### Data fetching + cache invalidation
+
+Keep a simple cache and explicit invalidation. Updates are manual and predictable.
+
+```ts
+type Listener = () => void
+const listeners = new Set<Listener>()
+const cache = new Map<string, unknown>()
+
+export const subscribe = (listener: Listener) => {
+  listeners.add(listener)
+  return () => listeners.delete(listener)
+}
+
+export const getCached = <T>(key: string) => cache.get(key) as T | undefined
+
+export const refresh = async (key: string, fetcher: () => Promise<unknown>) => {
+  cache.set(key, await fetcher())
+  for (const listener of listeners) listener()
+}
+```
+
+### Derived (selector) state
+
+Compute derived values during render, or cache them when the base state changes. This keeps updates
+explicit and avoids hidden dependencies.
+
+```ts
+const getVisibleItems = (items: string[], filter: string) =>
+  filter ? items.filter((item) => item.includes(filter)) : items
+
+// In render:
+const visible = getVisibleItems(items, filter)
+```
+
+### Event bus for cross-feature coordination
+
+For decoupled features, use a tiny event bus and update explicitly when events fire.
+
+```ts
+type Listener = (payload?: unknown) => void
+const listeners = new Map<string, Set<Listener>>()
+
+export const on = (event: string, listener: Listener) => {
+  const set = listeners.get(event) ?? new Set<Listener>()
+  set.add(listener)
+  listeners.set(event, set)
+  return () => set.delete(listener)
+}
+
+export const emit = (event: string, payload?: unknown) => {
+  const set = listeners.get(event)
+  if (!set) return
+  for (const listener of set) listener(payload)
+}
+```
+
+---
+
+## Large-scale app architecture
+
+Vani scales best when you keep update paths explicit and module boundaries clear. The core idea is
+to let feature modules own their local state and expose small, explicit APIs for coordination,
+instead of reaching into each other’s state or relying on global reactive graphs.
+
+### Suggested architecture
+
+1. Feature modules
+
+Each module exposes:
+
+- a small state container
+- read accessors (snapshot getters)
+- explicit mutation functions that call `handle.update()` on the owning component(s)
+
+2. Coordinator (optional)
+
+For cross-module workflows, add a thin coordinator that:
+
+- orchestrates sequences (e.g. save → refresh → notify)
+- calls public APIs of each module
+- never accesses private state directly
+
+3. Stable, explicit contracts
+
+Use interfaces, simple message payloads, or callbacks to avoid implicit coupling. If one feature
+needs another to update, it calls that module’s exported `invalidate()` (or specific mutation
+method) rather than mutating shared data.
+
+### Example: Feature module with explicit invalidation
+
+```ts
+import { component, div, type Handle } from '@vanijs/vani'
+
+type User = { id: string; name: string }
+
+export type UserFeatureApi = {
+  getUsers: () => User[]
+  refreshUsers: () => void
+}
+
+export const UsersView = component((_, handle: Handle) => {
+  let users: User[] = []
+
+  const getUsers = () => users
+
+  const setUsers = (next: User[]) => {
+    users = next
+    handle.update()
+  }
+
+  const refreshUsers = async () => {
+    const response = await fetch('/api/users')
+    const data = (await response.json()) as User[]
+    setUsers(data)
+  }
+
+  ;(UsersView as any).api = { getUsers, refreshUsers } satisfies UserFeatureApi
+
+  return () => div(getUsers().map((user) => div(user.name)))
+})
+```
+
+### Example: Coordinator calling explicit APIs
+
+```ts
+import type { UserFeatureApi } from './users-feature'
+
+type Coordinator = {
+  onUserSaved: () => void
+}
+
+export const createCoordinator = (users: UserFeatureApi): Coordinator => {
+  return {
+    onUserSaved: () => {
+      users.refreshUsers()
+    },
+  }
+}
+```
+
+### Challenges with manual invalidation at scale
+
+- Update fan‑out: one action may need to notify several modules; keep this explicit via a
+  coordinator instead of hidden subscriptions.
+- Over‑invalidating: it’s easy to call `handle.update()` too broadly; prefer small, keyed subtrees
+  (item components, feature-level roots).
+- Stale reads: when multiple modules depend on shared data, ensure you update the data first, then
+  invalidate dependent modules in a predictable order.
+- Debugging update paths: without implicit reactivity, you must track who called `update()`. Keep
+  module APIs narrow and name update methods clearly (`refreshUsers`, `invalidateSearch`).
+
+Vani trades automatic coordination for transparency. In large apps, that means you should invest in
+clear module boundaries, explicit cross-module APIs, and small invalidation targets.
 
 ---
 
@@ -211,7 +673,7 @@ Utility for composing class names:
 import { classNames, div } from '@vanijs/vani'
 
 div({
-  className: classNames('base', { active: true }, ['p-2', 'rounded']),
+  className: classNames('base', { active: true }, ['p-2', 'rounded-xl']),
 })
 ```
 
@@ -237,7 +699,8 @@ Effects are explicit and can return a cleanup function.
 If you plan to use vani for a SSR/SSG application, you should use effects to run client-only code
 such as accessing the window object, accessing the DOM, etc.
 
-Effects are very simple, they don't have dependencies and are run once on mount and once on update.
+Effects are very simple and run once during component setup (the component function run). They do
+not re-run on every `handle.update()`; updates only call the render function.
 
 ```ts
 import { component, div } from '@vanijs/vani'
@@ -303,7 +766,8 @@ const App = component(
 )
 ```
 
-They are awaited and the fallback is rendered until the component is ready.
+In DOM mode, the fallback is rendered until the component is ready. In SSR mode, async components
+are awaited, so the fallback only renders for `clientOnly` components.
 
 ---
 
@@ -342,8 +806,47 @@ Use `renderToString()` on the server, then `hydrateToDOM()` on the client.
 
 Use `renderToString()` at build time to generate a static `index.html`, then hydrate on the client.
 
-**Important:** Hydration only binds to anchors. It does not render or start effects. Call
-`handle.update()` to activate the UI.
+**Important:** Hydration only binds to anchors for normal components. It does not render or start
+effects until you call `handle.update()` to activate the UI. Components marked `clientOnly: true` do
+render on the client during hydration.
+
+---
+
+## Selective Hydration
+
+You can hydrate a full page but only **activate** the parts that need interactivity. Since
+`hydrateToDOM()` returns handles, you choose which ones to `update()`.
+
+Example: hydrate everything, activate only the header.
+
+```ts
+import { hydrateToDOM, type ComponentRef } from '@vanijs/vani'
+import { Header } from './header'
+import { Main } from './main'
+import { Footer } from './footer'
+
+const headerRef: ComponentRef = { current: null }
+const root = document.getElementById('app')!
+
+// Must match server render order.
+hydrateToDOM([Header({ ref: headerRef }), Main(), Footer()], root)
+
+// Activate only the header.
+headerRef.current?.update()
+```
+
+Alternative: split the page into separate roots and hydrate only the interactive region.
+
+```ts
+const headerRoot = document.getElementById('header-root')!
+const [headerHandle] = hydrateToDOM([Header()], headerRoot)
+headerHandle.update()
+```
+
+Notes:
+
+- Non‑updated components remain inert (no handlers/effects) until you call `update()`.
+- The hydration list must match the server render order for that root.
 
 ---
 
