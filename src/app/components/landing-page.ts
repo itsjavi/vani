@@ -1,6 +1,6 @@
 import { component } from '@/vani'
 import * as h from '@/vani/html'
-import { cn } from './utils'
+import { cn, renderBashCode, renderTypeScriptCode } from './utils'
 
 const navItems = [
   { label: 'Features', href: '#features' },
@@ -201,8 +201,11 @@ const HeroSection = component(() => {
             },
             h.div(
               { className: 'flex items-center justify-between text-sm text-slate-300' },
-              h.span('Simple by design'),
-              h.span('Use real HTML props and events'),
+              h.span({ className: 'font-bold text-lg' }, 'Simple by design'),
+              h.span(
+                { className: 'bg-cyan-500/20 px-2 py-1 rounded-full text-xs' },
+                'Zero dependencies',
+              ),
             ),
             h.div(
               { className: 'mt-6 space-y-4' },
@@ -319,6 +322,26 @@ const PrinciplesSection = component(() => {
 })
 
 const ApiSection = component(() => {
+  const installSnippet = renderBashCode(
+    ['npm install vani', 'pnpm add vani', 'bun add vani'].join('\n'),
+    'mt-4',
+  )
+  const apiSnippet = renderTypeScriptCode(
+    [
+      'import { component, div, button, renderToDOM } from "vani";',
+      '',
+      'const Counter = component((_, handle) => {',
+      '  let count = 0;',
+      '  return () => div(',
+      '    `Count: ${count}`,',
+      '    button({ onclick: () => { count++; handle.update(); } }, "Inc")',
+      '  );',
+      '});',
+      '',
+      'renderToDOM([Counter()], document.getElementById("app"));',
+    ].join('\n'),
+  )
+
   return () =>
     h.section(
       { id: 'api', className: 'bg-slate-950 py-20 text-white' },
@@ -338,26 +361,22 @@ const ApiSection = component(() => {
         h.div(
           {
             className: cn(
-              'rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 p-6',
-              'font-mono text-sm text-slate-200',
+              'rounded-3xl border border-white/10 bg-white/5 p-6',
+              'text-sm text-slate-200',
             ),
           },
-          h.pre(
-            { className: 'whitespace-pre-wrap' },
-            [
-              'import { component, div, button, renderToDOM } from "vani";',
-              '',
-              'const Counter = component((_, handle) => {',
-              '  let count = 0;',
-              '  return () => div(',
-              '    `Count: ${count}`,',
-              '    button({ onclick: () => { count++; handle.update(); } }, "Inc")',
-              '  );',
-              '});',
-              '',
-              'renderToDOM([Counter()], document.getElementById("app"));',
-            ].join('\n'),
-          ),
+          h.h3({ className: 'text-base font-semibold text-white' }, 'Install'),
+          h.p({ className: 'mt-2 text-sm text-slate-300' }, 'Choose your package manager:'),
+          installSnippet,
+        ),
+        h.div(
+          {
+            className: cn(
+              'rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 p-6',
+              'text-sm text-slate-200',
+            ),
+          },
+          apiSnippet,
         ),
       ),
     )
