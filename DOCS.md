@@ -20,7 +20,7 @@ pnpm add vani
 ## Quick Start (SPA)
 
 ```ts
-import { component, div, button, renderToDOM, type Handle } from 'vani'
+import { component, div, button, renderToDOM, type Handle } from '@vanijs/vani'
 
 const Counter = component((_, handle: Handle) => {
   let count = 0
@@ -54,7 +54,7 @@ renderToDOM([Counter()], appRoot)
 Components are functions that return a render function:
 
 ```ts
-import { component, div } from 'vani'
+import { component, div } from '@vanijs/vani'
 
 const Hello = component(() => {
   return () => div('Hello Vani')
@@ -66,7 +66,7 @@ const Hello = component(() => {
 Nothing re‑renders unless you call `handle.update()`:
 
 ```ts
-import { component, div, button, type Handle } from 'vani'
+import { component, div, button, type Handle } from '@vanijs/vani'
 
 const Clicker = component((_, handle: Handle) => {
   let clicks = 0
@@ -107,7 +107,7 @@ Updates replace only the DOM between anchors.
 Creates a component factory. The `fn` receives `props` and a `handle`.
 
 ```ts
-import { component, div, type Handle } from 'vani'
+import { component, div, type Handle } from '@vanijs/vani'
 
 const Card = component<{ title: string }>((props, handle: Handle) => {
   handle.effect(() => {
@@ -121,7 +121,7 @@ const Card = component<{ title: string }>((props, handle: Handle) => {
 Components can return other component instances directly:
 
 ```ts
-import { component } from 'vani'
+import { component } from '@vanijs/vani'
 import * as h from 'vani/html'
 
 const Hero = component(() => {
@@ -138,7 +138,7 @@ const Page = component(() => {
 Mounts components to the DOM immediately.
 
 ```ts
-import { renderToDOM, component, div } from 'vani'
+import { renderToDOM, component, div } from '@vanijs/vani'
 
 const App = component(() => () => div('App'))
 renderToDOM([App()], document.getElementById('app')!)
@@ -150,7 +150,7 @@ Binds handles to existing DOM (SSR/SSG) without rendering. You must call `handle
 activate.
 
 ```ts
-import { hydrateToDOM } from 'vani'
+import { hydrateToDOM } from '@vanijs/vani'
 import { App } from './app'
 
 const root = document.getElementById('app')!
@@ -163,7 +163,7 @@ handles.forEach((handle) => handle.update())
 Server‑side render to HTML with anchors. Import from `vani/ssr`.
 
 ```ts
-import { component } from 'vani'
+import { component } from '@vanijs/vani'
 import { renderToString } from 'vani/ssr'
 
 const App = component(() => () => 'Hello SSR')
@@ -176,7 +176,7 @@ Low‑level helper for embedding raw component functions in the middle of a rend
 you have an unwrapped component function.
 
 ```ts
-import { component, mount, div, type Component } from 'vani'
+import { component, mount, div, type Component } from '@vanijs/vani'
 
 const Footer: Component = () => () => div('Footer')
 
@@ -188,7 +188,7 @@ const Page = component(() => () => div('Body', mount(Footer, {})))
 Returns a fragment node. Useful for returning multiple siblings.
 
 ```ts
-import { fragment, div, component } from 'vani'
+import { fragment, div, component } from '@vanijs/vani'
 
 const App = component(() => () => fragment(div('One'), div('Two')))
 ```
@@ -198,7 +198,7 @@ const App = component(() => () => fragment(div('One'), div('Two')))
 Vani ships helpers for common elements:
 
 ```ts
-import { div, span, button, input } from 'vani'
+import { div, span, button, input } from '@vanijs/vani'
 
 div(span('Label'), input({ type: 'text' }), button({ onclick: () => {} }, 'Submit'))
 ```
@@ -208,7 +208,7 @@ div(span('Label'), input({ type: 'text' }), button({ onclick: () => {} }, 'Submi
 Utility for composing class names:
 
 ```ts
-import { classNames, div } from 'vani'
+import { classNames, div } from '@vanijs/vani'
 
 div({
   className: classNames('base', { active: true }, ['p-2', 'rounded']),
@@ -220,7 +220,7 @@ div({
 DOM refs and component refs are supported:
 
 ```ts
-import { component, input, type DomRef, type ComponentRef } from 'vani'
+import { component, input, type DomRef, type ComponentRef } from '@vanijs/vani'
 
 const Child = component((_, handle) => () => input({ ref: { current: null } }))
 
@@ -240,7 +240,7 @@ such as accessing the window object, accessing the DOM, etc.
 Effects are very simple, they don't have dependencies and are run once on mount and once on update.
 
 ```ts
-import { component, div } from 'vani'
+import { component, div } from '@vanijs/vani'
 
 const Timer = component((_, handle) => {
   handle.effect(() => {
@@ -260,7 +260,7 @@ This is useful to avoid blocking the UI while expensive work happens, e.g. if yo
 large list.
 
 ```ts
-import { component, button, div, startTransition, type Handle } from 'vani'
+import { component, button, div, startTransition, type Handle } from '@vanijs/vani'
 
 const List = component((_, handle: Handle) => {
   let items = [1, 2, 3]
@@ -288,7 +288,7 @@ const List = component((_, handle: Handle) => {
 Components may return a Promise of a render function. You can provide a `fallback`:
 
 ```ts
-import { component, div } from 'vani'
+import { component, div } from '@vanijs/vani'
 
 const AsyncCard = component(async () => {
   await new Promise((resolve) => setTimeout(resolve, 500))
@@ -312,7 +312,7 @@ They are awaited and the fallback is rendered until the component is ready.
 Use `clientOnly: true` to skip SSR of a component and render it only on the client:
 
 ```ts
-import { component, div } from 'vani'
+import { component, div } from '@vanijs/vani'
 
 const ClientWidget = component(() => () => div('Client‑only'))
 

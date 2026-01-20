@@ -334,12 +334,22 @@ const PrinciplesSection = component(() => {
 })
 
 const installTokens = getHighlightedTokens(
-  ['npm install vani', 'pnpm add vani', 'bun add vani'].join('\n'),
+  [
+    'npm install @vanijs/vani',
+    '',
+    'pnpm add @vanijs/vani',
+    '',
+    'bun add @vanijs/vani',
+    '',
+    'deno add @vanijs/vani',
+    '',
+    'yarn add @vanijs/vani',
+  ].join('\n'),
   'shell',
 )
 const apiTokens = getHighlightedTokens(
   [
-    'import { component, div, button, renderToDOM } from "vani";',
+    'import { component, div, button, renderToDOM } from "@vanijs/vani";',
     '',
     'const Counter = component((_, handle) => {',
     '  let count = 0;',

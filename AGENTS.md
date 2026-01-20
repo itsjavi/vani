@@ -18,7 +18,7 @@ In Vani, components are factories or Higher-Order Functions that create DOM node
 
 ```ts
 // With Vani (global scope)
-import { div } from 'vani'
+import { div } from '@vanijs/vani'
 
 function App() {
   return () => div({ class: 'text-red-500' }, 'Hello World!')
