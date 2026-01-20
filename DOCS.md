@@ -278,6 +278,54 @@ until the user confirms.
 
 ---
 
+### 5.1) Inputs and focus
+
+Vani replaces a component’s subtree on update. If you re-render on every keystroke, the input node
+is recreated and the browser will drop focus/selection. Prefer uncontrolled inputs and update on
+submit/blur, or split the input into its own component so only a sibling preview re-renders.
+
+If you need a controlled input, preserve focus explicitly:
+
+```ts
+import { component, div, input, type DomRef, type Handle } from '@vanijs/vani'
+
+const ControlledInput = component((_, handle: Handle) => {
+  const ref: DomRef<HTMLInputElement> = { current: null }
+  let value = ''
+
+  const updateWithFocus = () => {
+    const prev = ref.current
+    const start = prev?.selectionStart ?? null
+    const end = prev?.selectionEnd ?? null
+
+    handle.updateSync()
+
+    const next = ref.current
+    if (next) {
+      next.focus()
+      if (start != null && end != null) {
+        next.setSelectionRange(start, end)
+      }
+    }
+  }
+
+  return () =>
+    div(
+      input({
+        ref,
+        value,
+        oninput: (event) => {
+          value = (event.currentTarget as HTMLInputElement).value
+          updateWithFocus()
+        },
+      }),
+      div(`Value: ${value}`),
+    )
+})
+```
+
+---
+
 ### 6) Conditional rendering
 
 Conditional rendering is just normal control flow inside the render function. You compute a boolean

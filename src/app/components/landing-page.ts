@@ -3,6 +3,7 @@ import * as h from '@/vani/html'
 import { renderSvgString } from '@/vani/svg'
 import { Github } from 'lucide-static'
 import { CopyableCodeBlock } from './copyable-code-block'
+import { LandingPageExamples } from './landing-page-examples'
 import { PackageManagerTabs } from './package-manager-tabs'
 import { cn, getHighlightedTokens } from './utils'
 
@@ -145,7 +146,7 @@ const HeroSection = component(() => {
     h.section(
       {
         className: cn(
-          'relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950',
+          'relative overflow-hidden bg-gradient-to-b from-slate-950 via-amber-950 to-slate-950',
           'text-white',
         ),
       },
@@ -401,6 +402,7 @@ const ApiSection = component(() => {
           },
           CopyableCodeBlock({ code: apiCode, tokens: apiTokens }),
         ),
+        LandingPageExamples(),
       ),
     )
 })
