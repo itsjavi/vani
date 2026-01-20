@@ -22,7 +22,41 @@ async function renderWithEntryServer(server: ViteDevServer, url: string, entrySe
 
   const response = await handler()
   const html = await response.text()
-  return server.transformIndexHtml(url, html)
+  const transformed = await server.transformIndexHtml(url, html)
+  return rebasePublicAssetUrls(transformed, server.config.base)
+}
+
+function normalizeBase(base: string) {
+  if (!base || base === '/') return '/'
+  return base.endsWith('/') ? base : `${base}/`
+}
+
+function rebasePublicAssetUrls(html: string, base: string) {
+  const normalizedBase = normalizeBase(base)
+  if (normalizedBase === '/') return html
+
+  const baseNoSlash = normalizedBase.replace(/^\/|\/$/g, '')
+  const doubleBasePrefix = `/${baseNoSlash}/${baseNoSlash}/`
+  const shouldSkip = (url: string) =>
+    url.startsWith('//') ||
+    url.startsWith('http://') ||
+    url.startsWith('https://') ||
+    url.startsWith('#') ||
+    url.startsWith(normalizedBase) ||
+    url.startsWith('/@') ||
+    url.startsWith('/__vite') ||
+    url.startsWith('/@fs/') ||
+    url.startsWith('/src/')
+
+  return html.replace(/\b(?:src|href)=(['"])([^'"]+)\1/gi, (match, quote: string, url: string) => {
+    if (url.startsWith(doubleBasePrefix)) {
+      return match.replace(url, `${normalizedBase}${url.slice(doubleBasePrefix.length)}`)
+    }
+    if (!url.startsWith('/') || shouldSkip(url)) {
+      return match
+    }
+    return match.replace(url, `${normalizedBase}${url.slice(1)}`)
+  })
 }
 
 async function renderStaticHtml(
