@@ -5,7 +5,7 @@ import { vaniSpaPlugin } from './src/app/vite-plugin'
 
 // https://vite.dev/config/
 export default defineConfig({
-  // base: '/vani/',
+  base: '/vani/',
   plugins: [
     tailwindcss(),
     vaniSpaPlugin({
