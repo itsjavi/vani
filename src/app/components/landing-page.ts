@@ -1,6 +1,8 @@
 import { component } from '@/vani'
 import * as h from '@/vani/html'
-import { cn, getHighlightedTokens, renderHighlightedTokens } from './utils'
+import { CopyableCodeBlock } from './copyable-code-block'
+import { PackageManagerTabs } from './package-manager-tabs'
+import { cn, getHighlightedTokens } from './utils'
 
 const navItems = [
   { label: 'Features', href: '#features' },
@@ -164,6 +166,10 @@ const HeroSection = component(() => {
             ),
             h.span(
               { className: 'rounded-full bg-white/10 px-3 py-1 text-slate-200' },
+              'No dependencies',
+            ),
+            h.span(
+              { className: 'rounded-full bg-white/10 px-3 py-1 text-slate-200' },
               '~5KB gzipped',
             ),
           ),
@@ -214,10 +220,10 @@ const HeroSection = component(() => {
             h.div(
               { className: 'flex items-center justify-between text-sm text-slate-300' },
               h.span({ className: 'font-bold text-lg' }, 'Simple by design'),
-              h.span(
-                { className: 'bg-cyan-500/20 px-2 py-1 rounded-full text-xs' },
-                'Zero dependencies',
-              ),
+              // h.span(
+              //   { className: 'bg-cyan-500/20 px-2 py-1 rounded-full text-xs' },
+              //   'Zero dependencies',
+              // ),
             ),
             h.div(
               { className: 'mt-6 space-y-4' },
@@ -333,36 +339,20 @@ const PrinciplesSection = component(() => {
     )
 })
 
-const installTokens = getHighlightedTokens(
-  [
-    'npm install @vanijs/vani',
-    '',
-    'pnpm add @vanijs/vani',
-    '',
-    'bun add @vanijs/vani',
-    '',
-    'deno add @vanijs/vani',
-    '',
-    'yarn add @vanijs/vani',
-  ].join('\n'),
-  'shell',
-)
-const apiTokens = getHighlightedTokens(
-  [
-    'import { component, div, button, renderToDOM } from "@vanijs/vani";',
-    '',
-    'const Counter = component((_, handle) => {',
-    '  let count = 0;',
-    '  return () => div(',
-    '    `Count: ${count}`,',
-    '    button({ onclick: () => { count++; handle.update(); } }, "Inc")',
-    '  );',
-    '});',
-    '',
-    'renderToDOM([Counter()], document.getElementById("app"));',
-  ].join('\n'),
-  'ts',
-)
+const apiCode = [
+  'import { component, div, button, renderToDOM } from "@vanijs/vani";',
+  '',
+  'const Counter = component((props, handle)',
+  '  let count = 0;',
+  '  return () => div(',
+  '    `Count: ${count}`,',
+  '    button({ onclick: () => { count++; handle.update(); } }, "Inc")',
+  '  );',
+  '});',
+  '',
+  'renderToDOM([Counter()], document.getElementById("app"));',
+].join('\n')
+const apiTokens = getHighlightedTokens(apiCode, 'ts')
 
 const ApiSection = component(() => {
   return () =>
@@ -390,7 +380,7 @@ const ApiSection = component(() => {
           },
           h.h3({ className: 'text-base font-semibold text-white' }, 'Install'),
           h.p({ className: 'mt-2 text-sm text-slate-300' }, 'Choose your package manager:'),
-          renderHighlightedTokens(installTokens, 'mt-4'),
+          PackageManagerTabs(),
         ),
         h.div(
           {
@@ -399,7 +389,7 @@ const ApiSection = component(() => {
               'text-sm text-slate-200',
             ),
           },
-          renderHighlightedTokens(apiTokens),
+          CopyableCodeBlock({ code: apiCode, tokens: apiTokens }),
         ),
       ),
     )
