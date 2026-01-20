@@ -10,17 +10,17 @@ Check the DOCS.md and README.md files for more information.
 ```tsx
 // With React
 function App() {
-  return <div className="text-red-500">Hello World!</div>
+  return <div className="text-purple-500">Hello World!</div>
 }
 ```
 
 In Vani, components are factories or Higher-Order Functions that create DOM nodes.
 
 ```ts
-// With Vani (global scope)
+// With Vani
 import { div } from '@vanijs/vani'
 
 function App() {
-  return () => div({ class: 'text-red-500' }, 'Hello World!')
+  return () => div({ className: 'text-purple-500' }, 'Hello World!')
 }
 ```

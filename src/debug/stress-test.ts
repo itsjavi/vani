@@ -57,7 +57,6 @@ const MetricCard = component<{
   change: string
 }>((props, handle: Handle) => {
   let selected = false
-  let hovered = false
 
   return () =>
     div(
@@ -67,21 +66,10 @@ const MetricCard = component<{
           selected = !selected
           handle.update()
         },
-        onmouseenter: () => {
-          hovered = true
-          handle.update()
-        },
-        onmouseleave: () => {
-          hovered = false
-          handle.update()
-        },
         onfocus: (event: Event) => setOutline(event, true),
         onblur: (event: Event) => setOutline(event, false),
         tabIndex: 0,
         style: style({
-          backgroundColor: hovered ? '#f5f5f5' : '#fff',
-          transform: hovered && !selected ? 'translateY(-2px)' : 'translateY(0)',
-          transition: 'all 0.2s',
           padding: 20,
           border: '1px solid #ddd',
           borderRadius: 8,
@@ -104,31 +92,17 @@ const MetricCard = component<{
 })
 
 // Stateful Chart Bar Component
-const ChartBar = component<{ value: number; index: number }>((props, handle) => {
-  let hovered = false
-
+const ChartBar = component<{ value: number; index: number }>((props) => {
   return () =>
     div({
       className: 'chart-bar',
       style: style({
         height: `${props.value}%`,
-        backgroundColor: hovered ? '#286090' : '#337ab7',
         width: 30,
         margin: '0 2px',
         cursor: 'pointer',
-        transition: 'all 0.2s',
-        opacity: hovered ? 0.9 : 1,
-        transform: hovered ? 'scaleY(1.1)' : 'scaleY(1)',
       }),
       onclick: () => {},
-      onmouseenter: () => {
-        hovered = true
-        handle.update()
-      },
-      onmouseleave: () => {
-        hovered = false
-        handle.update()
-      },
       onfocus: (event: Event) => setOutline(event, true),
       onblur: (event: Event) => setOutline(event, false),
       tabIndex: 0,
@@ -139,7 +113,6 @@ const ChartBar = component<{ value: number; index: number }>((props, handle) => 
 const ActivityItem = component<{ id: number; title: string; time: string; icon: string }>(
   (props, handle) => {
     let read = false
-    let hovered = false
 
     return () =>
       el(
@@ -150,19 +123,10 @@ const ActivityItem = component<{ id: number; title: string; time: string; icon: 
             read = !read
             handle.update()
           },
-          onmouseenter: () => {
-            hovered = true
-            handle.update()
-          },
-          onmouseleave: () => {
-            hovered = false
-            handle.update()
-          },
           style: style({
             padding: 12,
             borderBottom: '1px solid #eee',
             cursor: 'pointer',
-            backgroundColor: hovered ? '#f5f5f5' : read ? 'rgba(245, 245, 245, 0.6)' : '#fff',
             display: 'flex',
             alignItems: 'center',
             gap: 12,
@@ -196,7 +160,6 @@ const ActivityItem = component<{ id: number; title: string; time: string; icon: 
 // Stateful Dropdown Menu Component
 const DropdownMenu = component<{ rowId: number }>((_, handle) => {
   let open = false
-  let hovered = false
   const actions = ['View Details', 'Edit', 'Duplicate', 'Archive', 'Delete']
 
   return () =>
@@ -210,20 +173,11 @@ const DropdownMenu = component<{ rowId: number }>((_, handle) => {
             open = !open
             handle.update()
           },
-          onmouseenter: () => {
-            hovered = true
-            handle.update()
-          },
-          onmouseleave: () => {
-            hovered = false
-            handle.update()
-          },
           onfocus: (event: Event) => setOutline(event, true),
           onblur: (event: Event) => setOutline(event, false),
           style: style({
             padding: '4px 8px',
             fontSize: 12,
-            backgroundColor: hovered ? '#286090' : '#337ab7',
           }),
         },
         '...',
@@ -280,28 +234,18 @@ const DropdownMenu = component<{ rowId: number }>((_, handle) => {
 
 // Stateful Dashboard Table Row Component
 const DashboardTableRow = component<{ row: Row }>((props, handle) => {
-  let hovered = false
   let selected = false
 
   return () =>
     el(
       'tr',
       {
-        className: classNames({ danger: selected }),
+        className: classNames('dashboard-row', { danger: selected }),
         onclick: () => {
           selected = !selected
           handle.update()
         },
-        onmouseenter: () => {
-          hovered = true
-          handle.update()
-        },
-        onmouseleave: () => {
-          hovered = false
-          handle.update()
-        },
         style: style({
-          backgroundColor: hovered ? '#f5f5f5' : '#fff',
           cursor: 'pointer',
         }),
       },
@@ -326,36 +270,24 @@ const DashboardTableRow = component<{ row: Row }>((props, handle) => {
 })
 
 // Stateful Search Input Component
-const SearchInput = component((_, handle) => {
+const SearchInput = component(() => {
   let value = ''
-  let focused = false
 
   return () =>
     input({
       type: 'text',
       placeholder: 'Search...',
       value,
+      className: 'dashboard-search',
       oninput: (event: Event) => {
         const target = event.currentTarget as HTMLInputElement | null
         value = target?.value ?? ''
-        handle.update()
-      },
-      onfocus: () => {
-        focused = true
-        handle.update()
-      },
-      onblur: () => {
-        focused = false
-        handle.update()
       },
       style: style({
         padding: '8px 12px',
-        border: `1px solid ${focused ? '#337ab7' : '#ddd'}`,
         borderRadius: 4,
         fontSize: 14,
         width: 300,
-        outline: focused ? '2px solid #337ab7' : 'none',
-        outlineOffset: 2,
       }),
     })
 })

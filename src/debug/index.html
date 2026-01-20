@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vani — Debug</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .container {
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 600px;
+        margin: 0 auto;
+
+        h1 {
+          text-align: center;
+        }
+        a {
+          text-decoration: none;
+          color: inherit;
+          padding: 10px;
+          border-radius: 5px;
+          background-color: #f0f0f0;
+          transition: background-color 0.15s ease;
+          &:hover {
+            background-color: #3a3fdd;
+            color: #fff;
+          }
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Vani Live Tests</h1>
+      <a href="./stress-test">1. Performance Test</a>
+      <a href="./golden-leaf-test">2. Golden Leaf Test</a>
+    </div>
+  </body>
+</html>

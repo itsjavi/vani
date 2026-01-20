@@ -54,6 +54,7 @@
     "build": "rm -rf dist && vite build && pnpm run build:lib",
     "build:lib": "pnpm tsdown src/vani/index.ts --minify --out-dir dist/lib --dts",
     "dev": "vite",
+    "dev:debug": "open http://localhost:4555 && PORT=4555 bun run --watch src/debug/*.html",
     "format": "prettier --write . && pnpm dlx sort-package-json",
     "lint": "pnpm run typecheck && pnpm run lint:eslint && pnpm run lint:circular",
     "lint:circular": "pnpm dlx madge --circular --extensions ts src/",

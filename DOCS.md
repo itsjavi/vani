@@ -939,6 +939,24 @@ This avoids slow DOM diffing and keeps behavior explicit.
 
 ---
 
+## Other Resources
+
+### Configuring Tailwind CSS Intellisense (VSCode)
+
+In order to have proper Tailwind CSS Intellisense code completion and hover documentation with Vani,
+you need to configure the following settings in your `.vscode/settings.json` file:
+
+```json
+{
+  "tailwindCSS.experimental.classRegex": [
+    ["(?:tw|clsx|cn)\\(([^;]*)[\\);]", "[`'\"`]([^'\"`;]*)[`'\"`]"],
+    "(?:className)=\\s*(?:\"|'|{`)([^(?:\"|'|`})]*)",
+    "(?:className):\\s*(?:\"|'|{`)([^(?:\"|'|`})]*)"
+  ],
+  "tailwindCSS.classAttributes": ["class", "classes", "className", "classNames"]
+}
+```
+
 ## License
 
 MIT

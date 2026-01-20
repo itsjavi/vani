@@ -38,6 +38,7 @@ function withRenderCounter(name: string, fn: RenderFn): RenderFn {
 }
 
 function printRenders() {
+  console.clear()
   console.table((window as any).__renders)
 }
 
