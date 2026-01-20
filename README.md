@@ -190,6 +190,12 @@ Notes:
 - ❌ Not a template language
 - ❌ Not a framework that guesses intent
 
+### Why not Web Components (yet)
+
+Vani does not use Web Components today because the developer ergonomics are still rough and SSR
+support is a key goal. We may revisit this if Web Components bring clear benefits without harming
+productivity and cross-browser compatibility.
+
 ---
 
 ## Comparison with Popular Frameworks
@@ -206,7 +212,31 @@ Notes:
 | SSR without heuristics | ✅   | ❌    | ❌  | ❌     | ❌    |
 | Dependency-free core   | ✅   | ❌    | ❌  | ❌     | ❌    |
 
-⚠️ = partially / indirectly supported
+⚠️ = partially / indirectly supported / average
+
+The strength of Vani is its predictability and simplicity, while other frameworks focus on developer
+productivity and ease of use, handling a lot of complexity behind the scenes automatically.
+
+### Vani's Sweet Spot
+
+✅ Perfect for:
+
+- Dashboard widgets
+- Micro-frontends
+- Live-coding in the browser
+- Embeddable components in other frameworks
+- Performance-critical UIs where you need exact control
+- Server-rendered sites
+- Learning UI fundamentals (no magic, direct DOM)
+- Lightweight SPAs or small Multi-Page Applications
+
+❌ Not ideal for:
+
+- Large, complex web applications with many interrelated states
+- Teams that want framework conventions to handle complexity
+- Projects needing a mature ecosystem
+
+(at least not yet)
 
 ---
 

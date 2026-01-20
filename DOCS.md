@@ -47,6 +47,69 @@ renderToDOM([Counter()], appRoot)
 
 ---
 
+## Incremental adoption (mounting points)
+
+Vani is intentionally small and lightweight, so you don't need to replace your full stack. You can
+adopt it gradually by mounting Vani components inside existing apps (React, Vue, server-rendered
+pages, etc.) using plain DOM elements as mounting points.
+
+Benefits:
+
+- Gradual migration: move one widget or screen at a time without a rewrite.
+- Minimal surface area: no global runtime or framework lock-in.
+- Clear ownership: a Vani component owns only its subtree between anchors.
+- Easy rollback: remove a mount point and the rest of the app keeps working.
+
+### Example: mount a Vani widget inside React
+
+```tsx
+import { useEffect, useRef } from 'react'
+import { component, div, button, renderToDOM, type Handle } from '@vanijs/vani'
+
+// Vani component (local state + explicit updates)
+const VaniCounter = component((_, handle) => {
+  let count = 0
+  return () =>
+    div(
+      `Count: ${count}`,
+      button(
+        {
+          onclick: () => {
+            count += 1
+            handle.update()
+          },
+        },
+        'Increment',
+      ),
+    )
+})
+
+// React component that hosts the Vani widget
+export function MyReactComponent() {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const vaniHandlesRef = useRef<Handle[] | null>(null)
+
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    // Mount Vani into a React-managed DOM element (the mounting point)
+    vaniHandlesRef.current = renderToDOM([VaniCounter()], containerRef.current)
+
+    // Cleanup when React unmounts
+    return () => {
+      for (const handle of vaniHandlesRef.current ?? []) {
+        handle.dispose()
+      }
+      vaniHandlesRef.current = null
+    }
+  }, [])
+
+  return <div ref={containerRef} />
+}
+```
+
+---
+
 ## Core Concepts
 
 ### 1) Components are functions
@@ -516,19 +579,27 @@ export const emit = (event: string, payload?: unknown) => {
 
 Vani scales best when you keep update paths explicit and module boundaries clear. The core idea is
 to let feature modules own their local state and expose small, explicit APIs for coordination,
-instead of reaching into each other’s state or relying on global reactive graphs.
+instead of reaching into each other's state or relying on global reactive graphs. At scale, treat
+updates like messages: state lives in a module, views read from the module, and invalidation is
+triggered by module commands.
 
 ### Suggested architecture
 
-1. Feature modules
+1. Feature modules (state + commands)
 
 Each module exposes:
 
 - a small state container
 - read accessors (snapshot getters)
-- explicit mutation functions that call `handle.update()` on the owning component(s)
+- explicit commands (mutations) that notify listeners
+- a `subscribe(listener)` for views to bind invalidation
 
-2. Coordinator (optional)
+2. View adapters (bind handles)
+
+Views subscribe once via `handle.effect()` and call `handle.update()` when their module notifies.
+This keeps invalidation scoped to the subtree that owns the handle.
+
+3. Coordinator (optional)
 
 For cross-module workflows, add a thin coordinator that:
 
@@ -536,74 +607,139 @@ For cross-module workflows, add a thin coordinator that:
 - calls public APIs of each module
 - never accesses private state directly
 
-3. Stable, explicit contracts
+4. Stable, explicit contracts
 
 Use interfaces, simple message payloads, or callbacks to avoid implicit coupling. If one feature
-needs another to update, it calls that module’s exported `invalidate()` (or specific mutation
-method) rather than mutating shared data.
+needs another to update, it calls that module's exported command (or `invalidate()` helper) rather
+than mutating shared data.
 
 ### Example: Feature module with explicit invalidation
 
 ```ts
-import { component, div, type Handle } from '@vanijs/vani'
+import { component, div, type Handle, type Component } from '@vanijs/vani'
 
 type User = { id: string; name: string }
 
-export type UserFeatureApi = {
+export type UsersFeatureApi = {
   getUsers: () => User[]
-  refreshUsers: () => void
+  setUsers: (next: User[]) => void
+  refreshUsers: () => Promise<void>
+  subscribe: (listener: () => void) => () => void
 }
 
-export const UsersView = component((_, handle: Handle) => {
+export const createUsersFeature = (): { api: UsersFeatureApi; View: Component } => {
   let users: User[] = []
+  const listeners = new Set<() => void>()
 
-  const getUsers = () => users
-
-  const setUsers = (next: User[]) => {
-    users = next
-    handle.update()
+  const notify = () => {
+    for (const listener of listeners) listener()
   }
 
-  const refreshUsers = async () => {
-    const response = await fetch('/api/users')
-    const data = (await response.json()) as User[]
-    setUsers(data)
+  const api: UsersFeatureApi = {
+    getUsers: () => users,
+    setUsers: (next) => {
+      users = next
+      notify()
+    },
+    refreshUsers: async () => {
+      const response = await fetch('/api/users')
+      const data = (await response.json()) as User[]
+      api.setUsers(data)
+    },
+    subscribe: (listener) => {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
   }
 
-  ;(UsersView as any).api = { getUsers, refreshUsers } satisfies UserFeatureApi
+  const View = component((_, handle: Handle) => {
+    handle.effect(() => api.subscribe(() => handle.update()))
+    return () => div(api.getUsers().map((user) => div(user.name)))
+  })
 
-  return () => div(getUsers().map((user) => div(user.name)))
-})
+  return { api, View }
+}
 ```
 
 ### Example: Coordinator calling explicit APIs
 
 ```ts
-import type { UserFeatureApi } from './users-feature'
+import type { UsersFeatureApi } from './users-feature'
 
 type Coordinator = {
-  onUserSaved: () => void
+  onUserSaved: () => Promise<void>
 }
 
-export const createCoordinator = (users: UserFeatureApi): Coordinator => {
+export const createCoordinator = (users: UsersFeatureApi): Coordinator => {
   return {
-    onUserSaved: () => {
-      users.refreshUsers()
+    onUserSaved: async () => {
+      await users.refreshUsers()
     },
   }
 }
 ```
 
+### Example: Scoped invalidation by key
+
+When a large list exists, invalidate only the affected rows.
+
+```ts
+import { component, div, type Handle } from '@vanijs/vani'
+
+const rowHandles = new Map<string, Handle>()
+
+export const bindUserRow = (id: string, handle: Handle) => {
+  rowHandles.set(id, handle)
+  return () => rowHandles.delete(id)
+}
+
+export const invalidateUserRow = (id: string) => {
+  rowHandles.get(id)?.update()
+}
+
+export const UserRow = component<{ id: string; name: string }>((props, handle) => {
+  handle.effect(() => bindUserRow(props.id, handle))
+  return () => div(props.name)
+})
+```
+
+### Explicit batching (optional)
+
+If you dispatch many invalidations in a single tick, queue them and update once per handle.
+
+```ts
+import type { Handle } from '@vanijs/vani'
+
+const pending = new Set<Handle>()
+let scheduled = false
+
+export const queueUpdate = (handle: Handle) => {
+  pending.add(handle)
+  if (scheduled) return
+  scheduled = true
+  queueMicrotask(() => {
+    scheduled = false
+    for (const item of pending) item.update()
+    pending.clear()
+  })
+}
+```
+
 ### Challenges with manual invalidation at scale
 
-- Update fan‑out: one action may need to notify several modules; keep this explicit via a
+- Update fan-out: one action may need to notify several modules; keep this explicit via a
   coordinator instead of hidden subscriptions.
-- Over‑invalidating: it’s easy to call `handle.update()` too broadly; prefer small, keyed subtrees
-  (item components, feature-level roots).
-- Stale reads: when multiple modules depend on shared data, ensure you update the data first, then
-  invalidate dependent modules in a predictable order.
-- Debugging update paths: without implicit reactivity, you must track who called `update()`. Keep
-  module APIs narrow and name update methods clearly (`refreshUsers`, `invalidateSearch`).
+- Over-invalidating: calling `handle.update()` too broadly can re-render large subtrees; prefer
+  small, keyed targets (row components, feature roots).
+- Under-invalidating: missing an update call leaves views stale; treat "update after state change"
+  as part of the module contract and centralize commands.
+- Ordering and race conditions: when multiple modules depend on shared data, update data first, then
+  invalidate in a predictable order; avoid interleaving async updates without coordination.
+- Lifecycle leaks: if a handle isn't unsubscribed, updates keep firing; ensure `subscribe()` returns
+  a cleanup and is wired through `handle.effect()`.
+- Debugging update paths: without implicit reactivity, you must trace who called `update()`. Keep
+  module APIs narrow, name update methods clearly (`refreshUsers`, `invalidateSearch`), and consider
+  instrumentation (log or wrap invalidation helpers).
 
 Vani trades automatic coordination for transparency. In large apps, that means you should invest in
 clear module boundaries, explicit cross-module APIs, and small invalidation targets.
