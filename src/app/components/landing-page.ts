@@ -1,6 +1,6 @@
 import { component } from '@/vani'
 import * as h from '@/vani/html'
-import { cn, renderBashCode, renderTypeScriptCode } from './utils'
+import { cn, getHighlightedTokens, renderHighlightedTokens } from './utils'
 
 const navItems = [
   { label: 'Features', href: '#features' },
@@ -321,27 +321,28 @@ const PrinciplesSection = component(() => {
     )
 })
 
-const ApiSection = component(() => {
-  const installSnippet = renderBashCode(
-    ['npm install vani', 'pnpm add vani', 'bun add vani'].join('\n'),
-    'mt-4',
-  )
-  const apiSnippet = renderTypeScriptCode(
-    [
-      'import { component, div, button, renderToDOM } from "vani";',
-      '',
-      'const Counter = component((_, handle) => {',
-      '  let count = 0;',
-      '  return () => div(',
-      '    `Count: ${count}`,',
-      '    button({ onclick: () => { count++; handle.update(); } }, "Inc")',
-      '  );',
-      '});',
-      '',
-      'renderToDOM([Counter()], document.getElementById("app"));',
-    ].join('\n'),
-  )
+const installTokens = getHighlightedTokens(
+  ['npm install vani', 'pnpm add vani', 'bun add vani'].join('\n'),
+  'shell',
+)
+const apiTokens = getHighlightedTokens(
+  [
+    'import { component, div, button, renderToDOM } from "vani";',
+    '',
+    'const Counter = component((_, handle) => {',
+    '  let count = 0;',
+    '  return () => div(',
+    '    `Count: ${count}`,',
+    '    button({ onclick: () => { count++; handle.update(); } }, "Inc")',
+    '  );',
+    '});',
+    '',
+    'renderToDOM([Counter()], document.getElementById("app"));',
+  ].join('\n'),
+  'ts',
+)
 
+const ApiSection = component(() => {
   return () =>
     h.section(
       { id: 'api', className: 'bg-slate-950 py-20 text-white' },
@@ -367,7 +368,7 @@ const ApiSection = component(() => {
           },
           h.h3({ className: 'text-base font-semibold text-white' }, 'Install'),
           h.p({ className: 'mt-2 text-sm text-slate-300' }, 'Choose your package manager:'),
-          installSnippet,
+          renderHighlightedTokens(installTokens, 'mt-4'),
         ),
         h.div(
           {
@@ -376,7 +377,7 @@ const ApiSection = component(() => {
               'text-sm text-slate-200',
             ),
           },
-          apiSnippet,
+          renderHighlightedTokens(apiTokens),
         ),
       ),
     )

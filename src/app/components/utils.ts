@@ -21,9 +21,13 @@ const shikiHighlighter = createHighlighterCoreSync({
   engine: createJavaScriptRegexEngine(),
 })
 
-function renderHighlightedCode(code: string, lang: 'ts' | 'shell', className?: ClassName): VChild {
-  const { tokens } = shikiHighlighter.codeToTokens(code, { lang, theme: shikiTheme })
+export type HighlightedTokens = ReturnType<typeof shikiHighlighter.codeToTokens>['tokens']
 
+export function getHighlightedTokens(code: string, lang: 'ts' | 'shell'): HighlightedTokens {
+  return shikiHighlighter.codeToTokens(code, { lang, theme: shikiTheme }).tokens
+}
+
+export function renderHighlightedTokens(tokens: HighlightedTokens, className?: ClassName): VChild {
   return h.pre(
     { className: cn('font-mono text-sm whitespace-pre-wrap text-slate-200', className) },
     h.code(
@@ -45,9 +49,9 @@ function renderHighlightedCode(code: string, lang: 'ts' | 'shell', className?: C
 }
 
 export function renderTypeScriptCode(code: string, className?: ClassName) {
-  return renderHighlightedCode(code, 'ts', className)
+  return renderHighlightedTokens(getHighlightedTokens(code, 'ts'), className)
 }
 
 export function renderBashCode(code: string, className?: ClassName) {
-  return renderHighlightedCode(code, 'shell', className)
+  return renderHighlightedTokens(getHighlightedTokens(code, 'shell'), className)
 }
