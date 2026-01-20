@@ -1,6 +1,6 @@
 {
   "name": "@vanijs/vani",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Web-standards-first UI runtime with explicit updates, fine-grained DOM ownership, and zero dependencies. No Virtual DOM, no JSX, no compiler. Built for SPA, SSR, and SSG.",
   "keywords": [
     "ui",
