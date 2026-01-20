@@ -4,7 +4,9 @@
 
 import { el, type HtmlProps, type VChild } from './runtime'
 
-function createElementFn<E extends keyof HTMLElementTagNameMap>(tag: E) {
+type ElementTagName = keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap
+
+function createElementFn<E extends ElementTagName>(tag: E) {
   return (propsOrChild?: HtmlProps<E> | VChild | null, ...children: VChild[]) =>
     el(tag, propsOrChild, ...children)
 }
@@ -99,3 +101,22 @@ export const script = createElementFn('script')
 export const noscript = createElementFn('noscript')
 export const template = createElementFn('template')
 export const slot = createElementFn('slot')
+
+// SVG elements
+export const svg = createElementFn('svg')
+export const g = createElementFn('g')
+export const path = createElementFn('path')
+export const circle = createElementFn('circle')
+export const rect = createElementFn('rect')
+export const line = createElementFn('line')
+export const polyline = createElementFn('polyline')
+export const polygon = createElementFn('polygon')
+export const ellipse = createElementFn('ellipse')
+export const defs = createElementFn('defs')
+export const clipPath = createElementFn('clipPath')
+export const mask = createElementFn('mask')
+export const pattern = createElementFn('pattern')
+export const linearGradient = createElementFn('linearGradient')
+export const radialGradient = createElementFn('radialGradient')
+export const stop = createElementFn('stop')
+export const use = createElementFn('use')

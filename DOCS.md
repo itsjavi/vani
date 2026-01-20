@@ -665,6 +665,26 @@ import { div, span, button, input } from '@vanijs/vani'
 div(span('Label'), input({ type: 'text' }), button({ onclick: () => {} }, 'Submit'))
 ```
 
+### SVG icons (Lucide)
+
+Vani can render SVG strings directly using `renderSvgString()`. With `lucide-static`, import just
+the icon you need (tree-shakable) and render it with explicit sizing and class names.
+
+```ts
+import { component } from '@vanijs/vani'
+import { renderSvgString } from '@vanijs/vani/svg'
+import { Github } from 'lucide-static'
+
+const GithubLink = component(() => {
+  return () =>
+    renderSvgString(Github, {
+      size: 16,
+      className: 'h-4 w-4',
+      attributes: { 'aria-hidden': 'true' },
+    })
+})
+```
+
 ### `classNames(...classes)`
 
 Utility for composing class names:

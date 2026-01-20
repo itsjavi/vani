@@ -92,15 +92,29 @@ export type VChild = VNode | ComponentInstance<any> | string | number | null | u
 
 export type DataAttribute = `data-${string}`
 
-export type HtmlProps<T extends keyof HTMLElementTagNameMap> = Partial<
-  Omit<HTMLElementTagNameMap[T], 'children' | 'className' | 'style'>
-> & {
+type ElementTagName = keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap
+
+type ElementByTag<T extends ElementTagName> = T extends keyof HTMLElementTagNameMap
+  ? HTMLElementTagNameMap[T]
+  : T extends keyof SVGElementTagNameMap
+    ? SVGElementTagNameMap[T]
+    : Element
+
+export type SvgProps = {
+  [key: string]: string | number | boolean | undefined | null | ((...args: any[]) => any)
+}
+
+type BaseProps<T extends ElementTagName> = {
   className?: ClassName
   style?: string
-  ref?: DomRef<HTMLElementTagNameMap[T]>
+  ref?: DomRef<ElementByTag<T>>
 } & {
   [key in DataAttribute]?: string | number | boolean | undefined | null
 }
+
+export type HtmlProps<T extends ElementTagName> = T extends keyof SVGElementTagNameMap
+  ? BaseProps<T> & SvgProps
+  : BaseProps<T> & Partial<Omit<ElementByTag<T>, 'children' | 'className' | 'style'>>
 
 export type ClassName =
   | string
@@ -121,7 +135,7 @@ export type ComponentRef = {
   current: Handle | null
 }
 
-export type DomRef<T extends HTMLElement = HTMLElement> = {
+export type DomRef<T extends Element = Element> = {
   current: T | null
 }
 
@@ -209,8 +223,31 @@ function isSsrFragment(node: VNode): node is Extract<SSRNode, { type: 'fragment'
   return isSsrNode(node) && node.type === 'fragment'
 }
 
+const svgTags = new Set<string>([
+  'svg',
+  'g',
+  'path',
+  'circle',
+  'rect',
+  'line',
+  'polyline',
+  'polygon',
+  'ellipse',
+  'defs',
+  'clipPath',
+  'mask',
+  'pattern',
+  'linearGradient',
+  'radialGradient',
+  'stop',
+  'use',
+])
+
 function createElementNode(tag: string): VNode {
   if (currentRenderMode === 'dom') {
+    if (svgTags.has(tag)) {
+      return document.createElementNS('http://www.w3.org/2000/svg', tag)
+    }
     return document.createElement(tag)
   }
   return { type: 'element', tag, props: {}, children: [] }
@@ -573,7 +610,23 @@ function appendChildren(parent: VNode, children: VChild[]) {
   }
 }
 
+function isSvgElement(el: VNode): el is SVGElement {
+  return typeof SVGElement !== 'undefined' && el instanceof SVGElement
+}
+
+function normalizeAttrKey(key: string, isSvg: boolean) {
+  if (key.startsWith('aria')) {
+    return 'aria-' + key.replace('aria-', '').replace('aria', '').toLowerCase()
+  }
+  if (key.toLowerCase() === 'htmlfor') {
+    return 'for'
+  }
+  if (isSvg) return key
+  return key.toLowerCase()
+}
+
 function setProps(el: VNode, props: Record<string, any>) {
+  const isSvg = isSsrElement(el) ? svgTags.has(el.tag) : isSvgElement(el)
   for (const key in props) {
     const value = props[key]
 
@@ -585,6 +638,8 @@ function setProps(el: VNode, props: Record<string, any>) {
       const classValue = classNames(value)
       if (isSsrElement(el)) {
         el.props.class = classValue
+      } else if (isSvg) {
+        ;(el as SVGElement).setAttribute('class', classValue)
       } else {
         ;(el as HTMLElement).className = classValue
       }
@@ -604,12 +659,7 @@ function setProps(el: VNode, props: Record<string, any>) {
     } else if (value === false || value == null) {
       continue
     } else {
-      let normalizedKey = key.toLowerCase()
-      if (normalizedKey.startsWith('aria')) {
-        normalizedKey = 'aria-' + normalizedKey.replace('aria-', '').replace('aria', '')
-      } else if (normalizedKey === 'htmlfor') {
-        normalizedKey = 'for'
-      }
+      const normalizedKey = normalizeAttrKey(key, isSvg)
       if (isSsrElement(el)) {
         el.props[normalizedKey] = String(value)
       } else {
@@ -645,7 +695,7 @@ export function classNames(...classes: ClassName[]): string {
 // Element helpers
 // ─────────────────────────────────────────────
 
-export function el<E extends keyof HTMLElementTagNameMap>(
+export function el<E extends keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap>(
   tag: E,
   props?: HtmlProps<E> | VChild | null,
   ...children: VChild[]
@@ -654,7 +704,7 @@ export function el<E extends keyof HTMLElementTagNameMap>(
   if (isHtmlProps(props)) {
     if (props.ref) {
       if (!isSsrElement(node)) {
-        props.ref.current = node as HTMLElementTagNameMap[E]
+        props.ref.current = node as ElementByTag<E>
         ;(node as any).__vaniDomRef = props.ref
       } else {
         props.ref.current = null

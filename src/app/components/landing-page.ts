@@ -1,5 +1,7 @@
 import { component } from '@/vani'
 import * as h from '@/vani/html'
+import { renderSvgString } from '@/vani/svg'
+import { Github } from 'lucide-static'
 import { CopyableCodeBlock } from './copyable-code-block'
 import { PackageManagerTabs } from './package-manager-tabs'
 import { cn, getHighlightedTokens } from './utils'
@@ -58,6 +60,13 @@ const principles = [
   },
 ]
 
+const svgIcon = (svg: string, options: { size?: number; className?: string } = {}) =>
+  renderSvgString(svg, {
+    size: options.size,
+    className: options.className,
+    attributes: { 'aria-hidden': 'true' },
+  })
+
 const Header = component(() => {
   return () =>
     h.header(
@@ -95,12 +104,13 @@ const Header = component(() => {
             {
               href: 'https://github.com/itsjavi/vani',
               className: cn(
-                'rounded-full border border-white/20 px-4 py-2 text-sm text-white',
+                'inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm text-white',
                 'transition hover:border-white/40 hover:bg-white/10',
               ),
               target: '_blank',
               rel: 'noreferrer',
             },
+            svgIcon(Github, { size: 16, className: 'h-4 w-4' }),
             'GitHub',
           ),
           h.a(
