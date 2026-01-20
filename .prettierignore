@@ -1,0 +1,27 @@
+# Ignore:
+build/
+dist/
+dataset/dist/
+.next/
+.turbo/
+node_modules/
+.yarn/
+.cache/
+coverage/
+.vercel/
+.astro/
+.wrangler/
+
+pnpm-*.yaml
+*.min.json
+package.json
+.pnpm-store
+.pnpm-store/
+
+.ignore/
+.local/
+
+*-index.json
+*.min.json
+
+LICENSE

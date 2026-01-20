@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vani — A Web-Standards-First UI Runtime with Explicit Rendering, SSR-ready</title>
+    <script>
+      function _getTheme() {
+        if (typeof window === 'undefined') return 'light'
+        const stored = localStorage.getItem('theme')
+        if (stored === 'dark' || stored === 'light') return stored
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      }
+      ;(function () {
+        const theme = _getTheme()
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark')
+        }
+      })()
+    </script>
+    <!--vani:head-->
+    <!-- Privacy-friendly analytics by Plausible -->
+    <script async src="https://ua.werkowl.com/js/pa-huJDgELYT7G3JT1Ibsdzi.js"></script>
+    <script>
+      ;((window.plausible =
+        window.plausible ||
+        function () {
+          ;(plausible.q = plausible.q || []).push(arguments)
+        }),
+        (plausible.init =
+          plausible.init ||
+          function (i) {
+            plausible.o = i || {}
+          }))
+      plausible.init()
+    </script>
+  </head>
+  <body>
+    <div id="root"><!--vani:root--></div>
+  </body>
+</html>
