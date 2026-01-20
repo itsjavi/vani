@@ -604,10 +604,16 @@ function setProps(el: VNode, props: Record<string, any>) {
     } else if (value === false || value == null) {
       continue
     } else {
+      let normalizedKey = key.toLowerCase()
+      if (normalizedKey.startsWith('aria')) {
+        normalizedKey = 'aria-' + normalizedKey.replace('aria-', '').replace('aria', '')
+      } else if (normalizedKey === 'htmlfor') {
+        normalizedKey = 'for'
+      }
       if (isSsrElement(el)) {
-        el.props[key] = String(value)
+        el.props[normalizedKey] = String(value)
       } else {
-        ;(el as HTMLElement).setAttribute(key, String(value))
+        ;(el as HTMLElement).setAttribute(normalizedKey, String(value))
       }
     }
   }
