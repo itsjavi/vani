@@ -8,6 +8,8 @@ Vani is not a Virtual DOM, not reactive-by-default, and not compiler-driven.
 It is a **runtime-first**, **DOM-anchored**, **subtree-based** rendering system designed for
 clarity, performance, and long-term maintainability.
 
+Docs: [DOCS.md](https://github.com/itsjavi/vani/blob/main/DOCS.md)
+
 ---
 
 ## Philosophy

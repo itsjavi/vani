@@ -71,7 +71,7 @@ const Header = component(() => {
         },
         h.div(
           { className: 'flex items-center gap-1' },
-          h.img({ src: '/logo-trimmed.png', alt: 'Vani Logo', className: 'h-8 w-12' }),
+          h.img({ src: '/vani/logo-trimmed.png', alt: 'Vani Logo', className: 'h-8 w-12' }),
           h.span({ className: 'text-lg font-extrabold font-stretch-150% tracking-tight' }, 'vani'),
         ),
         h.nav(
@@ -91,7 +91,7 @@ const Header = component(() => {
           { className: 'flex items-center gap-3' },
           h.a(
             {
-              href: 'https://github.com/vani-js/vani',
+              href: 'https://github.com/itsjavi/vani',
               className: cn(
                 'rounded-full border border-white/20 px-4 py-2 text-sm text-white',
                 'transition hover:border-white/40 hover:bg-white/10',
@@ -100,6 +100,18 @@ const Header = component(() => {
               rel: 'noreferrer',
             },
             'GitHub',
+          ),
+          h.a(
+            {
+              href: 'https://github.com/itsjavi/vani/blob/main/DOCS.md',
+              className: cn(
+                'rounded-full border border-white/20 px-4 py-2 text-sm text-white',
+                'transition hover:border-white/40 hover:bg-white/10',
+              ),
+              target: '_blank',
+              rel: 'noreferrer',
+            },
+            'Docs',
           ),
           h.a(
             {
@@ -178,7 +190,7 @@ const HeroSection = component(() => {
             ),
             h.a(
               {
-                href: 'https://github.com/vani-js/vani',
+                href: 'https://github.com/itsjavi/vani',
                 target: '_blank',
                 rel: 'noreferrer',
                 className: cn(
@@ -405,7 +417,7 @@ const Footer = component(() => {
         h.div(
           { className: 'flex flex-wrap items-center gap-4 text-sm text-slate-300' },
           h.a(
-            { href: 'https://github.com/vani-js/vani', target: '_blank', rel: 'noreferrer' },
+            { href: 'https://github.com/itsjavi/vani', target: '_blank', rel: 'noreferrer' },
             'GitHub',
           ),
           h.a({ href: '#features' }, 'Features'),
