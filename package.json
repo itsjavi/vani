@@ -12,7 +12,7 @@
     "explicit-rendering",
     "no-virtual-dom",
     "js-first",
-    "jsx-adapter",
+    "jsx-runtime",
     "no-compiler",
     "ssr",
     "ssg",
