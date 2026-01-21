@@ -1,16 +1,16 @@
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
 import { defineConfig } from 'vite'
-import { vaniSpaPlugin } from './src/app/vite-plugin'
+import vaniSpa from './src/ecosystem/vite-plugin-vani-spa'
 
 // https://vite.dev/config/
 export default defineConfig({
   base: '/vani/',
   plugins: [
     tailwindcss(),
-    vaniSpaPlugin({
-      entryClientFile: 'src/app/entry-client.ts',
-      entryServerFile: 'src/app/entry-server.ts',
+    vaniSpa({
+      entryClientFile: 'src/spa-app/entry-client.ts',
+      entryServerFile: 'src/spa-app/entry-server.ts',
     }),
   ],
   resolve: {

@@ -1,7 +1,7 @@
+import { GithubIcon, NotepadTextIcon } from '@/ecosystem/lucide-vani'
 import { component, type DomRef } from '@/vani'
 import * as h from '@/vani/html'
 import { renderSvgString } from '@/vani/svg'
-import { Github, NotepadText } from 'lucide-static'
 import { CopyableCodeBlock } from './copyable-code-block'
 import { LandingPageExamples } from './landing-page-examples'
 import { LiveSandboxDialog } from './live-sandbox'
@@ -117,7 +117,7 @@ const Header = component(() => {
               rel: 'noreferrer',
               ariaLabel: 'Github',
             },
-            svgIcon(Github, { size: 16, className: 'size-[1.2rem]' }),
+            GithubIcon({ size: 16, className: 'size-[1.2rem]' }),
             // '',
           ),
           h.a(
@@ -273,7 +273,7 @@ const HeroSection = component((props: HeroSectionProps) => {
                     'transition hover:text-white',
                   ),
                 },
-                svgIcon(NotepadText, { size: 18, className: 'size-4' }),
+                NotepadTextIcon({ size: 18, className: 'size-4' }),
                 'llms.txt',
               ),
             ),

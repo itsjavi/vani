@@ -1,0 +1,4 @@
+src/bench/* linguist-vendored
+src/bench/** linguist-vendored
+src/spa-app/* linguist-vendored
+src/spa-app/** linguist-vendored

@@ -156,18 +156,18 @@ async function servePreviewHtml(server: PreviewServer, resolvedConfig: ResolvedC
   })
 }
 
-export function vaniSpaPlugin(options: VaniSpaPluginOptions = {}): Plugin {
+export default function vitePluginVaniSpa(options: VaniSpaPluginOptions = {}): Plugin {
   let resolvedConfig: ResolvedConfig
   let hasRendered = false
-  const entryClientFile = options.entryClientFile ?? 'src/app/entry-client.ts'
-  const entryServerFile = options.entryServerFile ?? 'src/app/entry-server.ts'
-  let entryServerId = '/src/app/entry-server.ts'
-  let manifestEntryKey = 'src/app/entry-client.ts'
+  const entryClientFile = options.entryClientFile ?? 'src/entry-client.ts'
+  const entryServerFile = options.entryServerFile ?? 'src/entry-server.ts'
+  let entryServerId = '/src/entry-server.ts'
+  let manifestEntryKey = 'src/entry-client.ts'
 
   const toPosixPath = (filePath: string) => filePath.replace(/\\/g, '/')
 
   return {
-    name: 'vani-app',
+    name: 'vite-plugin-vani-spa',
     config(config) {
       const root = config.root ?? process.cwd()
       const entryClientAbs = path.resolve(root, entryClientFile)
