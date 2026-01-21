@@ -1,0 +1,17 @@
+{
+  "name": "@vanijs/bench",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bench": "bun run runner.ts",
+    "build-frameworks": "bun run --filter 'benchmark-*' build && cd ../ && pnpm run build:lib",
+    "dev": "pnpm run start --watch",
+    "start": "PORT=4555 bun run ./index.html ./frameworks/*/index.html ./debug/*/index.html"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "@types/node": "catalog:",
+    "bootstrap": "3.3.7",
+    "playwright": "catalog:"
+  }
+}

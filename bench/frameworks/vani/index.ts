@@ -1,123 +1,23 @@
-import { a, button, component, div, h1, span, table, tbody, td, tr, type Handle } from '../../vani'
-import { buildData, type RowItem } from './build-dummy-data'
+import {
+  a,
+  button,
+  component,
+  div,
+  h1,
+  renderKeyedChildren,
+  renderToDOM,
+  span,
+  table,
+  tbody,
+  td,
+  tr,
+  type DomRef,
+  type Handle,
+} from 'vani'
+import { type RowItem } from '../benchmark-generators'
+import { RowsStore, SelectionStore, type BenchmarkActions } from '../benchmark-state-managers'
 
-interface BenchmarkActions {
-  create1000Rows: () => void
-  create10000Rows: () => void
-  append1000Rows: () => void
-  updateEvery10thRow: () => void
-  clear: () => void
-  swapRows: () => void
-  deleteRow: (id: number) => void
-  selectRow: (id: number) => void
-}
-
-// Selection store - separate from rows to avoid full table re-renders
-class SelectionStore {
-  selectedRowId: number | null = null
-  private updateHandles: Map<number, Handle> = new Map()
-
-  subscribe(rowId: number, handle: Handle) {
-    this.updateHandles.set(rowId, handle)
-    return () => {
-      this.updateHandles.delete(rowId)
-    }
-  }
-
-  selectRow(id: number) {
-    const prevId = this.selectedRowId
-    this.selectedRowId = id
-
-    // Only update the affected rows (previously selected and newly selected)
-    if (prevId !== null && prevId !== id) {
-      const prevHandle = this.updateHandles.get(prevId)
-      if (prevHandle) prevHandle.update()
-    }
-    if (id !== null) {
-      const newHandle = this.updateHandles.get(id)
-      if (newHandle) newHandle.update()
-    }
-  }
-
-  clearSelection() {
-    const prevId = this.selectedRowId
-    this.selectedRowId = null
-    if (prevId !== null) {
-      const handle = this.updateHandles.get(prevId)
-      if (handle) handle.update()
-    }
-  }
-
-  isSelected(rowId: number): boolean {
-    return this.selectedRowId === rowId
-  }
-}
-
-// Rows store - manages the rows array
-class RowsStore {
-  rows: RowItem[] = []
-  private updateHandles: Set<Handle> = new Set()
-
-  subscribe(handle: Handle) {
-    this.updateHandles.add(handle)
-    return () => {
-      this.updateHandles.delete(handle)
-    }
-  }
-
-  private notify() {
-    this.updateHandles.forEach((handle) => handle.update())
-  }
-
-  create1000Rows() {
-    this.rows = buildData(1000)
-    this.notify()
-  }
-
-  create10000Rows() {
-    this.rows = buildData(10000)
-    this.notify()
-  }
-
-  append1000Rows() {
-    this.rows = [...this.rows, ...buildData(1000)]
-    this.notify()
-  }
-
-  updateEvery10thRow() {
-    this.rows = this.rows.map((row, index) => {
-      // Update every 10th row starting from the first (indices 0, 10, 20, 30, ...)
-      if (index % 10 === 0) {
-        return { ...row, label: row.label + ' !!!' }
-      }
-      return row
-    })
-    this.notify()
-  }
-
-  clear() {
-    this.rows = []
-    this.notify()
-  }
-
-  swapRows() {
-    if (this.rows.length >= 999) {
-      const newRows = [...this.rows]
-      ;[newRows[1], newRows[998]] = [newRows[998], newRows[1]]
-      this.rows = newRows
-      this.notify()
-    }
-  }
-
-  deleteRow(id: number) {
-    this.rows = this.rows.filter((r) => r.id !== id)
-    this.notify()
-  }
-
-  getRows(): RowItem[] {
-    return this.rows
-  }
-}
+export const name = 'vani'
 
 // Global store instances
 const rowsStore = new RowsStore()
@@ -127,12 +27,10 @@ const selectionStore = new SelectionStore()
 // Each row subscribes to selection changes individually to avoid full table re-renders
 const TableRow = component<{
   item: RowItem
-  onSelect: () => void
-  onDelete: () => void
 }>((props, handle) => {
   // Subscribe to selection changes for this specific row
   handle.effect(() => {
-    return selectionStore.subscribe(props.item.id, handle)
+    return selectionStore.subscribe(props.item.id, handle.update)
   })
 
   return () => {
@@ -151,7 +49,7 @@ const TableRow = component<{
             className: 'lbl',
             onclick: (e: MouseEvent) => {
               e.preventDefault()
-              props.onSelect()
+              selectionStore.selectRow(props.item.id)
             },
           },
           props.item.label,
@@ -164,7 +62,10 @@ const TableRow = component<{
             className: 'remove btn btn-default btn-xs',
             onclick: (e: MouseEvent) => {
               e.preventDefault()
-              props.onDelete()
+              rowsStore.deleteRow(props.item.id)
+              if (selectionStore.isSelected(props.item.id)) {
+                selectionStore.clearSelection()
+              }
             },
           },
           span({ className: '', ariaHidden: 'true' }, 'X'),
@@ -176,10 +77,31 @@ const TableRow = component<{
 })
 
 // Table body component that manages rows state
-export const DataTable = component((_, handle: Handle) => {
-  // Subscribe to rows updates only (not selection)
+const DataTable = component((_, handle: Handle) => {
+  const tbodyRef: DomRef<HTMLTableSectionElement> = { current: null }
+
+  const renderRows = () => {
+    if (!tbodyRef.current) return
+    const rowChildren = rowsStore.getRows().map((item) =>
+      TableRow({
+        key: item.id,
+        item,
+      }),
+    )
+    renderKeyedChildren(tbodyRef.current, rowChildren)
+  }
+
   handle.effect(() => {
-    const unsubscribe = rowsStore.subscribe(handle)
+    const subscriptionHandle: Handle = {
+      update: renderRows,
+      updateSync: renderRows,
+      dispose() {},
+      onCleanup() {},
+      effect() {},
+    }
+
+    const unsubscribe = rowsStore.subscribe(subscriptionHandle.update)
+    queueMicrotask(renderRows)
     return unsubscribe
   })
 
@@ -208,28 +130,15 @@ export const DataTable = component((_, handle: Handle) => {
         }
       },
       selectRow: (id: number) => selectionStore.selectRow(id),
+      sortRowsAsc: () => rowsStore.sortRowsAsc(),
+      sortRowsDesc: () => rowsStore.sortRowsDesc(),
     }
   })
 
   return () =>
     table(
       { className: 'table table-hover table-striped test-data' },
-      tbody(
-        { id: 'tbody' },
-        ...rowsStore.getRows().map((item) =>
-          TableRow({
-            key: item.id,
-            item,
-            onSelect: () => selectionStore.selectRow(item.id),
-            onDelete: () => {
-              rowsStore.deleteRow(item.id)
-              if (selectionStore.isSelected(item.id)) {
-                selectionStore.clearSelection()
-              }
-            },
-          }),
-        ),
-      ),
+      tbody({ id: 'tbody', ref: tbodyRef }),
     )
 })
 
@@ -246,14 +155,14 @@ const SmallpadButton = component(
   },
 )
 
-export const Controls = component(() => {
+const Controls = component(() => {
   return () => {
     console.log('Controls re-rendered')
     return div(
       { className: 'jumbotron' },
       div(
         { className: 'row' },
-        div({ className: 'col-md-6' }, h1('vani-"keyed"')),
+        div({ className: 'col-md-6' }, h1('Vani')),
         div(
           { className: 'col-md-6' },
           div(
@@ -303,6 +212,18 @@ export const Controls = component(() => {
               label: 'Swap Rows',
               onClick: () => rowsStore.swapRows(),
             }),
+            SmallpadButton({
+              key: 'sortasc',
+              id: 'sortasc',
+              label: 'Sort Asc',
+              onClick: () => rowsStore.sortRowsAsc(),
+            }),
+            SmallpadButton({
+              key: 'sortdesc',
+              id: 'sortdesc',
+              label: 'Sort Desc',
+              onClick: () => rowsStore.sortRowsDesc(),
+            }),
           ),
         ),
       ),
@@ -310,8 +231,11 @@ export const Controls = component(() => {
   }
 })
 
-export const containerChildren = [
-  Controls(),
-  DataTable(),
-  () => span({ className: '', ariaHidden: 'true' }, '❌'),
-]
+const rootNode: HTMLElement | null = document.querySelector('#app')
+if (!rootNode) {
+  throw new Error('Root node not found')
+}
+
+const App = component(() => () => div({ className: 'container' }, Controls(), DataTable()))
+
+renderToDOM([App()], rootNode)
