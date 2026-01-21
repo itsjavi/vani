@@ -1,9 +1,10 @@
-import { component } from '@/vani'
+import { component, type DomRef } from '@/vani'
 import * as h from '@/vani/html'
 import { renderSvgString } from '@/vani/svg'
-import { Github } from 'lucide-static'
+import { Github, NotepadText } from 'lucide-static'
 import { CopyableCodeBlock } from './copyable-code-block'
 import { LandingPageExamples } from './landing-page-examples'
+import { LiveSandboxDialog } from './live-sandbox'
 import { PackageManagerTabs } from './package-manager-tabs'
 import { cn, getHighlightedTokens } from './utils'
 
@@ -79,15 +80,19 @@ const Header = component(() => {
       },
       h.div(
         {
-          className: cn('mx-auto flex max-w-6xl items-center justify-between px-6 py-4', 'gap-6'),
+          className: cn(
+            'mx-auto flex max-w-6xl flex-col items-center',
+            'justify-between px-6 py-4 lg:grid lg:grid-cols-3',
+            'gap-4',
+          ),
         },
-        h.div(
-          { className: 'flex items-center gap-1' },
+        h.a(
+          { className: 'flex items-center gap-1', href: '#' },
           h.img({ src: '/vani/logo-trimmed.png', alt: 'Vani Logo', className: 'h-8 w-12' }),
           h.span({ className: 'text-lg font-extrabold font-stretch-150% tracking-tight' }, 'vani'),
         ),
         h.nav(
-          { className: 'hidden items-center gap-6 text-sm text-slate-200 md:flex' },
+          { className: ' items-center gap-6 text-sm text-slate-200 flex lg:place-self-center' },
           ...navItems.map((item) =>
             h.a(
               {
@@ -100,7 +105,7 @@ const Header = component(() => {
           ),
         ),
         h.div(
-          { className: 'flex items-center gap-3' },
+          { className: 'hidden lg:flex items-center gap-3 lg:place-self-end' },
           h.a(
             {
               href: 'https://github.com/itsjavi/vani',
@@ -110,9 +115,10 @@ const Header = component(() => {
               ),
               target: '_blank',
               rel: 'noreferrer',
+              ariaLabel: 'Github',
             },
-            svgIcon(Github, { size: 16, className: 'h-4 w-4' }),
-            'GitHub',
+            svgIcon(Github, { size: 16, className: 'size-[1.2rem]' }),
+            // '',
           ),
           h.a(
             {
@@ -141,7 +147,11 @@ const Header = component(() => {
     )
 })
 
-const HeroSection = component(() => {
+type HeroSectionProps = {
+  onTryLive: () => void
+}
+
+const HeroSection = component((props: HeroSectionProps) => {
   return () =>
     h.section(
       {
@@ -205,6 +215,31 @@ const HeroSection = component(() => {
               },
               'Start building',
             ),
+            h.button(
+              {
+                type: 'button',
+                className: cn(
+                  'rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white',
+                  'transition hover:border-white/40 hover:bg-white/10',
+                ),
+                onclick: props.onTryLive,
+              },
+              h.span(
+                { className: 'relative flex items-center gap-2' },
+                h.span(
+                  { className: 'relative flex h-2.5 w-2.5 items-center justify-center' },
+                  h.span(
+                    {
+                      className:
+                        'absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/70',
+                    },
+                    '',
+                  ),
+                  h.span({ className: 'relative h-2.5 w-2.5 rounded-full bg-amber-400' }, ''),
+                ),
+                'Try it live',
+              ),
+            ),
             h.a(
               {
                 href: 'https://github.com/itsjavi/vani',
@@ -216,6 +251,22 @@ const HeroSection = component(() => {
                 ),
               },
               'View on GitHub',
+            ),
+            h.div(
+              h.a(
+                {
+                  href: 'https://context7.com/itsjavi/vani/llms.txt?tokens=10000',
+                  target: '_blank',
+                  rel: 'noreferrer',
+                  className: cn(
+                    'inline-flex items-center gap-2 text-base text-slate-300',
+                    'underline decoration-dotted underline-offset-4',
+                    'transition hover:text-white',
+                  ),
+                },
+                svgIcon(NotepadText, { size: 18, className: 'size-4' }),
+                'llms.txt',
+              ),
             ),
           ),
         ),
@@ -422,7 +473,7 @@ const Footer = component(() => {
             { className: 'flex items-center gap-2 text-white' },
             h.span('Vani'),
             h.span('·'),
-            h.span('MIT'),
+            h.span({ className: 'text-slate-300 ' }, 'MIT License'),
           ),
           h.p('A Web‑Standards‑First UI runtime for explicit rendering.'),
         ),
@@ -441,11 +492,24 @@ const Footer = component(() => {
 })
 
 export const LandingPage = component(() => {
+  const dialogRef: DomRef<HTMLDialogElement> = { current: null }
+
+  const openLiveSandbox = () => {
+    dialogRef.current?.showModal()
+  }
+
   return () =>
     h.div(
       { className: 'min-h-screen bg-slate-950 text-white' },
       Header(),
-      h.main({}, HeroSection(), FeaturesSection(), PrinciplesSection(), ApiSection()),
+      h.main(
+        {},
+        HeroSection({ onTryLive: openLiveSandbox }),
+        FeaturesSection(),
+        PrinciplesSection(),
+        ApiSection(),
+      ),
       Footer(),
+      LiveSandboxDialog({ dialogRef }),
     )
 })
