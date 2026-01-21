@@ -2,8 +2,8 @@
 
 Vani (from Vanilla) is a Web Standards-first framework for building web applications.
 
-A fine-grained reactive open source framework for building lightning-fast apps — no virtual DOM, no
-compiler, no JSX, no transpilation, zero dependencies, SSR support, imperative reactivity.
+A JS-first, transpiler-free runtime for building lightning-fast apps — no virtual DOM, no compiler,
+zero dependencies, SSR support, imperative reactivity. It also ships an optional JSX adapter.
 
 Check the DOCS.md and README.md files for more information.
 

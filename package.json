@@ -1,7 +1,7 @@
 {
   "name": "@vanijs/vani",
   "version": "0.2.0",
-  "description": "Web-standards-first UI runtime with explicit updates, fine-grained DOM ownership, and zero dependencies. No Virtual DOM, no JSX, no compiler. Built for SPA, SSR, and SSG.",
+  "description": "Web-standards-first UI runtime with explicit updates, fine-grained DOM ownership, and zero dependencies. JS-first, transpiler-free, with an optional JSX adapter. Built for SPA, SSR, and SSG.",
   "keywords": [
     "ui",
     "frontend",
@@ -11,7 +11,8 @@
     "fine-grained",
     "explicit-rendering",
     "no-virtual-dom",
-    "no-jsx",
+    "js-first",
+    "jsx-adapter",
     "no-compiler",
     "ssr",
     "ssg",
@@ -38,6 +39,18 @@
         "types": "./dist/lib/index.d.mts",
         "default": "./dist/lib/index.mjs"
       }
+    },
+    "./jsx-runtime": {
+      "import": {
+        "types": "./dist/lib/jsx-runtime.d.mts",
+        "default": "./dist/lib/jsx-runtime.mjs"
+      }
+    },
+    "./jsx-dev-runtime": {
+      "import": {
+        "types": "./dist/lib/jsx-dev-runtime.d.mts",
+        "default": "./dist/lib/jsx-dev-runtime.mjs"
+      }
     }
   },
   "module": "./dist/lib/index.mjs",
@@ -52,7 +65,7 @@
   ],
   "scripts": {
     "build": "rm -rf dist && vite build && pnpm run build:lib",
-    "build:lib": "pnpm tsdown src/vani/index.ts --minify --out-dir dist/lib --dts",
+    "build:lib": "pnpm tsdown src/vani/index.ts src/vani/jsx-runtime.ts src/vani/jsx-dev-runtime.ts --minify --out-dir dist/lib --dts",
     "dev": "vite",
     "dev:debug": "open http://localhost:4555 && PORT=4555 bun run --watch src/debug/*.html",
     "format": "prettier --write . && pnpm dlx sort-package-json",
@@ -99,6 +112,14 @@
       ".": {
         "types": "./dist/lib/index.d.mts",
         "default": "./dist/lib/index.mjs"
+      },
+      "./jsx-runtime": {
+        "types": "./dist/lib/jsx-runtime.d.mts",
+        "default": "./dist/lib/jsx-runtime.mjs"
+      },
+      "./jsx-dev-runtime": {
+        "types": "./dist/lib/jsx-dev-runtime.d.mts",
+        "default": "./dist/lib/jsx-dev-runtime.mjs"
       }
     }
   },

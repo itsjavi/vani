@@ -14,8 +14,37 @@ export default defineConfig({
     }),
   ],
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+    alias: [
+      { find: '@', replacement: path.resolve(__dirname, './src') },
+      // { find: /^vani$/, replacement: path.resolve(__dirname, './src/vani/index.ts') },
+      // {
+      //   find: /^vani\/jsx-runtime$/,
+      //   replacement: path.resolve(__dirname, './src/vani/jsx-runtime.ts'),
+      // },
+      // {
+      //   find: /^vani\/jsx-dev-runtime$/,
+      //   replacement: path.resolve(__dirname, './src/vani/jsx-dev-runtime.ts'),
+      // },
+    ],
+  },
+  build: {
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: (moduleId /*, _meta*/) => {
+          if (moduleId.includes('codemirror') || moduleId.includes('babel')) {
+            return 'codemirror'
+          }
+          if (moduleId.includes('shiki')) {
+            return 'shiki'
+          }
+          if (moduleId.includes('node_modules')) {
+            // tailwind and lucide basically
+            return 'vendor'
+          }
+          return null
+        },
+      },
     },
   },
 })

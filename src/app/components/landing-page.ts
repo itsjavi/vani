@@ -28,7 +28,7 @@ const featureCards = [
   {
     icon: '🧪',
     title: 'Runtime‑First',
-    description: 'No compiler, no JSX needed by default, no magic. Just functions and the DOM.',
+    description: 'JS-first and transpiler-free, with an optional JSX adapter.',
   },
   {
     icon: '🌊',
@@ -240,6 +240,15 @@ const HeroSection = component((props: HeroSectionProps) => {
                 'Try it live',
               ),
             ),
+            // DemoButton({
+            //   // label: 'JSX demo',
+            //   // children: 'It is JSX live',
+            //   onclick: props.onTryLive,
+            //   className: cn(
+            //     'rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white',
+            //     'transition hover:border-white/40 hover:bg-white/10',
+            //   ),
+            // }),
             h.a(
               {
                 href: 'https://github.com/itsjavi/vani',
@@ -299,10 +308,10 @@ const HeroSection = component((props: HeroSectionProps) => {
               ),
               h.div(
                 { className: 'rounded-2xl bg-white/5 p-4' },
-                h.p({ className: 'text-sm text-slate-200' }, 'Zero compiler, zero JSX'),
+                h.p({ className: 'text-sm text-slate-200' }, 'JS-first, zero compiler'),
                 h.p(
                   { className: 'mt-2 text-xs text-slate-400' },
-                  'Just TypeScript functions and DOM APIs.',
+                  'Just TypeScript functions and DOM APIs, plus an optional JSX adapter.',
                 ),
               ),
               h.div(

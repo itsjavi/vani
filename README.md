@@ -59,7 +59,7 @@ This guarantees:
 
 Vani requires:
 
-- no JSX
+- JS-first by default (optional JSX adapter)
 - no compiler
 - no build-time transforms
 - no generated code
@@ -154,6 +154,24 @@ This separates:
 
 ---
 
+## JSX (optional)
+
+Vani is JS-first and transpiler-free, but it also ships a JSX adapter that maps JSX syntax to the
+same runtime behavior (CSR + SSR).
+
+TypeScript config example:
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "@vanijs/vani"
+  }
+}
+```
+
+---
+
 ## SSR (experimental)
 
 Vani SSR is explicit and anchor-based. You call `renderToString`, and the output includes the same
@@ -185,7 +203,7 @@ Notes:
 
 - ❌ Not a Virtual DOM
 - ❌ Not reactive-by-default
-- ❌ Not JSX-based
+- ❌ Not JSX-mandatory (optional adapter)
 - ❌ Not compiler-driven
 - ❌ Not a template language
 - ❌ Not a framework that guesses intent

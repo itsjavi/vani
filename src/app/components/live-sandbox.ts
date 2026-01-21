@@ -149,7 +149,7 @@ export const LiveSandboxDialog = component((props: LiveSandboxProps, handle: Han
 
   const scheduleSend = (code: string) => {
     if (debounceId) clearTimeout(debounceId)
-    debounceId = setTimeout(() => sendCode(code), 400)
+    debounceId = setTimeout(() => sendCode(code), 200)
   }
 
   handle.effect(() => {

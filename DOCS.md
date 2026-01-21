@@ -47,6 +47,56 @@ renderToDOM([Counter()], appRoot)
 
 ---
 
+## JSX mode examples
+
+Vani is JS-first and transpiler-free, with an optional JSX adapter. JSX mode requires
+`jsxImportSource` to be set to `@vanijs/vani` and a `.tsx` file.
+
+### 1) JSX counter button
+
+```tsx
+import { component, renderToDOM, type Handle } from '@vanijs/vani'
+
+const Counter = component((_, handle: Handle) => {
+  let count = 0
+  return () => (
+    <button
+      type="button"
+      onclick={() => {
+        count += 1
+        handle.update()
+      }}
+    >
+      Count: {count}
+    </button>
+  )
+})
+
+renderToDOM([Counter()], document.getElementById('app')!)
+```
+
+### 2) JSX component inside JS-first components
+
+```tsx
+import { component } from '@vanijs/vani'
+import * as h from '@vanijs/vani/html'
+
+const Badge = component<{ label: string }>((props) => {
+  return () => <span>{props.label}</span>
+})
+
+const Panel = component(() => {
+  return () =>
+    h.div(
+      'Mixed render:',
+      Badge({ label: 'JSX component' }),
+      h.span('inside a JS-first component.'),
+    )
+})
+```
+
+---
+
 ## Incremental adoption (mounting points)
 
 Vani is intentionally small and lightweight, so you don't need to replace your full stack. You can

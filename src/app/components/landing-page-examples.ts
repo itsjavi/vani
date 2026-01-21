@@ -1,6 +1,7 @@
 import { component, startTransition, type DomRef, type Handle } from '@/vani'
 import * as h from '@/vani/html'
 import { CopyableCodeBlock } from './copyable-code-block'
+import { jsxExamples } from './jsx-examples'
 import { cn, getHighlightedTokens } from './utils'
 
 type Example = {
@@ -651,6 +652,20 @@ const examples: Example[] = [
     code: counterCode,
     tokens: getHighlightedTokens(counterCode, 'ts'),
     demo: () => CounterExample(),
+  },
+  {
+    title: 'JSX mode counter',
+    description: 'Use JSX syntax with the Vani JSX runtime.',
+    code: jsxExamples.counter.code,
+    tokens: getHighlightedTokens(jsxExamples.counter.code, 'ts'),
+    demo: () => jsxExamples.counter.demo(),
+  },
+  {
+    title: 'JSX inside JS-first',
+    description: 'Render JSX components inside element-helper trees.',
+    code: jsxExamples.interop.code,
+    tokens: getHighlightedTokens(jsxExamples.interop.code, 'ts'),
+    demo: () => jsxExamples.interop.demo(),
   },
   {
     title: 'Conditional rendering',
