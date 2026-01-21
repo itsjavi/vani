@@ -1,0 +1,18 @@
+{
+  "name": "js-framework-benchmark-vani",
+  "private": true,
+  "version": "0.3.0",
+  "js-framework-benchmark": {
+    "frameworkVersion": "0.3.0",
+    "frameworkHomeURL": "https://itsjavi.com/vani/"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch index.html",
+    "build-prod": "npx -y tsdown main.ts --out-dir dist",
+    "preview": "bun run --watch index.html"
+  },
+  "devDependencies": {
+    "tsdown": "^0.20.0-beta.4"
+  }
+}
