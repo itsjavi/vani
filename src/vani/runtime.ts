@@ -217,7 +217,28 @@ export function getRenderMode(): RenderMode {
 }
 
 function isSsrNode(node: VNode): node is SSRNode {
-  return typeof node === 'object' && node !== null && 'type' in node
+  if (typeof node !== 'object' || node === null || !('type' in node)) {
+    return false
+  }
+
+  const anyNode = node as SSRNode
+  switch (anyNode.type) {
+    case 'element':
+      return (
+        typeof anyNode.tag === 'string' &&
+        typeof anyNode.props === 'object' &&
+        Array.isArray(anyNode.children)
+      )
+    case 'text':
+    case 'comment':
+      return typeof anyNode.text === 'string'
+    case 'fragment':
+      return Array.isArray(anyNode.children)
+    case 'component':
+      return typeof anyNode.instance === 'object' && anyNode.instance != null
+    default:
+      return false
+  }
 }
 
 function isSsrElement(node: VNode): node is Extract<SSRNode, { type: 'element' }> {
@@ -512,7 +533,8 @@ function isHtmlProps(props: any): props is ElementProps<any> {
     props !== null &&
     typeof props === 'object' &&
     !isDomNode &&
-    !isComponentInstance(props as VChild)
+    !isComponentInstance(props as VChild) &&
+    !isSsrNode(props as VNode)
   )
 }
 

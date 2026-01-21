@@ -206,8 +206,13 @@ export function vaniSpaPlugin(options: VaniSpaPluginOptions = {}): Plugin {
           res.setHeader('Content-Type', 'text/html')
           res.end(html)
         } catch (error) {
-          server.ssrFixStacktrace(error as Error)
-          next(error)
+          const err = error as Error
+          try {
+            server.ssrFixStacktrace(err)
+          } catch (stackError) {
+            console.warn('[vani] failed to rewrite SSR stacktrace', stackError)
+          }
+          next(err)
         }
       })
     },
