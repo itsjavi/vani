@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable unicorn/no-array-callback-reference */
+
 import { getRenderMode, type SSRNode, type SvgProps, type VNode } from './runtime'
 
 export type SvgRenderOptions = {
@@ -52,7 +55,7 @@ const parseSvgAttributes = (input: string) => {
 }
 
 const parseSvgToSsrNode = (svg: string): SSRNode => {
-  const cleaned = svg.replace(/<!--[\s\S]*?-->/g, '').trim()
+  const cleaned = svg.replaceAll(/<!--[\s\S]*?-->/g, '').trim()
   const tagRegex = /<\/?[^>]+>/g
   const stack: Array<SSRNode> = []
   let root: SSRNode | null = null
@@ -60,7 +63,7 @@ const parseSvgToSsrNode = (svg: string): SSRNode => {
   let match: RegExpExecArray | null
 
   const appendChild = (child: SSRNode) => {
-    const parent = stack[stack.length - 1]
+    const parent = stack.at(-1)
     if (parent && (parent.type === 'element' || parent.type === 'fragment')) {
       parent.children.push(child)
     }
@@ -84,7 +87,7 @@ const parseSvgToSsrNode = (svg: string): SSRNode => {
       const props = parseSvgAttributes(attrString)
       const node: SSRNode = { type: 'element', tag, props, children: [] }
 
-      if (!root) {
+      if (root == null) {
         root = node
       } else {
         appendChild(node)

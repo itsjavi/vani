@@ -1,6 +1,8 @@
-// vani.ts
-// Vani — explicit, subtree-based rendering runtime
-// with component() descriptors (no manual mount() needed in templates)
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable unicorn/prefer-dom-node-append */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable unicorn/no-negated-condition */
 
 // ─────────────────────────────────────────────
 // Types
@@ -391,13 +393,11 @@ function mountComponent<Props>(component: Component<Props>, props: Props, parent
 
     updateSync() {
       if (disposed) return
-
-      const realParent = start.parentNode
-      if (!realParent) return
+      if (!start.parentNode) return
 
       clearBetween(start, end)
       const node = normalizeDomChild(render())
-      realParent.insertBefore(node, end)
+      end.before(node, end)
     },
 
     onCleanup(fn) {
@@ -703,7 +703,7 @@ export function classNames(...classes: ClassName[]): string {
   return classes
     .map((cls) => {
       if (cls === null || cls === undefined || cls === '') {
-        return undefined
+        return
       }
       if (typeof cls === 'string') {
         return cls.trim()
