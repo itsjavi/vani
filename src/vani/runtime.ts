@@ -90,17 +90,19 @@ type ComponentMetaProps = {
 
 export type VChild = VNode | ComponentInstance<any> | string | number | null | undefined | false
 
-export type DataAttribute = `data-${string}`
+export type DataAttribute = `data-${string}` | `data${Capitalize<string>}`
 
-type ElementTagName = keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap
+type HtmlTagName = keyof HTMLElementTagNameMap
+type SvgTagName = keyof SVGElementTagNameMap
+type ElementTagName = HtmlTagName | SvgTagName
 
-type ElementByTag<T extends ElementTagName> = T extends keyof HTMLElementTagNameMap
+type ElementByTag<T extends ElementTagName> = T extends HtmlTagName
   ? HTMLElementTagNameMap[T]
-  : T extends keyof SVGElementTagNameMap
+  : T extends SvgTagName
     ? SVGElementTagNameMap[T]
     : Element
 
-export type SvgProps = {
+export type SvgProps<T extends SvgTagName = SvgTagName> = BaseProps<T> & {
   [key: string]: string | number | boolean | undefined | null | ((...args: any[]) => any)
 }
 
@@ -109,12 +111,15 @@ type BaseProps<T extends ElementTagName> = {
   style?: string
   ref?: DomRef<ElementByTag<T>>
 } & {
-  [key in DataAttribute]?: string | number | boolean | undefined | null
+  [key: DataAttribute]: string | number | boolean | undefined | null
 }
 
-export type HtmlProps<T extends ElementTagName> = T extends keyof SVGElementTagNameMap
-  ? BaseProps<T> & SvgProps
-  : BaseProps<T> & Partial<Omit<ElementByTag<T>, 'children' | 'className' | 'style'>>
+export type HtmlProps<T extends HtmlTagName = HtmlTagName> = BaseProps<T> &
+  Partial<Omit<ElementByTag<T>, 'children' | 'className' | 'style'>>
+
+export type ElementProps<T extends ElementTagName> = T extends SvgTagName
+  ? SvgProps<T>
+  : HtmlProps<Extract<T, HtmlTagName>>
 
 export type ClassName =
   | string
@@ -501,7 +506,7 @@ export function isComponentInstance(child: VChild): child is ComponentInstance<a
   return instance.$$vani === 'component' && typeof instance.component === 'function'
 }
 
-function isHtmlProps(props: any): props is HtmlProps<any> {
+function isHtmlProps(props: any): props is ElementProps<any> {
   const isDomNode = typeof Node !== 'undefined' && props instanceof Node
   return (
     props !== null &&
@@ -618,6 +623,9 @@ function normalizeAttrKey(key: string, isSvg: boolean) {
   if (key.startsWith('aria')) {
     return 'aria-' + key.replace('aria-', '').replace('aria', '').toLowerCase()
   }
+  if (key.startsWith('data')) {
+    return 'data-' + key.replace('data-', '').replace('data', '')
+  }
   if (key.toLowerCase() === 'htmlfor') {
     return 'for'
   }
@@ -695,9 +703,9 @@ export function classNames(...classes: ClassName[]): string {
 // Element helpers
 // ─────────────────────────────────────────────
 
-export function el<E extends keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap>(
+export function el<E extends ElementTagName>(
   tag: E,
-  props?: HtmlProps<E> | VChild | null,
+  props?: ElementProps<E> | VChild | null,
   ...children: VChild[]
 ): VNode {
   const node = createElementNode(tag)

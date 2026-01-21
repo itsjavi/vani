@@ -28,7 +28,7 @@ const featureCards = [
   {
     icon: '🧪',
     title: 'Runtime‑First',
-    description: 'No compiler, no JSX, no magic. Just functions and the DOM.',
+    description: 'No compiler, no JSX needed by default, no magic. Just functions and the DOM.',
   },
   {
     icon: '🌊',

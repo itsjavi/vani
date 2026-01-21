@@ -2,12 +2,12 @@
 // HTML element helpers
 // ─────────────────────────────────────────────
 
-import { el, type HtmlProps, type VChild } from './runtime'
+import { el, type ElementProps, type VChild } from './runtime'
 
 type ElementTagName = keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap
 
 function createElementFn<E extends ElementTagName>(tag: E) {
-  return (propsOrChild?: HtmlProps<E> | VChild | null, ...children: VChild[]) =>
+  return (propsOrChild?: ElementProps<E> | VChild | null, ...children: VChild[]) =>
     el(tag, propsOrChild, ...children)
 }
 
