@@ -31,7 +31,6 @@ import {
   h3,
   p,
   renderToDOM,
-  small,
   span,
   table,
   tbody,
@@ -68,7 +67,7 @@ function renderRendersUI() {
   if (!tableBody) return
   const renders = (window as any).__renders as Record<string, number>
   tableBody.innerHTML = Object.entries(renders)
-    .map(([name, count]) => `<tr><td>${name}</td><td class="text-right">${count}</td></tr>`)
+    .map(([name, count]) => `<tr><td>${name}</td><td class="text-end">${count}</td></tr>`)
     .join('')
 
   const timestampEl = document.getElementById(timestampId)
@@ -83,30 +82,39 @@ function renderRendersUI() {
 
 const Header = component(() => {
   return withRenderCounter('Header', () =>
-    div({ className: 'panel panel-default' }, div({ className: 'panel-body' }, 'Header')),
+    div(
+      { className: 'card shadow-sm border-0' },
+      div({ className: 'card-body py-2 text-center fw-semibold text-secondary' }, 'Header'),
+    ),
   )
 })
 
 const Sidebar = component(() => {
   return withRenderCounter('Sidebar', () =>
-    div({ className: 'panel panel-default' }, div({ className: 'panel-body' }, 'Sidebar')),
+    div(
+      { className: 'card shadow-sm border-0' },
+      div({ className: 'card-body py-2 text-center fw-semibold text-secondary' }, 'Sidebar'),
+    ),
   )
 })
 
 const Footer = component(() => {
   return withRenderCounter('Footer', () =>
-    div({ className: 'panel panel-default' }, div({ className: 'panel-body' }, 'Footer')),
+    div(
+      { className: 'card shadow-sm border-0' },
+      div({ className: 'card-body py-2 text-center fw-semibold text-secondary' }, 'Footer'),
+    ),
   )
 })
 
 const Item = component((props: { id: string }, handle) => {
   return withRenderCounter(`Item-${props.id}`, () =>
     div(
-      { className: 'list-group-item clearfix' },
-      span(props.id),
+      { className: 'list-group-item d-flex align-items-center justify-content-between' },
+      span({ className: 'fw-semibold' }, props.id),
       button(
         {
-          className: 'btn btn-xs btn-primary pull-right',
+          className: 'btn btn-sm btn-primary',
           onclick: () => {
             setStatus('info', `Manual update triggered for Item ${props.id}.`)
             handle.updateSync()
@@ -122,10 +130,10 @@ const Item = component((props: { id: string }, handle) => {
 const List = component(() => {
   return withRenderCounter('List', () =>
     div(
-      { className: 'panel panel-default' },
-      div({ className: 'panel-heading' }, h3({ className: 'panel-title' }, 'List')),
+      { className: 'card shadow-sm border-0' },
+      div({ className: 'card-header bg-light' }, h3({ className: 'h6 mb-0' }, 'List')),
       div(
-        { className: 'list-group' },
+        { className: 'list-group list-group-flush' },
         Item({ id: 'A', key: 'A' }),
         Item({ id: 'B', key: 'B' }),
         Item({ id: 'C', key: 'C' }),
@@ -137,38 +145,44 @@ const List = component(() => {
 const App = component(() => {
   return () =>
     div(
-      { className: 'container' },
-      div({ className: 'page-header' }, h1('Golden leaf test ', small('UI runner'))),
+      { className: 'container py-5' },
+      div({ className: 'mb-3' }, h1({ className: 'fw-bold' }, "Vani's Golden leaf test")),
       p(
-        { className: 'lead' },
+        { className: 'lead text-muted' },
         'Only the buttons should re-render when they update. All other nodes must stay untouched.',
       ),
       div(
-        { className: 'row' },
+        { className: 'row g-4' },
         div(
-          { className: 'col-sm-6' },
+          { className: 'col-lg-6' },
           div(
-            { className: 'panel panel-default' },
-            div({ className: 'panel-heading' }, h3({ className: 'panel-title' }, 'Rendered tree')),
-            div({ className: 'panel-body' }, Header(), Sidebar(), List(), Footer()),
+            { className: 'card shadow-sm border-0' },
+            div(
+              { className: 'card-header bg-light' },
+              h3({ className: 'h6 mb-0' }, 'Rendered tree'),
+            ),
+            div({ className: 'card-body d-grid gap-3' }, Header(), Sidebar(), List(), Footer()),
           ),
         ),
         div(
-          { className: 'col-sm-6' },
+          { className: 'col-lg-6' },
           div(
-            { className: 'panel panel-info' },
-            div({ className: 'panel-heading' }, h3({ className: 'panel-title' }, 'Debug info')),
+            { className: 'card shadow-sm border-0' },
+            div({ className: 'card-header bg-light' }, h3({ className: 'h6 mb-0' }, 'Debug info')),
             div(
-              { className: 'panel-body' },
-              div({ className: 'alert alert-info', id: statusElId }, 'Waiting for test to run...'),
+              { className: 'card-body' },
               div(
-                { className: 'clearfix' },
-                span({ className: 'text-muted' }, 'Last update: '),
-                span({ className: 'text-muted', id: timestampId }, '—'),
+                { className: 'alert alert-info mb-3', id: statusElId },
+                'Waiting for test to run...',
+              ),
+              div(
+                { className: 'small text-muted mb-3' },
+                span('Last update: '),
+                span({ id: timestampId }, '—'),
               ),
               table(
-                { className: 'table table-striped table-condensed', style: 'margin-top: 12px;' },
-                thead(tr(th('Node'), th({ className: 'text-right' }, 'Renders'))),
+                { className: 'table table-sm table-striped align-middle mb-0' },
+                thead(tr(th('Node'), th({ className: 'text-end' }, 'Renders'))),
                 tbody({ id: tableBodyId }),
               ),
             ),

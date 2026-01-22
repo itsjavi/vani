@@ -145,8 +145,20 @@ function render(snapshot: SnapshotPayload): void {
           .map((name) => frameworkMap.get(name))
           .filter((framework): framework is SnapshotFramework => Boolean(framework))
       : snapshot.frameworks
-  let frameworkNames = frameworks.map((fw) => fw.name)
   let operations = calculated.operations
+  let scoredFrameworks = frameworks.map((framework, index) => ({
+    framework,
+    score: calculated.overallScores[framework.name] ?? null,
+    index,
+  }))
+  scoredFrameworks.sort((a, b) => {
+    let aScore = a.score ?? Number.POSITIVE_INFINITY
+    let bScore = b.score ?? Number.POSITIVE_INFINITY
+    if (aScore === bScore) return a.index - b.index
+    return aScore - bScore
+  })
+  frameworks = scoredFrameworks.map((item) => item.framework)
+  let frameworkNames = frameworks.map((fw) => fw.name)
   let overallScores = frameworkNames.map(
     (frameworkName) => calculated.overallScores[frameworkName] ?? null,
   )
@@ -203,6 +215,7 @@ function render(snapshot: SnapshotPayload): void {
                   return `
                     <td class="text-center ${cellClass(score)}">
                       <strong>${score.toFixed(2)}</strong>
+                      ${score === 1 ? '<div class="small text-muted">baseline</div>' : ''}
                     </td>
                   `
                 })
