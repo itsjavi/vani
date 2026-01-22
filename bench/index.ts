@@ -26,19 +26,25 @@ const sortedFrameworks = overallScores
       return (left?.name ?? '').localeCompare(right?.name ?? '')
     })
   : frameworks
-const scoreBadgeClass = (score: number) => {
-  if (score <= 1.1) return 'bench-score-good'
-  if (score <= 1.3) return 'bench-score-ok'
-  if (score <= 1.7) return 'bench-score-warn'
+const scoreBadgeClass = (score: number, best: number) => {
+  if (!Number.isFinite(best) || best <= 0) return 'bench-score-neutral'
+  const ratio = score / best
+  if (ratio <= 1.1) return 'bench-score-good'
+  if (ratio <= 1.3) return 'bench-score-ok'
+  if (ratio <= 1.7) return 'bench-score-warn'
   return 'bench-score-bad'
 }
 const buildScoreBadge = (frameworkName?: string) => {
   if (!frameworkName || !overallScores) return ''
   const score = overallScores[frameworkName]
   if (score === null || score === undefined || !Number.isFinite(score)) return ''
-  return `<span class="badge rounded-pill bench-score ${scoreBadgeClass(score)}">${score.toFixed(
-    2,
-  )}</span>`
+  const best = Math.min(
+    ...Object.values(overallScores).filter((value): value is number => Number.isFinite(value)),
+  )
+  return `<span class="badge rounded-pill bench-score ${scoreBadgeClass(
+    score,
+    best,
+  )}">${score.toFixed(1)} ms</span>`
 }
 
 const app = document.querySelector('#app')
@@ -151,6 +157,9 @@ style.textContent = `
   }
   .bench-score-bad {
     background: #d9534f;
+  }
+  .bench-score-neutral {
+    background: #6c757d;
   }
   .notes p {
     margin-bottom: 6px;

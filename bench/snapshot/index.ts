@@ -138,6 +138,21 @@ function formatSecondsToMs(value: number): string {
   return (value * 1000).toFixed(1)
 }
 
+function buildMetricCells(values: number[], formatter: (value: number) => string): string {
+  const finiteValues = values.filter((value) => Number.isFinite(value))
+  const best = finiteValues.length > 0 ? Math.min(...finiteValues) : Number.NaN
+  return values
+    .map((value) => {
+      if (!Number.isFinite(value)) {
+        return `<td class="text-center">-</td>`
+      }
+      const ratio = Number.isFinite(best) && best > 0 ? value / best : Number.NaN
+      const className = Number.isFinite(ratio) ? ` ${cellClass(ratio)}` : ''
+      return `<td class="text-center${className}">${formatter(value)}</td>`
+    })
+    .join('')
+}
+
 function cellClass(ratio: number): string {
   if (ratio <= 1.1) return 'cell-good'
   if (ratio <= 1.3) return 'cell-ok'
@@ -189,6 +204,9 @@ function render(snapshot: SnapshotPayload): void {
   let overallScores = frameworkNames.map(
     (frameworkName) => calculated.overallScores[frameworkName] ?? null,
   )
+  let bestOverallScore = Math.min(
+    ...overallScores.filter((score): score is number => Number.isFinite(score)),
+  )
   let resourceMetricsByFramework = new Map(
     (snapshot.resourceMetrics ?? []).map((entry) => [entry.framework, entry]),
   )
@@ -236,16 +254,20 @@ function render(snapshot: SnapshotPayload): void {
                 .join('')}
             </tr>
             <tr>
-              <td><strong>overall score</strong><br /><small>average of ratios. baseline is the framework with the best mean time.</small></td>
+              <td><strong>overall score</strong><br /><small>average total time (ms).</small></td>
               ${overallScores
                 .map((score) => {
                   if (score === null) {
                     return `<td class="text-center">-</td>`
                   }
+                  const ratio =
+                    Number.isFinite(bestOverallScore) && bestOverallScore > 0
+                      ? score / bestOverallScore
+                      : Number.NaN
+                  const className = Number.isFinite(ratio) ? ` ${cellClass(ratio)}` : ''
                   return `
-                    <td class="text-center ${cellClass(score)}">
-                      <strong>${score.toFixed(2)}</strong>
-                      ${score === 1 ? '<div class="small text-muted">baseline</div>' : ''}
+                    <td class="text-center${className}">
+                      <strong>${formatNumber(score)} ms</strong>
                     </td>
                   `
                 })
@@ -294,55 +316,125 @@ function render(snapshot: SnapshotPayload): void {
             </tr>
           </thead>
           <tbody>
-            <tr class="table-active" style="--bs-table-bg-state: #f5f5f5 !important;">
-              <td>Heap used (first render, MB)</td>
-              ${frameworkNames
-                .map((frameworkName) => {
-                  const metrics = resourceMetricsByFramework.get(frameworkName)
-                  const value = metrics?.firstRender.jsHeapUsedSize ?? Number.NaN
-                  return `<td class="text-center">${formatBytesToMB(value)}</td>`
-                })
-                .join('')}
+            <tr>
+              <td><strong>Heap used (first render, MB)</strong></td>
+              ${buildMetricCells(
+                frameworkNames.map(
+                  (frameworkName) =>
+                    resourceMetricsByFramework.get(frameworkName)?.firstRender.jsHeapUsedSize ??
+                    Number.NaN,
+                ),
+                formatBytesToMB,
+              )}
             </tr>
             <tr>
               <td>Heap used (after suite, MB)</td>
-              ${frameworkNames
-                .map((frameworkName) => {
-                  const metrics = resourceMetricsByFramework.get(frameworkName)
-                  const value = metrics?.afterSuite.jsHeapUsedSize ?? Number.NaN
-                  return `<td class="text-center">${formatBytesToMB(value)}</td>`
-                })
-                .join('')}
+              ${buildMetricCells(
+                frameworkNames.map(
+                  (frameworkName) =>
+                    resourceMetricsByFramework.get(frameworkName)?.afterSuite.jsHeapUsedSize ??
+                    Number.NaN,
+                ),
+                formatBytesToMB,
+              )}
             </tr>
             <tr>
               <td>Heap used delta (MB)</td>
-              ${frameworkNames
-                .map((frameworkName) => {
-                  const metrics = resourceMetricsByFramework.get(frameworkName)
-                  const value = metrics?.delta.jsHeapUsedSize ?? Number.NaN
-                  return `<td class="text-center">${formatBytesToMB(value)}</td>`
-                })
-                .join('')}
+              ${buildMetricCells(
+                frameworkNames.map(
+                  (frameworkName) =>
+                    resourceMetricsByFramework.get(frameworkName)?.delta.jsHeapUsedSize ??
+                    Number.NaN,
+                ),
+                formatBytesToMB,
+              )}
             </tr>
-            <tr class="table-active" style="--bs-table-bg-state: #f5f5f5 !important;">
-              <td>CPU task duration delta (ms)</td>
-              ${frameworkNames
-                .map((frameworkName) => {
-                  const metrics = resourceMetricsByFramework.get(frameworkName)
-                  const value = metrics?.delta.taskDuration ?? Number.NaN
-                  return `<td class="text-center">${formatSecondsToMs(value)}</td>`
-                })
-                .join('')}
+            <tr>
+              <td><strong>CPU task duration delta (ms)</strong></td>
+              ${buildMetricCells(
+                frameworkNames.map(
+                  (frameworkName) =>
+                    resourceMetricsByFramework.get(frameworkName)?.delta.taskDuration ?? Number.NaN,
+                ),
+                formatSecondsToMs,
+              )}
             </tr>
             <tr>
               <td>CPU script duration delta (ms)</td>
-              ${frameworkNames
-                .map((frameworkName) => {
-                  const metrics = resourceMetricsByFramework.get(frameworkName)
-                  const value = metrics?.delta.scriptDuration ?? Number.NaN
-                  return `<td class="text-center">${formatSecondsToMs(value)}</td>`
-                })
-                .join('')}
+              ${buildMetricCells(
+                frameworkNames.map(
+                  (frameworkName) =>
+                    resourceMetricsByFramework.get(frameworkName)?.delta.scriptDuration ??
+                    Number.NaN,
+                ),
+                formatSecondsToMs,
+              )}
+            </tr>
+            <tr>
+              <td>CPU task duration (after suite, ms)</td>
+              ${buildMetricCells(
+                frameworkNames.map(
+                  (frameworkName) =>
+                    resourceMetricsByFramework.get(frameworkName)?.afterSuite.taskDuration ??
+                    Number.NaN,
+                ),
+                formatSecondsToMs,
+              )}
+            </tr>
+            <tr>
+              <td>CPU script duration (after suite, ms)</td>
+              ${buildMetricCells(
+                frameworkNames.map(
+                  (frameworkName) =>
+                    resourceMetricsByFramework.get(frameworkName)?.afterSuite.scriptDuration ??
+                    Number.NaN,
+                ),
+                formatSecondsToMs,
+              )}
+            </tr>
+            <tr>
+              <td><strong>CPU layout duration delta (ms)</strong></td>
+              ${buildMetricCells(
+                frameworkNames.map(
+                  (frameworkName) =>
+                    resourceMetricsByFramework.get(frameworkName)?.delta.layoutDuration ??
+                    Number.NaN,
+                ),
+                formatSecondsToMs,
+              )}
+            </tr>
+            <tr>
+              <td>CPU recalc style duration delta (ms)</td>
+              ${buildMetricCells(
+                frameworkNames.map(
+                  (frameworkName) =>
+                    resourceMetricsByFramework.get(frameworkName)?.delta.recalcStyleDuration ??
+                    Number.NaN,
+                ),
+                formatSecondsToMs,
+              )}
+            </tr>
+            <tr>
+              <td>CPU layout duration (after suite, ms)</td>
+              ${buildMetricCells(
+                frameworkNames.map(
+                  (frameworkName) =>
+                    resourceMetricsByFramework.get(frameworkName)?.afterSuite.layoutDuration ??
+                    Number.NaN,
+                ),
+                formatSecondsToMs,
+              )}
+            </tr>
+            <tr>
+              <td>CPU recalc style duration (after suite, ms)</td>
+              ${buildMetricCells(
+                frameworkNames.map(
+                  (frameworkName) =>
+                    resourceMetricsByFramework.get(frameworkName)?.afterSuite.recalcStyleDuration ??
+                    Number.NaN,
+                ),
+                formatSecondsToMs,
+              )}
             </tr>
           </tbody>
         </table>

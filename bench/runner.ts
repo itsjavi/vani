@@ -3,7 +3,7 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { parseArgs } from 'node:util'
 
-import { chromium, type Browser, type Page } from 'playwright'
+import { chromium, type Browser, type CDPSession, type Page } from 'playwright'
 import { getProjects } from './macros'
 
 const PORT = 44100
@@ -705,14 +705,10 @@ function getMetric(metrics: Array<{ name: string; value: number }>, name: string
   return metric ? metric.value : 0
 }
 
-async function collectResourceMetrics(page: Page): Promise<ResourceMetrics> {
-  const cdp = await page.context().newCDPSession(page)
-  await cdp.send('Performance.enable')
+async function collectResourceMetrics(cdp: CDPSession): Promise<ResourceMetrics> {
   const { metrics } = (await cdp.send('Performance.getMetrics')) as {
     metrics: Array<{ name: string; value: number }>
   }
-  await cdp.send('Performance.disable')
-  await cdp.detach()
 
   return {
     jsHeapUsedSize: getMetric(metrics, 'JSHeapUsedSize'),
@@ -730,24 +726,32 @@ async function measureFrameworkResourceMetrics(
   operationsToRun: Operation[],
   framework: string,
 ): Promise<SnapshotFrameworkMetrics> {
-  await page.goto(url)
-  await page.waitForSelector('#run')
-  await waitForIdle(page)
+  const cdp = await page.context().newCDPSession(page)
+  await cdp.send('Performance.enable')
 
-  const firstRender = await collectResourceMetrics(page)
+  try {
+    await page.goto(url)
+    await page.waitForSelector('#run')
+    await waitForIdle(page)
 
-  for (const operation of operationsToRun) {
-    await measureOperation(page, operation)
-  }
+    const firstRender = await collectResourceMetrics(cdp)
 
-  await waitForIdle(page)
-  const afterSuite = await collectResourceMetrics(page)
+    for (const operation of operationsToRun) {
+      await measureOperation(page, operation)
+    }
 
-  return {
-    framework,
-    firstRender,
-    afterSuite,
-    delta: buildResourceMetricsDelta(firstRender, afterSuite),
+    await waitForIdle(page)
+    const afterSuite = await collectResourceMetrics(cdp)
+
+    return {
+      framework,
+      firstRender,
+      afterSuite,
+      delta: buildResourceMetricsDelta(firstRender, afterSuite),
+    }
+  } finally {
+    await cdp.send('Performance.disable')
+    await cdp.detach()
   }
 }
 
@@ -802,41 +806,19 @@ function buildCalculatedSnapshot(
     return { framework, averageMean }
   })
 
+  let averageMeanMap = new Map(
+    averageMeansByFramework.map((entry) => [entry.framework.name, entry.averageMean]),
+  )
+
   let frameworkOrder = averageMeansByFramework
     .sort((a, b) => a.averageMean - b.averageMean)
     .map((entry) => entry.framework.name)
 
   let overallScores: Record<string, number | null> = {}
   for (let frameworkName of frameworkOrder) {
-    let ratios: number[] = []
-    for (let operation of operations) {
-      let opResults = resultsByOperation.get(operation)
-      if (!opResults) continue
-      let means = frameworkOrder.map((name) => {
-        let result = opResults.get(name)
-        if (!result) return Number.POSITIVE_INFINITY
-        return result.total.mean
-      })
-      let best = Math.min(...means.filter((value) => Number.isFinite(value)))
-      let current = opResults.get(frameworkName)
-      if (!current || !Number.isFinite(best) || best <= 0) continue
-      let mean = current.total.mean
-      if (Number.isFinite(mean)) {
-        ratios.push(mean / best)
-      }
-    }
+    let averageMean = averageMeanMap.get(frameworkName)
     overallScores[frameworkName] =
-      ratios.length === 0 ? null : ratios.reduce((sum, value) => sum + value, 0) / ratios.length
-  }
-  let normalizedBase = Math.min(
-    ...Object.values(overallScores).filter((score): score is number => Number.isFinite(score)),
-  )
-  if (Number.isFinite(normalizedBase) && normalizedBase > 0) {
-    for (let frameworkName of Object.keys(overallScores)) {
-      let score = overallScores[frameworkName]
-      if (score === null || !Number.isFinite(score)) continue
-      overallScores[frameworkName] = score / normalizedBase
-    }
+      averageMean !== undefined && Number.isFinite(averageMean) ? averageMean : null
   }
 
   let operationResults: Record<string, Record<string, SnapshotOperationCell>> = {}
