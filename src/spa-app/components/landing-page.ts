@@ -1,7 +1,7 @@
-import GithubIcon from 'lucide-static/icons/github.svg?vani'
-import NotepadTextIcon from 'lucide-static/icons/notepad-text.svg?vani'
 import { component, type DomRef } from '@/vani'
 import * as h from '@/vani/html'
+import GithubIcon from 'lucide-static/icons/github.svg?vani'
+import NotepadTextIcon from 'lucide-static/icons/notepad-text.svg?vani'
 import { CopyableCodeBlock } from './copyable-code-block'
 import { LandingPageExamples } from './landing-page-examples'
 import { LiveSandboxDialog } from './live-sandbox'
@@ -81,7 +81,7 @@ const Header = component(() => {
         },
         h.a(
           { className: 'flex items-center gap-1', href: '#' },
-          h.img({ src: '/vani/logo-trimmed.png', alt: 'Vani Logo', className: 'h-8 w-12' }),
+          h.img({ src: '/logo-trimmed.png', alt: 'Vani Logo', className: 'h-8 w-12' }),
           h.span({ className: 'text-lg font-extrabold font-stretch-150% tracking-tight' }, 'vani'),
         ),
         h.nav(
