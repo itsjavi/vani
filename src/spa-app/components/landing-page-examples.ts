@@ -1,3 +1,4 @@
+import SparklesIcon from 'lucide-static/icons/sparkles.svg?vani'
 import { component, startTransition, type DomRef, type Handle } from '@/vani'
 import * as h from '@/vani/html'
 import { CopyableCodeBlock } from './copyable-code-block'
@@ -379,6 +380,15 @@ const ControlledInputExample = component((_, handle: Handle) => {
     )
 })
 
+const SvgExample = component(() => {
+  return () =>
+    h.div(
+      { className: 'flex items-center gap-3 text-sm text-slate-200' },
+      SparklesIcon({ size: 18, className: 'text-amber-300', 'aria-hidden': true }),
+      h.span('Import any SVG with ?vani and use it as a component.'),
+    )
+})
+
 const counterCode = [
   'const Counter = component((_, handle) => {',
   '  let count = 0;',
@@ -645,6 +655,18 @@ const controlledCode = [
   '});',
 ].join('\n')
 
+const svgCode = [
+  "import SparklesIcon from 'lucide-static/icons/sparkles.svg?vani';",
+  "import { div, span } from '@vanijs/vani';",
+  '',
+  'export const SvgExample = () =>',
+  '  div(',
+  "    { className: 'flex items-center gap-3 text-sm' },",
+  "    SparklesIcon({ size: 18, className: 'text-amber-300', 'aria-hidden': true }),",
+  "    span('Import any SVG with ?vani and use it as a component.')",
+  '  );',
+].join('\n')
+
 const examples: Example[] = [
   {
     title: 'Explicit updates',
@@ -701,6 +723,13 @@ const examples: Example[] = [
     code: controlledCode,
     tokens: getHighlightedTokens(controlledCode, 'ts'),
     demo: () => ControlledInputExample(),
+  },
+  {
+    title: 'SVG components',
+    description: 'Import SVGs with ?vani and render them as components.',
+    code: svgCode,
+    tokens: getHighlightedTokens(svgCode, 'ts'),
+    demo: () => SvgExample(),
   },
   {
     title: 'Client-only islands',

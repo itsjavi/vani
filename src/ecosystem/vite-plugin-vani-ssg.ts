@@ -3,7 +3,7 @@ import path from 'node:path'
 import type { Plugin, PreviewServer, ResolvedConfig, ViteDevServer } from 'vite'
 import { createServer, isRunnableDevEnvironment } from 'vite'
 
-type VaniSpaPluginOptions = {
+type VaniSsgPluginOptions = {
   entryClientFile?: string
   entryServerFile?: string
 }
@@ -156,7 +156,7 @@ async function servePreviewHtml(server: PreviewServer, resolvedConfig: ResolvedC
   })
 }
 
-export default function vitePluginVaniSpa(options: VaniSpaPluginOptions = {}): Plugin {
+export default function vitePluginVaniSsg(options: VaniSsgPluginOptions = {}): Plugin {
   let resolvedConfig: ResolvedConfig
   let hasRendered = false
   const entryClientFile = options.entryClientFile ?? 'src/entry-client.ts'
@@ -167,7 +167,7 @@ export default function vitePluginVaniSpa(options: VaniSpaPluginOptions = {}): P
   const toPosixPath = (filePath: string) => filePath.replace(/\\/g, '/')
 
   return {
-    name: 'vite-plugin-vani-spa',
+    name: 'vite-plugin-vani-ssg',
     config(config) {
       const root = config.root ?? process.cwd()
       const entryClientAbs = path.resolve(root, entryClientFile)

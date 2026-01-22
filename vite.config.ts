@@ -1,14 +1,16 @@
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
 import { defineConfig } from 'vite'
-import vaniSpa from './src/ecosystem/vite-plugin-vani-spa'
+import vaniStaticSiteGenerator from './src/ecosystem/vite-plugin-vani-ssg'
+import vaniSvgImports from './src/ecosystem/vite-plugin-vani-svg'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/vani/',
+  // base: '/vani/',
   plugins: [
     tailwindcss(),
-    vaniSpa({
+    vaniSvgImports(),
+    vaniStaticSiteGenerator({
       entryClientFile: 'src/spa-app/entry-client.ts',
       entryServerFile: 'src/spa-app/entry-server.ts',
     }),

@@ -901,21 +901,38 @@ div(span('Label'), input({ type: 'text' }), button({ onclick: () => {} }, 'Submi
 
 ### SVG icons (Lucide)
 
-Vani can render SVG strings directly using `renderSvgString()`. With `lucide-static`, import just
-the icon you need (tree-shakable) and render it with explicit sizing and class names.
+Use the Vite SVG plugin at `src/ecosystem/vite-plugin-vani-svg.ts` and import SVGs with `?vani`.
+This keeps the bundle small by only including the icons you actually import.
+
+In your `vite.config.ts`:
 
 ```ts
+import vitePluginVaniSvg from './src/ecosystem/vite-plugin-vani-svg'
+
+export default defineConfig({
+  plugins: [vitePluginVaniSvg()],
+})
+```
+
+```ts
+import GithubIcon from 'lucide-static/icons/github.svg?vani'
 import { component } from '@vanijs/vani'
-import { renderSvgString } from '@vanijs/vani/svg'
-import { Github } from 'lucide-static'
 
 const GithubLink = component(() => {
-  return () =>
-    renderSvgString(Github, {
-      size: 16,
-      className: 'h-4 w-4',
-      attributes: { 'aria-hidden': 'true' },
-    })
+  return () => GithubIcon({ size: 16, className: 'h-4 w-4', 'aria-hidden': true })
+})
+```
+
+### SVGs as components
+
+Any SVG can be turned into a Vani component with the same `?vani` suffix.
+
+```ts
+import LogoIcon from './logo.svg?vani'
+import { component } from '@vanijs/vani'
+
+const HeaderLogo = component(() => {
+  return () => LogoIcon({ className: 'h-8 w-8', 'aria-hidden': true })
 })
 ```
 

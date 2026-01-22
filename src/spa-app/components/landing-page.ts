@@ -1,4 +1,5 @@
-import { GithubIcon, NotepadTextIcon } from '@/ecosystem/lucide-vani'
+import GithubIcon from 'lucide-static/icons/github.svg?vani'
+import NotepadTextIcon from 'lucide-static/icons/notepad-text.svg?vani'
 import { component, type DomRef } from '@/vani'
 import * as h from '@/vani/html'
 import { CopyableCodeBlock } from './copyable-code-block'
