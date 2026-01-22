@@ -14,7 +14,7 @@
   "devDependencies": {
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
-    "bootstrap": "3.4.1",
+    "bootstrap": "^5.3.8",
     "playwright": "catalog:",
     "serve": "^14.2.5",
     "sirv-cli": "^3.0.1"

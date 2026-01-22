@@ -27,7 +27,7 @@ const createRow = (row) => {
   labelEl.textContent = row.label
   rowById.set(row.id, cloned)
   labelById.set(row.id, labelEl)
-  if (selectedId === row.id) cloned.classList.add('danger')
+  if (selectedId === row.id) cloned.classList.add('table-active')
   return cloned
 }
 
@@ -53,11 +53,11 @@ const appendRows = (newRows) => {
 
 const updateSelectedRow = (nextSelectedId) => {
   if (selectedRowEl) {
-    selectedRowEl.classList.remove('danger')
+    selectedRowEl.classList.remove('table-active')
   }
   selectedId = nextSelectedId
   selectedRowEl = selectedId === null ? null : (rowById.get(selectedId) ?? null)
-  if (selectedRowEl) selectedRowEl.classList.add('danger')
+  if (selectedRowEl) selectedRowEl.classList.add('table-active')
 }
 
 const app = {
@@ -113,14 +113,14 @@ tbody.addEventListener('click', (event) => {
   const rowElement = target.closest('tr')
   if (!rowElement) return
 
-  if (target.closest('a.lbl')) {
+  if (target.closest('.lbl')) {
     event.preventDefault()
     const id = Number(rowElement.dataset.id)
     updateSelectedRow(selectedId === id ? null : id)
     return
   }
 
-  if (target.closest('a.remove') || target.classList.contains('remove')) {
+  if (target.closest('.remove')) {
     event.preventDefault()
     const id = Number(rowElement.dataset.id)
     rows = remove(rows, id)

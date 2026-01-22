@@ -71,4 +71,4 @@ framework benchmark implementations in this repo:
 - Track selection as a single id/reference, not per-row flags.
 - Manual DOM manipulation or explicit event delegation may be flagged in reviews, with the exception
   of the vanillajs implementation.
-- Keep the preload icon (`.preloadicon ... glyphicon-remove`) to avoid layout shifts.
+- Keep the preload icon (`.preloadicon.btn-close`) to avoid layout shifts.

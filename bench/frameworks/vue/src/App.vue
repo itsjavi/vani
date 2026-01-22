@@ -62,78 +62,82 @@ function sortDesc() {
 </script>
 
 <template>
-  <div class="jumbotron">
-    <div class="row">
-      <div class="col-md-6">
-        <h1>Vue.js 3 (keyed)</h1>
-      </div>
-      <div class="col-md-6">
-        <div class="row">
-          <div class="col-sm-6 smallpad">
-            <button type="button" class="btn btn-primary btn-block" id="run" @click="run">
-              Create 1,000 rows
-            </button>
-          </div>
-          <div class="col-sm-6 smallpad">
-            <button type="button" class="btn btn-primary btn-block" id="runlots" @click="runLots">
-              Create 10,000 rows
-            </button>
-          </div>
-          <div class="col-sm-6 smallpad">
-            <button type="button" class="btn btn-primary btn-block" id="add" @click="add">
-              Append 1,000 rows
-            </button>
-          </div>
-          <div class="col-sm-6 smallpad">
-            <button type="button" class="btn btn-primary btn-block" id="update" @click="update">
-              Update every 10th row
-            </button>
-          </div>
-          <div class="col-sm-6 smallpad">
-            <button type="button" class="btn btn-primary btn-block" id="clear" @click="clear">
-              Clear
-            </button>
-          </div>
-          <div class="col-sm-6 smallpad">
-            <button type="button" class="btn btn-primary btn-block" id="swaprows" @click="swapRows">
-              Swap Rows
-            </button>
-          </div>
-          <div class="col-sm-6 smallpad">
-            <button type="button" class="btn btn-primary btn-block" id="sortasc" @click="sortAsc">
-              Sort Ascending
-            </button>
-          </div>
-          <div class="col-sm-6 smallpad">
-            <button type="button" class="btn btn-primary btn-block" id="sortdesc" @click="sortDesc">
-              Sort Descending
-            </button>
+  <div class="container">
+    <div class="bench-header jumbo-hero mb-3">
+      <div class="row align-items-center g-0">
+        <div class="col-lg-6">
+          <h1 class="bench-title mb-0">Vue</h1>
+        </div>
+        <div class="col-lg-6">
+          <div class="row g-2 bench-actions" id="app-actions">
+            <div class="col-6">
+              <button type="button" class="btn btn-primary w-100" id="run" @click="run">
+                Create 1,000 rows
+              </button>
+            </div>
+            <div class="col-6">
+              <button type="button" class="btn btn-primary w-100" id="runlots" @click="runLots">
+                Create 10,000 rows
+              </button>
+            </div>
+            <div class="col-6">
+              <button type="button" class="btn btn-primary w-100" id="add" @click="add">
+                Append 1,000 rows
+              </button>
+            </div>
+            <div class="col-6">
+              <button type="button" class="btn btn-primary w-100" id="update" @click="update">
+                Update every 10th row
+              </button>
+            </div>
+            <div class="col-6">
+              <button type="button" class="btn btn-primary w-100" id="clear" @click="clear">
+                Clear
+              </button>
+            </div>
+            <div class="col-6">
+              <button type="button" class="btn btn-primary w-100" id="swaprows" @click="swapRows">
+                Swap Rows
+              </button>
+            </div>
+            <div class="col-6">
+              <button type="button" class="btn btn-primary w-100" id="sortasc" @click="sortAsc">
+                Sort Ascending
+              </button>
+            </div>
+            <div class="col-6">
+              <button type="button" class="btn btn-primary w-100" id="sortdesc" @click="sortDesc">
+                Sort Descending
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
+    <table class="table-hover table-striped test-data table align-middle">
+      <tbody id="tbody">
+        <tr
+          v-for="{ id, label } of rows"
+          :key="id"
+          :class="{ 'table-active': id === selected }"
+          v-memo="[label, id === selected]"
+        >
+          <td class="col-md-1">{{ id }}</td>
+          <td class="col-md-4">
+            <a class="lbl" href="/" @click.prevent="select(id)">{{ label }}</a>
+          </td>
+          <td class="col-md-1">
+            <button
+              class="btn-close remove"
+              type="button"
+              aria-label="Remove"
+              @click.prevent="removeRow(id)"
+            ></button>
+          </td>
+          <td class="col-md-6"></td>
+        </tr>
+      </tbody>
+    </table>
+    <span class="preloadicon btn-close" aria-hidden="true"></span>
   </div>
-  <table class="table-hover table-striped test-data table">
-    <tbody>
-      <tr
-        v-for="{ id, label } of rows"
-        :key="id"
-        :class="{ danger: id === selected }"
-        :data-label="label"
-        v-memo="[label, id === selected]"
-      >
-        <td class="col-md-1">{{ id }}</td>
-        <td class="col-md-4">
-          <a @click="select(id)">{{ label }}</a>
-        </td>
-        <td class="col-md-1">
-          <a @click="removeRow(id)">
-            <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
-          </a>
-        </td>
-        <td class="col-md-6"></td>
-      </tr>
-    </tbody>
-  </table>
-  <span class="preloadicon glyphicon glyphicon-remove" aria-hidden="true"></span>
 </template>

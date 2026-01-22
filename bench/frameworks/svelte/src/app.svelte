@@ -42,66 +42,51 @@
     }
 </script>
 
-<div id="app" class="container">
-  <div class="jumbotron">
-    <div class="row">
-      <div class="col-md-6">
-        <h1>Svelte</h1>
+<div class="container">
+  <div class="bench-header jumbo-hero mb-3">
+    <div class="row align-items-center g-0">
+      <div class="col-lg-6">
+        <h1 class="bench-title mb-0">Svelte</h1>
       </div>
-      <div class="col-md-6">
-        <div class="row">
-          <div class="col-sm-6 smallpad">
-            <button type="button" class="btn btn-primary btn-block" id="run" onclick={run}>
+      <div class="col-lg-6">
+        <div class="row g-2 bench-actions" id="app-actions">
+          <div class="col-6">
+            <button type="button" class="btn btn-primary w-100" id="run" onclick={run}>
               Create 1,000 rows
             </button>
           </div>
-          <div class="col-sm-6 smallpad">
-            <button type="button" class="btn btn-primary btn-block" id="runlots" onclick={runLots}>
+          <div class="col-6">
+            <button type="button" class="btn btn-primary w-100" id="runlots" onclick={runLots}>
               Create 10,000 rows
             </button>
           </div>
-          <div class="col-sm-6 smallpad">
-            <button type="button" class="btn btn-primary btn-block" id="add" onclick={add}>
+          <div class="col-6">
+            <button type="button" class="btn btn-primary w-100" id="add" onclick={add}>
               Append 1,000 rows
             </button>
           </div>
-          <div class="col-sm-6 smallpad">
-            <button
-              type="button"
-              class="btn btn-primary btn-block"
-              id="update"
-              onclick={partialUpdate}
-            >
+          <div class="col-6">
+            <button type="button" class="btn btn-primary w-100" id="update" onclick={partialUpdate}>
               Update every 10th row
             </button>
           </div>
-          <div class="col-sm-6 smallpad">
-            <button type="button" class="btn btn-primary btn-block" id="clear" onclick={clear}>
+          <div class="col-6">
+            <button type="button" class="btn btn-primary w-100" id="clear" onclick={clear}>
               Clear
             </button>
           </div>
-          <div class="col-sm-6 smallpad">
-            <button
-              type="button"
-              class="btn btn-primary btn-block"
-              id="swaprows"
-              onclick={swapRows}
-            >
+          <div class="col-6">
+            <button type="button" class="btn btn-primary w-100" id="swaprows" onclick={swapRows}>
               Swap Rows
             </button>
           </div>
-          <div class="col-sm-6 smallpad">
-            <button type="button" class="btn btn-primary btn-block" id="sortasc" onclick={sortAsc}>
+          <div class="col-6">
+            <button type="button" class="btn btn-primary w-100" id="sortasc" onclick={sortAsc}>
               Sort Ascending
             </button>
           </div>
-          <div class="col-sm-6 smallpad">
-            <button
-              type="button"
-              class="btn btn-primary btn-block"
-              id="sortdesc"
-              onclick={sortDesc}
-            >
+          <div class="col-6">
+            <button type="button" class="btn btn-primary w-100" id="sortdesc" onclick={sortDesc}>
               Sort Descending
             </button>
           </div>
@@ -109,14 +94,15 @@
       </div>
     </div>
   </div>
-  <table class="table table-hover table-striped test-data">
-    <tbody>
+  <table class="table table-hover table-striped align-middle test-data">
+    <tbody id="tbody">
       {#each data as row (row.id)}
-        <tr class={selected === row.id ? 'danger' : ''}>
+        <tr class={selected === row.id ? 'table-active' : ''}>
           <td class="col-md-1">{row.id}</td>
           <td class="col-md-4">
             <a
-              href="#/"
+              class="lbl"
+              href="/"
               onclick={(event) => {
                 event.preventDefault()
                 selected = row.id
@@ -126,21 +112,20 @@
             </a>
           </td>
           <td class="col-md-1">
-            <a
-              href="#/"
+            <button
+              class="btn-close remove"
+              type="button"
+              aria-label="Remove"
               onclick={(event) => {
                 event.preventDefault()
                 removeRow(row.id)
               }}
-              aria-label="Remove"
-            >
-              <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
-            </a>
+            ></button>
           </td>
           <td class="col-md-6"></td>
         </tr>
       {/each}
     </tbody>
   </table>
-  <span class="preloadicon glyphicon glyphicon-remove" aria-hidden="true"></span>
+  <span class="preloadicon btn-close" aria-hidden="true"></span>
 </div>

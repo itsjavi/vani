@@ -7,53 +7,53 @@
     <link href="../../styles.css" rel="stylesheet" />
   </head>
   <body>
-    <div class="back-to-home container">
-      <a href="../../">Back to home</a>
+    <div class="back-to-home container py-2">
+      <a class="link-secondary text-decoration-none" href="../../">Back to home</a>
     </div>
     <div id="main">
       <div class="container">
-        <div class="jumbotron">
-          <div class="row">
-            <div class="col-md-6">
-              <h1>Vanilla JS</h1>
+        <div class="bench-header jumbo-hero mb-3">
+          <div class="row align-items-center g-0">
+            <div class="col-lg-6">
+              <h1 class="bench-title mb-0">Vanilla JS</h1>
             </div>
-            <div class="col-md-6">
-              <div class="row" id="app-actions">
-                <div class="col-sm-6 smallpad">
-                  <button type="button" class="btn btn-primary btn-block" id="run">
+            <div class="col-lg-6">
+              <div class="row g-2 bench-actions" id="app-actions">
+                <div class="col-6">
+                  <button type="button" class="btn btn-primary w-100" id="run">
                     Create 1,000 rows
                   </button>
                 </div>
-                <div class="col-sm-6 smallpad">
-                  <button type="button" class="btn btn-primary btn-block" id="runlots">
+                <div class="col-6">
+                  <button type="button" class="btn btn-primary w-100" id="runlots">
                     Create 10,000 rows
                   </button>
                 </div>
-                <div class="col-sm-6 smallpad">
-                  <button type="button" class="btn btn-primary btn-block" id="add">
+                <div class="col-6">
+                  <button type="button" class="btn btn-primary w-100" id="add">
                     Append 1,000 rows
                   </button>
                 </div>
-                <div class="col-sm-6 smallpad">
-                  <button type="button" class="btn btn-primary btn-block" id="update">
+                <div class="col-6">
+                  <button type="button" class="btn btn-primary w-100" id="update">
                     Update every 10th row
                   </button>
                 </div>
-                <div class="col-sm-6 smallpad">
-                  <button type="button" class="btn btn-primary btn-block" id="clear">Clear</button>
+                <div class="col-6">
+                  <button type="button" class="btn btn-primary w-100" id="clear">Clear</button>
                 </div>
-                <div class="col-sm-6 smallpad">
-                  <button type="button" class="btn btn-primary btn-block" id="swaprows">
+                <div class="col-6">
+                  <button type="button" class="btn btn-primary w-100" id="swaprows">
                     Swap Rows
                   </button>
                 </div>
-                <div class="col-sm-6 smallpad">
-                  <button type="button" class="btn btn-primary btn-block" id="sortasc">
+                <div class="col-6">
+                  <button type="button" class="btn btn-primary w-100" id="sortasc">
                     Sort Ascending
                   </button>
                 </div>
-                <div class="col-sm-6 smallpad">
-                  <button type="button" class="btn btn-primary btn-block" id="sortdesc">
+                <div class="col-6">
+                  <button type="button" class="btn btn-primary w-100" id="sortdesc">
                     Sort Descending
                   </button>
                 </div>
@@ -61,20 +61,18 @@
             </div>
           </div>
         </div>
-        <table class="table-hover table-striped test-data table">
+        <table class="table-hover table-striped test-data table align-middle">
           <tbody id="tbody"></tbody>
         </table>
-        <span class="preloadicon glyphicon glyphicon-remove" aria-hidden="true"></span>
+        <span class="preloadicon btn-close" aria-hidden="true"></span>
       </div>
     </div>
     <template>
       <tr>
         <td class="col-md-1">{id}</td>
-        <td class="col-md-4"><a class="lbl">{lbl}</a></td>
+        <td class="col-md-4"><a class="lbl" href="/">{lbl}</a></td>
         <td class="col-md-1">
-          <a class="remove">
-            <span class="remove glyphicon glyphicon-remove" aria-hidden="true"></span>
-          </a>
+          <button class="btn-close remove" type="button" aria-label="Remove"></button>
         </td>
         <td class="col-md-6"></td>
       </tr>

@@ -59,72 +59,52 @@ function App() {
 
   return (
     <div class="container">
-      <div class="jumbotron">
-        <div class="row">
-          <div class="col-md-6">
-            <h1>SolidJS</h1>
+      <div class="bench-header jumbo-hero mb-3">
+        <div class="row align-items-center g-0">
+          <div class="col-lg-6">
+            <h1 class="bench-title mb-0">SolidJS</h1>
           </div>
-          <div class="col-md-6">
-            <div class="row">
-              <div class="col-sm-6 smallpad">
-                <button id="run" class="btn btn-primary btn-block" type="button" onClick={run}>
+          <div class="col-lg-6">
+            <div class="row g-2 bench-actions" id="app-actions">
+              <div class="col-6">
+                <button id="run" class="btn btn-primary w-100" type="button" onClick={run}>
                   Create 1,000 rows
                 </button>
               </div>
-              <div class="col-sm-6 smallpad">
-                <button
-                  id="runlots"
-                  class="btn btn-primary btn-block"
-                  type="button"
-                  onClick={runLots}
-                >
+              <div class="col-6">
+                <button id="runlots" class="btn btn-primary w-100" type="button" onClick={runLots}>
                   Create 10,000 rows
                 </button>
               </div>
-              <div class="col-sm-6 smallpad">
-                <button id="add" class="btn btn-primary btn-block" type="button" onClick={add}>
+              <div class="col-6">
+                <button id="add" class="btn btn-primary w-100" type="button" onClick={add}>
                   Append 1,000 rows
                 </button>
               </div>
-              <div class="col-sm-6 smallpad">
-                <button
-                  id="update"
-                  class="btn btn-primary btn-block"
-                  type="button"
-                  onClick={update}
-                >
+              <div class="col-6">
+                <button id="update" class="btn btn-primary w-100" type="button" onClick={update}>
                   Update every 10th row
                 </button>
               </div>
-              <div class="col-sm-6 smallpad">
-                <button id="clear" class="btn btn-primary btn-block" type="button" onClick={clear}>
+              <div class="col-6">
+                <button id="clear" class="btn btn-primary w-100" type="button" onClick={clear}>
                   Clear
                 </button>
               </div>
-              <div class="col-sm-6 smallpad">
-                <button
-                  id="swaprows"
-                  class="btn btn-primary btn-block"
-                  type="button"
-                  onClick={swap}
-                >
+              <div class="col-6">
+                <button id="swaprows" class="btn btn-primary w-100" type="button" onClick={swap}>
                   Swap Rows
                 </button>
               </div>
-              <div class="col-sm-6 smallpad">
-                <button
-                  id="sortasc"
-                  class="btn btn-primary btn-block"
-                  type="button"
-                  onClick={sortAsc}
-                >
+              <div class="col-6">
+                <button id="sortasc" class="btn btn-primary w-100" type="button" onClick={sortAsc}>
                   Sort Ascending
                 </button>
               </div>
-              <div class="col-sm-6 smallpad">
+              <div class="col-6">
                 <button
                   id="sortdesc"
-                  class="btn btn-primary btn-block"
+                  class="btn btn-primary w-100"
                   type="button"
                   onClick={sortDesc}
                 >
@@ -135,17 +115,18 @@ function App() {
           </div>
         </div>
       </div>
-      <table class="table-hover table-striped test-data table">
-        <tbody>
+      <table class="table-hover table-striped test-data table align-middle">
+        <tbody id="tbody">
           <For each={rows()}>
             {(row) => {
               let rowId = row.id
               return (
-                <tr class={isSelected(rowId) ? 'danger' : ''}>
+                <tr class={isSelected(rowId) ? 'table-active' : ''}>
                   <td class="col-md-1">{rowId}</td>
                   <td class="col-md-4">
                     <a
-                      href="#"
+                      class="lbl"
+                      href="/"
                       onClick={(event) => {
                         event.preventDefault()
                         setSelected(rowId)
@@ -155,15 +136,15 @@ function App() {
                     </a>
                   </td>
                   <td class="col-md-1">
-                    <a
-                      href="#"
+                    <button
+                      class="btn-close remove"
+                      type="button"
+                      aria-label="Remove"
                       onClick={(event) => {
                         event.preventDefault()
                         removeRow(rowId)
                       }}
-                    >
-                      <span class="glyphicon glyphicon-remove" aria-hidden="true" />
-                    </a>
+                    />
                   </td>
                   <td class="col-md-6" />
                 </tr>
@@ -172,10 +153,10 @@ function App() {
           </For>
         </tbody>
       </table>
-      <span class="preloadicon glyphicon glyphicon-remove" aria-hidden="true" />
+      <span class="preloadicon btn-close" aria-hidden="true" />
     </div>
   )
 }
 
-let el = document.getElementById('app')!
+let el = document.getElementById('main')!
 render(App, el)

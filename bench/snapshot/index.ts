@@ -103,6 +103,8 @@ const app = document.querySelector('#app')
 if (!app) throw new Error('#app not found')
 const appRoot = app
 
+const mainTitle = 'Frontend Framework Benchmarks - Results Snapshot'
+
 function formatNumber(value: number): string {
   if (Number.isNaN(value)) return '-'
   return value.toFixed(1)
@@ -122,9 +124,9 @@ function buildHeaderCell(framework: SnapshotFramework): string {
 function render(snapshot: SnapshotPayload): void {
   if (!snapshot.calculated) {
     appRoot.innerHTML = `
-      <div class="container">
-        <div class="page-header">
-          <h1>Benchmark Snapshot</h1>
+      <div class="container py-4">
+        <div class="border-bottom pb-2 mb-3">
+          <h1 class="mb-0">${mainTitle}</h1>
         </div>
         <div class="alert alert-warning">
           This snapshot is missing calculated data. Re-run the benchmark runner to regenerate it.
@@ -149,30 +151,30 @@ function render(snapshot: SnapshotPayload): void {
   )
 
   let html = `
-    <div class="container">
-      <div class="page-header">
-        <h1>Benchmark Snapshot</h1>
+    <div class="container py-4">
+      <div class="border-bottom pb-2 mb-3">
+        <h1 class="mb-0">${mainTitle}</h1>
       </div>
-      <p class="lead">
+      <p class="lead mb-2">
         Duration in milliseconds +/- 95% confidence interval.
       </p>
-      <p class="text-muted">
+      <p class="text-muted mb-4">
         Generated at ${new Date(snapshot.generatedAt).toLocaleString()} | CPU throttling ${
           snapshot.cpuThrottling
         }x | ${snapshot.warmups} warmups | ${snapshot.runs} runs | headless ${
           snapshot.headless ? 'yes' : 'no'
         }
       </p>
-      <div class="table-responsive">
-        <table class="table table-bordered table-hover">
+      <div class="table-responsive shadow-sm rounded bg-white">
+        <table class="table table-bordered table-hover align-middle mb-0 test-results">
           <thead>
-            <tr>
+            <tr class="table-active">
               <th style="width: 32%">Name<br /><small>Duration for...</small></th>
               ${frameworks.map((fw) => `<th class="text-center">${buildHeaderCell(fw)}</th>`).join('')}
             </tr>
           </thead>
           <tbody>
-            <tr class="active">
+            <tr class="table-active" style="--bs-table-bg-state: #f5f5f5 !important;">
               <td>Implementation notes</td>
               ${frameworks
                 .map((framework) => {
@@ -247,9 +249,9 @@ async function loadSnapshot(): Promise<void> {
     render(benchResults)
   } catch (error) {
     appRoot.innerHTML = `
-      <div class="container">
-        <div class="page-header">
-          <h1>Benchmark Snapshot</h1>
+      <div class="container py-4">
+        <div class="border-bottom pb-2 mb-3">
+          <h1 class="mb-0">${mainTitle}</h1>
         </div>
         <div class="alert alert-danger">
           Failed to load bench-snapshot.json. Run the benchmark runner to generate it.
@@ -266,16 +268,24 @@ style.textContent = `
     vertical-align: middle;
   }
   .cell-good {
-    background: #5cb85c22;
+    --bs-table-bg: #5cb85c22;
+    --bs-table-color: #1f3d1f;
+    background-color: #5cb85c22;
   }
   .cell-ok {
-    background: #8ad17d33;
+    --bs-table-bg: #8ad17d33;
+    --bs-table-color: #1f3d1f;
+    background-color: #8ad17d33;
   }
   .cell-warn {
-    background: #f0ad4e33;
+    --bs-table-bg: #f0ad4e33;
+    --bs-table-color: #5a3b09;
+    background-color: #f0ad4e33;
   }
   .cell-bad {
-    background: #d9534f33;
+    --bs-table-bg: #d9534f33;
+    --bs-table-color: #5a1a18;
+    background-color: #d9534f33;
   }
 `
 document.head.append(style)

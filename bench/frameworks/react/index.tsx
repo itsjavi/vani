@@ -58,77 +58,72 @@ function App() {
 
   return (
     <div className="container">
-      <div className="jumbotron">
-        <div className="row">
-          <div className="col-md-6">
-            <h1>React</h1>
+      <div className="bench-header jumbo-hero mb-3">
+        <div className="row align-items-center g-0">
+          <div className="col-lg-6">
+            <h1 className="bench-title mb-0">React</h1>
           </div>
-          <div className="col-md-6">
-            <div className="row">
-              <div className="col-sm-6 smallpad">
-                <button id="run" className="btn btn-primary btn-block" type="button" onClick={run}>
+          <div className="col-lg-6">
+            <div className="row g-2 bench-actions" id="app-actions">
+              <div className="col-6">
+                <button id="run" className="btn btn-primary w-100" type="button" onClick={run}>
                   Create 1,000 rows
                 </button>
               </div>
-              <div className="col-sm-6 smallpad">
+              <div className="col-6">
                 <button
                   id="runlots"
-                  className="btn btn-primary btn-block"
+                  className="btn btn-primary w-100"
                   type="button"
                   onClick={runLots}
                 >
                   Create 10,000 rows
                 </button>
               </div>
-              <div className="col-sm-6 smallpad">
-                <button id="add" className="btn btn-primary btn-block" type="button" onClick={add}>
+              <div className="col-6">
+                <button id="add" className="btn btn-primary w-100" type="button" onClick={add}>
                   Append 1,000 rows
                 </button>
               </div>
-              <div className="col-sm-6 smallpad">
+              <div className="col-6">
                 <button
                   id="update"
-                  className="btn btn-primary btn-block"
+                  className="btn btn-primary w-100"
                   type="button"
                   onClick={update}
                 >
                   Update every 10th row
                 </button>
               </div>
-              <div className="col-sm-6 smallpad">
-                <button
-                  id="clear"
-                  className="btn btn-primary btn-block"
-                  type="button"
-                  onClick={clear}
-                >
+              <div className="col-6">
+                <button id="clear" className="btn btn-primary w-100" type="button" onClick={clear}>
                   Clear
                 </button>
               </div>
-              <div className="col-sm-6 smallpad">
+              <div className="col-6">
                 <button
                   id="swaprows"
-                  className="btn btn-primary btn-block"
+                  className="btn btn-primary w-100"
                   type="button"
                   onClick={swap}
                 >
                   Swap Rows
                 </button>
               </div>
-              <div className="col-sm-6 smallpad">
+              <div className="col-6">
                 <button
                   id="sortasc"
-                  className="btn btn-primary btn-block"
+                  className="btn btn-primary w-100"
                   type="button"
                   onClick={sortAsc}
                 >
                   Sort Ascending
                 </button>
               </div>
-              <div className="col-sm-6 smallpad">
+              <div className="col-6">
                 <button
                   id="sortdesc"
-                  className="btn btn-primary btn-block"
+                  className="btn btn-primary w-100"
                   type="button"
                   onClick={sortDesc}
                 >
@@ -139,16 +134,17 @@ function App() {
           </div>
         </div>
       </div>
-      <table className="table-hover table-striped test-data table">
-        <tbody>
+      <table className="table-hover table-striped test-data table align-middle">
+        <tbody id="tbody">
           {rows.map((row) => {
             let rowId = row.id
             return (
-              <tr key={rowId} className={selected === rowId ? 'danger' : ''}>
+              <tr key={rowId} className={selected === rowId ? 'table-active' : ''}>
                 <td className="col-md-1">{rowId}</td>
                 <td className="col-md-4">
                   <a
-                    href="#"
+                    className="lbl"
+                    href="/"
                     onClick={(event) => {
                       event.preventDefault()
                       setSelected(rowId)
@@ -158,15 +154,15 @@ function App() {
                   </a>
                 </td>
                 <td className="col-md-1">
-                  <a
-                    href="#"
+                  <button
+                    className="btn-close remove"
+                    type="button"
+                    aria-label="Remove"
                     onClick={(event) => {
                       event.preventDefault()
                       removeRow(rowId)
                     }}
-                  >
-                    <span className="glyphicon glyphicon-remove" aria-hidden="true" />
-                  </a>
+                  />
                 </td>
                 <td className="col-md-6" />
               </tr>
@@ -174,11 +170,11 @@ function App() {
           })}
         </tbody>
       </table>
-      <span className="preloadicon glyphicon glyphicon-remove" aria-hidden="true" />
+      <span className="preloadicon btn-close" aria-hidden="true" />
     </div>
   )
 }
 
-let el = document.getElementById('app')!
+let el = document.getElementById('main')!
 let root = createRoot(el)
 root.render(<App />)

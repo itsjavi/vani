@@ -64,7 +64,7 @@ const TableRow = component<{ item: Row; isSelected: boolean }>((props) => {
   return () =>
     tr(
       {
-        className: { danger: props.isSelected },
+        className: { 'table-active': props.isSelected },
       },
       td({ className: 'col-md-1' }, String(props.item.id)),
       td(
@@ -72,6 +72,7 @@ const TableRow = component<{ item: Row; isSelected: boolean }>((props) => {
         a(
           {
             className: 'lbl',
+            href: '/',
             onclick: (e: MouseEvent) => {
               e.preventDefault()
               setSelected(props.item.id)
@@ -82,15 +83,15 @@ const TableRow = component<{ item: Row; isSelected: boolean }>((props) => {
       ),
       td(
         { className: 'col-md-1' },
-        a(
-          {
-            onclick: (e: MouseEvent) => {
-              e.preventDefault()
-              removeRow(props.item.id)
-            },
+        button({
+          type: 'button',
+          className: 'btn-close remove',
+          ariaLabel: 'Remove',
+          onclick: (e: MouseEvent) => {
+            e.preventDefault()
+            removeRow(props.item.id)
           },
-          span({ className: 'glyphicon glyphicon-remove', ariaHidden: 'true' }),
-        ),
+        }),
       ),
       td({ className: 'col-md-6' }),
     )
@@ -103,7 +104,7 @@ const DataTable = component((_, handle: Handle) => {
 
   return () =>
     table(
-      { className: 'table table-hover table-striped test-data' },
+      { className: 'table table-hover table-striped align-middle test-data' },
       tbody({ id: 'tbody', ref: tbodyRef }),
     )
 })
@@ -112,11 +113,8 @@ const SmallpadButton = component(
   ({ id, label, onClick }: { id: string; label: string; onClick: () => void }) => {
     return () =>
       div(
-        { className: 'col-sm-6 smallpad' },
-        button(
-          { type: 'button', className: 'btn btn-primary btn-block', id, onclick: onClick },
-          label,
-        ),
+        { className: 'col-6' },
+        button({ type: 'button', className: 'btn btn-primary w-100', id, onclick: onClick }, label),
       )
   },
 )
@@ -124,14 +122,14 @@ const SmallpadButton = component(
 const Controls = component(() => {
   return () => {
     return div(
-      { className: 'jumbotron' },
+      { className: 'bench-header jumbo-hero mb-3' },
       div(
-        { className: 'row' },
-        div({ className: 'col-md-6' }, h1('Vani')),
+        { className: 'row align-items-center g-0' },
+        div({ className: 'col-lg-6' }, h1({ className: 'bench-title mb-0' }, 'Vani')),
         div(
-          { className: 'col-md-6' },
+          { className: 'col-lg-6' },
           div(
-            { className: 'row' },
+            { className: 'row g-2 bench-actions', id: 'app-actions' },
             SmallpadButton({
               key: 'run',
               id: 'run',
@@ -180,13 +178,13 @@ const Controls = component(() => {
             SmallpadButton({
               key: 'sortasc',
               id: 'sortasc',
-              label: 'Sort Asc',
+              label: 'Sort Ascending',
               onClick: () => setRows(sortRows(rows, true)),
             }),
             SmallpadButton({
               key: 'sortdesc',
               id: 'sortdesc',
-              label: 'Sort Desc',
+              label: 'Sort Descending',
               onClick: () => setRows(sortRows(rows, false)),
             }),
           ),
@@ -196,11 +194,19 @@ const Controls = component(() => {
   }
 })
 
-const rootNode: HTMLElement | null = document.querySelector('#app')
+const rootNode: HTMLElement | null = document.querySelector('#main')
 if (!rootNode) {
   throw new Error('Root node not found')
 }
 
-const App = component(() => () => div({ className: 'container' }, Controls(), DataTable()))
+const App = component(
+  () => () =>
+    div(
+      { className: 'container' },
+      Controls(),
+      DataTable(),
+      span({ className: 'preloadicon btn-close', ariaHidden: 'true' }),
+    ),
+)
 
 renderToDOM([App()], rootNode)
