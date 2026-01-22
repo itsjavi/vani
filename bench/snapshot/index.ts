@@ -277,7 +277,7 @@ function render(snapshot: SnapshotPayload): void {
               ${frameworks
                 .map(
                   (fw) =>
-                    `<td class="text-center"><a target="_blank" href="/${fw.path}">view</a></td>`,
+                    `<td class="text-center"><a target="_blank" href="../${fw.path}">view</a></td>`,
                 )
                 .join('')}
             </tr>
