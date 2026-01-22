@@ -1,16 +1,10 @@
 # Ignore:
 build/
 dist/
-dataset/dist/
-.next/
 .turbo/
 node_modules/
-.yarn/
 .cache/
 coverage/
-.vercel/
-.astro/
-.wrangler/
 
 pnpm-*.yaml
 *.min.json
@@ -25,3 +19,5 @@ package.json
 *.min.json
 
 LICENSE
+
+bench/snapshot/results/

@@ -13,5 +13,6 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.3",
     "vite": "catalog:"
-  }
+  },
+  "benchmarkNotes": "keyed, non-jsx"
 }

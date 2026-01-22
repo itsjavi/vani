@@ -7,16 +7,33 @@ import fs from 'fs'
 import path from 'path'
 import vaniPkg from '../package.json'
 
-function getVersion(packagePath: string) {
+type FrameworkPackage = {
+  name?: string
+  version?: string
+  dependencies?: Record<string, string>
+  benchmarkNotes?: string
+}
+
+function readPackageJson(packagePath: string): FrameworkPackage | null {
   if (!fs.existsSync(packagePath)) {
+    return null
+  }
+
+  return JSON.parse(fs.readFileSync(packagePath, 'utf8')) as FrameworkPackage
+}
+
+function getVersion(pkg: FrameworkPackage | null) {
+  if (!pkg) {
     return '0.0.0'
   }
-  const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'))
-  const frameworkPackage = pkg.name.replace('benchmark-', '')
+  const frameworkPackage = (pkg.name ?? '').replace('benchmark-', '')
+  if (!frameworkPackage) {
+    return '0.0.0'
+  }
   if (frameworkPackage === 'vani') {
     return vaniPkg.version
   }
-  const version = pkg.version || pkg.dependencies[frameworkPackage] || '0.0.0'
+  const version = pkg.version || pkg.dependencies?.[frameworkPackage] || '0.0.0'
   return version.replace(/[vV~^]/, '')
 }
 
@@ -29,11 +46,14 @@ export function getProjects(projectType: 'frameworks' | 'debug' = 'frameworks') 
       const dirPath = path.join(basePath, name)
       const indexPath = path.join(dirPath, 'index.html')
       const packagePath = path.join(dirPath, 'package.json')
+      const pkg = readPackageJson(packagePath)
 
       if (fs.statSync(dirPath).isDirectory() && fs.existsSync(indexPath)) {
+        const benchmarkNotes = pkg?.benchmarkNotes?.trim()
         return {
           name,
-          version: getVersion(packagePath),
+          version: getVersion(pkg),
+          benchmarkNotes: benchmarkNotes ? benchmarkNotes : undefined,
           path: `${projectType}/${name}`,
         }
       }

@@ -1,5 +1,6 @@
 {
   "name": "benchmark-vani",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "benchmarkNotes": "keyed, non-jsx"
 }

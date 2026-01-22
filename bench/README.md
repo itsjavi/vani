@@ -15,7 +15,7 @@ pnpm run bench
 ```
 
 This will run the `build-frameworks` package script for all frameworks and then use `playwright` to
-run the benchmarks and save the results to the `./results/` directory.
+run the benchmarks and show the results in the terminal.
 
 ## Manual UI Debugging
 

@@ -8,8 +8,9 @@ import { getProjects } from './macros'
 
 const PORT = 44100
 const BASE_URL = `http://localhost:${PORT}`
-const VANI_RESULTS_FILE = path.join(import.meta.dirname, '.bench-vani-results.json')
-const LAST_ARGS_FILE = path.join(import.meta.dirname, '.bench-last-args.json')
+const LAST_ARGS_FILE = path.join(import.meta.dirname, 'snapshot/results/bench-last-args.json')
+const SNAPSHOT_FILE = path.join(import.meta.dirname, 'snapshot/results/bench-results.json')
+const VANI_RESULTS_FILE = path.join(import.meta.dirname, 'snapshot/results/bench-results-vani.json')
 
 interface SavedArgs {
   cpu: string
@@ -117,6 +118,37 @@ interface BenchmarkResult {
   operation: string
   scripting: { times: number[]; mean: number; median: number; min: number; max: number }
   total: { times: number[]; mean: number; median: number; min: number; max: number }
+}
+
+interface SnapshotFramework {
+  name: string
+  version: string
+  path: string
+  benchmarkNotes?: string
+}
+
+interface SnapshotPayload {
+  generatedAt: string
+  cpuThrottling: number
+  runs: number
+  warmups: number
+  headless: boolean
+  frameworks: SnapshotFramework[]
+  results: BenchmarkResult[]
+  calculated: SnapshotCalculated
+}
+
+type SnapshotOperationCell = {
+  mean: number
+  ci: number
+  ratio: number
+}
+
+type SnapshotCalculated = {
+  operations: string[]
+  frameworkOrder: string[]
+  overallScores: Record<string, number | null>
+  operationResults: Record<string, Record<string, SnapshotOperationCell>>
 }
 
 interface Operation {
@@ -385,6 +417,11 @@ function saveVaniResults(results: BenchmarkResult[]): void {
   }
 }
 
+function saveSnapshot(payload: SnapshotPayload): void {
+  fs.writeFileSync(SNAPSHOT_FILE, JSON.stringify(payload, null, 2))
+  console.log(`Saved snapshot to ${SNAPSHOT_FILE}`)
+}
+
 // Load previous vani results if they exist
 function loadPreviousVaniResults(): BenchmarkResult[] {
   try {
@@ -433,6 +470,113 @@ function calcStats(times: number[]) {
     median: sorted[Math.floor(sorted.length / 2)],
     min: sorted[0],
     max: sorted[sorted.length - 1],
+  }
+}
+
+function calcConfidenceInterval(times: number[]): number {
+  if (times.length < 2) {
+    return 0
+  }
+
+  let mean = times.reduce((sum, value) => sum + value, 0) / times.length
+  let variance =
+    times.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) / (times.length - 1)
+  let stddev = Math.sqrt(variance)
+  return (1.96 * stddev) / Math.sqrt(times.length)
+}
+
+function buildCalculatedSnapshot(
+  results: BenchmarkResult[],
+  frameworks: SnapshotFramework[],
+): SnapshotCalculated {
+  let resultsByOperation = new Map<string, Map<string, BenchmarkResult>>()
+  for (let result of results) {
+    if (!resultsByOperation.has(result.operation)) {
+      resultsByOperation.set(result.operation, new Map())
+    }
+    resultsByOperation.get(result.operation)!.set(result.framework, result)
+  }
+
+  let operations = Array.from(resultsByOperation.keys())
+  let averageMeansByFramework = frameworks.map((framework) => {
+    let totalMeans = operations.map((operation) => {
+      let result = resultsByOperation.get(operation)?.get(framework.name)
+      if (!result) return Number.POSITIVE_INFINITY
+      return result.total.mean
+    })
+    let validMeans = totalMeans.filter((value) => Number.isFinite(value))
+    let averageMean =
+      validMeans.length === 0
+        ? Number.POSITIVE_INFINITY
+        : validMeans.reduce((sum, value) => sum + value, 0) / validMeans.length
+    return { framework, averageMean }
+  })
+
+  let frameworkOrder = averageMeansByFramework
+    .sort((a, b) => a.averageMean - b.averageMean)
+    .map((entry) => entry.framework.name)
+
+  let overallScores: Record<string, number | null> = {}
+  for (let frameworkName of frameworkOrder) {
+    let ratios: number[] = []
+    for (let operation of operations) {
+      let opResults = resultsByOperation.get(operation)
+      if (!opResults) continue
+      let means = frameworkOrder.map((name) => {
+        let result = opResults.get(name)
+        if (!result) return Number.POSITIVE_INFINITY
+        return result.total.mean
+      })
+      let best = Math.min(...means.filter((value) => Number.isFinite(value)))
+      let current = opResults.get(frameworkName)
+      if (!current || !Number.isFinite(best) || best <= 0) continue
+      let mean = current.total.mean
+      if (Number.isFinite(mean)) {
+        ratios.push(mean / best)
+      }
+    }
+    overallScores[frameworkName] =
+      ratios.length === 0 ? null : ratios.reduce((sum, value) => sum + value, 0) / ratios.length
+  }
+  let normalizedBase = Math.min(
+    ...Object.values(overallScores).filter((score): score is number => Number.isFinite(score)),
+  )
+  if (Number.isFinite(normalizedBase) && normalizedBase > 0) {
+    for (let frameworkName of Object.keys(overallScores)) {
+      let score = overallScores[frameworkName]
+      if (score === null || !Number.isFinite(score)) continue
+      overallScores[frameworkName] = score / normalizedBase
+    }
+  }
+
+  let operationResults: Record<string, Record<string, SnapshotOperationCell>> = {}
+  for (let operation of operations) {
+    let opResults = resultsByOperation.get(operation)
+    if (!opResults) continue
+    let means = frameworkOrder.map((frameworkName) => {
+      let result = opResults.get(frameworkName)
+      if (!result) return Number.POSITIVE_INFINITY
+      return result.total.mean
+    })
+    let best = Math.min(...means.filter((value) => Number.isFinite(value)))
+
+    let perFramework: Record<string, SnapshotOperationCell> = {}
+    for (let frameworkName of frameworkOrder) {
+      let result = opResults.get(frameworkName)
+      if (!result) continue
+      let mean = result.total.mean
+      let ci = calcConfidenceInterval(result.total.times)
+      let ratio = best > 0 ? mean / best : 1
+      perFramework[frameworkName] = { mean, ci, ratio }
+    }
+    operationResults[operation] = perFramework
+  }
+
+  return {
+    operations,
+    frameworkOrder,
+    overallScores,
+    operationResults,
   }
 }
 
@@ -800,6 +944,8 @@ async function main(): Promise<void> {
       saveVaniResults(allResults)
     }
 
+    let snapshotResults = [...allResults]
+
     // Add previous vani results to display only when vani is the only framework
     // (When comparing against other frameworks, we don't need to show previous vani)
     if (previousVaniResults.length > 0 && frameworks.length === 1) {
@@ -818,6 +964,18 @@ async function main(): Promise<void> {
 
     // Print benchmark results after profiles
     printResults(allResults)
+
+    let frameworkDetails = getProjects('frameworks') as SnapshotFramework[]
+    saveSnapshot({
+      generatedAt: new Date().toISOString(),
+      cpuThrottling,
+      runs: benchmarkRuns,
+      warmups: warmupRuns,
+      headless,
+      frameworks: frameworkDetails,
+      results: snapshotResults,
+      calculated: buildCalculatedSnapshot(snapshotResults, frameworkDetails),
+    })
 
     console.log('Benchmark complete!')
   } finally {

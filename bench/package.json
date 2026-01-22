@@ -4,14 +4,19 @@
   "type": "module",
   "scripts": {
     "bench": "bun run build-frameworks && bun run runner.ts",
+    "build": "bun run build-frameworks && bun run ./build.ts",
+    "build:dev": "bun run build --base '/{dir}'",
     "build-frameworks": "bun run --filter 'benchmark-*' build-prod && cd ../ && pnpm run build:lib",
     "dev": "bun run build-frameworks && pnpm run start --watch",
-    "start": "PORT=4555 bun run ./index.html ./frameworks/*/index.html ./debug/*/index.html"
+    "preview": "bun run build:dev && sirv -p 8080 --brotli ./dist",
+    "start": "PORT=4555 bun run ./index.html ./frameworks/*/index.html ./debug/*/index.html ./snapshot/index.html"
   },
   "devDependencies": {
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
-    "bootstrap": "3.3.7",
-    "playwright": "catalog:"
+    "bootstrap": "3.4.1",
+    "playwright": "catalog:",
+    "serve": "^14.2.5",
+    "sirv-cli": "^3.0.1"
   }
 }

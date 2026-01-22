@@ -30,6 +30,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
 
       - name: 'Setup PNPM'
         uses: pnpm/action-setup@v4
@@ -46,8 +48,25 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Check for bench changes
+        id: bench_changes
+        run: |
+          if git rev-parse HEAD^ >/dev/null 2>&1; then
+            if git diff --name-only HEAD^ HEAD -- bench/ | grep -q .; then
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run benchmarks
+        if: steps.bench_changes.outputs.changed == 'true'
+        run: pnpm bench --headless --cpu 3 --runs 4 --warmups 2
+
       - name: Build
-        run: pnpm build
+        run: pnpm build:pages
 
       - name: Lint
         run: pnpm lint
