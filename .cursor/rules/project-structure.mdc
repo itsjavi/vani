@@ -1,0 +1,16 @@
+---
+alwaysApply: true
+---
+
+# Project Structure
+
+- Docs live in [DOCS.md](mdc:DOCS.md) and [README.md](mdc:README.md); start here for Vani concepts.
+- Core runtime is in [src/vani](mdc:src/vani) (runtime, jsx runtimes, SSR helpers).
+- Site app is in [src/spa-app](mdc:src/spa-app) with entries
+  [entry-client.ts](mdc:src/spa-app/entry-client.ts) and
+  [entry-server.ts](mdc:src/spa-app/entry-server.ts).
+- Vani's ecosystem tools are in [src/ecosystem](mdc:src/ecosystem) (vite plugins, etc).
+- Benchmarks and framework comparisons are under [bench](mdc:bench) (see
+  [bench/README.md](mdc:bench/README.md)).
+- Main build config lives in [vite.config.ts](mdc:vite.config.ts) and TypeScript config in
+  [tsconfig.json](mdc:tsconfig.json).

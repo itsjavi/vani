@@ -1,0 +1,13 @@
+---
+globs: src/vani/*.ts,src/spa-app/**/*.{ts,tsx}
+---
+
+# Vani Runtime Patterns
+
+- Components are functions returning render functions; explicit updates via `handle.update()` (or
+  `updateSync()`).
+- Use `renderToDOM()` for SPA and `renderToString()` + `hydrateToDOM()` for SSR/SSG.
+- JSX mode uses `jsxImportSource: "@vanijs/vani"` and `.tsx` files.
+- For class composition in the SPA app, prefer the local `cn()` helper from
+  [src/spa-app/components/utils.ts](mdc:src/spa-app/components/utils.ts) which wraps `classNames` +
+  `tailwind-merge`.

@@ -1,0 +1,10 @@
+---
+globs: bench/**
+---
+
+# Benchmarks Workspace
+
+- Benchmark entrypoint is [bench/index.ts](mdc:bench/index.ts) and build tooling in
+  [bench/build.ts](mdc:bench/build.ts).
+- Framework variants live under [bench/frameworks](mdc:bench/frameworks) with per-framework configs.
+- Local dev notes and setup are in [bench/README.md](mdc:bench/README.md).

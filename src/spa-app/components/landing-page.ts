@@ -1,6 +1,7 @@
 import { component, type DomRef } from '@/vani'
 import * as h from '@/vani/html'
 import BarChart3Icon from 'lucide-static/icons/bar-chart-3.svg?vani'
+import BookOpenIcon from 'lucide-static/icons/book-open.svg?vani'
 import GithubIcon from 'lucide-static/icons/github.svg?vani'
 import NotepadTextIcon from 'lucide-static/icons/notepad-text.svg?vani'
 import { CopyableCodeBlock } from './copyable-code-block'
@@ -260,6 +261,20 @@ const HeroSection = component((props: HeroSectionProps) => {
             ),
             h.div(
               { className: cn('flex flex-wrap items-center gap-6') },
+              h.a(
+                {
+                  href: 'https://context7.com/itsjavi/vani',
+                  target: '_blank',
+                  rel: 'noreferrer',
+                  className: cn(
+                    'inline-flex items-center gap-2 text-base text-slate-300',
+                    'underline decoration-dotted underline-offset-4',
+                    'transition hover:text-white',
+                  ),
+                },
+                BookOpenIcon({ size: 18, className: 'size-4' }),
+                'Context7',
+              ),
               h.a(
                 {
                   href: 'https://context7.com/itsjavi/vani/llms.txt?tokens=10000',
