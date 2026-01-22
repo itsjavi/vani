@@ -1,20 +1,11 @@
-# Vani project agent guide
+# Vani Framework Agent Guide
 
-Vani (from Vanilla) is a Web Standards-first framework for building web applications.
+Vani (from Vanilla) is a Web Standards-first framework for building transpiler-free and predictable
+web applications.
 
-A JS-first, transpiler-free runtime for building lightning-fast apps — no virtual DOM, no compiler,
-zero dependencies, SSR support, imperative reactivity. It also ships an optional JSX adapter.
+Check the [DOCS.md](./DOCS.md) and [README.md](./README.md) files for more information.
 
-Check the DOCS.md and README.md files for more information.
-
-```tsx
-// With React
-function App() {
-  return <div className="text-purple-500">Hello World!</div>
-}
-```
-
-In Vani, components are factories or Higher-Order Functions that create DOM nodes.
+Here is a quick example:
 
 ```ts
 // With Vani

@@ -6,7 +6,7 @@
 
 Vani is not a Virtual DOM, not reactive-by-default, and not compiler-driven.  
 It is a **runtime-first**, **DOM-anchored**, **subtree-based** rendering system designed for
-clarity, performance, and long-term maintainability.
+clarity, predictable lifecycle control, and long-term maintainability.
 
 Docs: [DOCS.md](https://github.com/itsjavi/vani/blob/main/DOCS.md)
 
@@ -31,7 +31,7 @@ There are:
 - no state subscriptions
 - no implicit invalidation
 
-This makes performance characteristics **obvious and predictable**.
+This makes rendering characteristics **obvious and predictable**.
 
 ---
 
@@ -93,9 +93,9 @@ This avoids:
 
 ---
 
-### 5. Scheduling, not reactivity, handles performance
+### 5. Scheduling, not reactivity, handles update timing
 
-Performance is handled by:
+Update timing is handled by:
 
 - batching
 - microtask queues

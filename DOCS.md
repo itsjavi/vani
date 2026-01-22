@@ -1,4 +1,4 @@
-# Vani Documentation
+# Vani Framework Documentation
 
 Vani is a small, dependency‑free UI runtime built around a simple idea:
 
@@ -215,9 +215,9 @@ Updates replace only the DOM between anchors.
 
 ### 4) Lists and item-level updates
 
-Lists are efficient in Vani when each item is its own component. Every item owns a tiny subtree and
-can update itself (or be updated via a ref) without touching siblings. Use `key` to preserve
-identity across reorders.
+Lists scale well in Vani when each item is its own component. Every item owns a tiny subtree and can
+update itself (or be updated via a ref) without touching siblings. Use `key` to preserve identity
+across reorders.
 
 Key ideas:
 

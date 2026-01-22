@@ -18,7 +18,7 @@ const featureCards = [
   {
     icon: '⚡️',
     title: 'Explicit Updates',
-    description: 'Only re-render when you call handle.update(). Predictable and fast.',
+    description: 'Only re-render when you call handle.update(). Predictable without magic.',
   },
   {
     icon: '🧱',
@@ -189,12 +189,12 @@ const HeroSection = component((props: HeroSectionProps) => {
           ),
           h.h1(
             { className: 'text-4xl font-semibold tracking-tight md:text-6xl' },
-            'Build lightning‑fast UIs with zero magic.',
+            'Build fast UIs with zero magic.',
           ),
           h.p(
             { className: 'max-w-xl text-base text-slate-300 md:text-lg' },
             'Vani is a Web‑Standards‑first UI runtime with explicit updates, anchor‑owned subtrees,',
-            ' and predictable performance across SPA, SSR, and SSG.',
+            ' and a clear and predictable rendering model across SPA and static sites.',
           ),
           h.div(
             { className: 'flex flex-wrap items-center gap-4' },
