@@ -3,14 +3,15 @@ import {
   button,
   component,
   div,
+  fragment,
   h1,
-  renderKeyedChildren,
   renderToDOM,
   span,
   table,
   tbody,
   td,
   tr,
+  type ComponentRef,
   type DomRef,
   type Handle,
 } from 'vani'
@@ -30,16 +31,16 @@ let rows: Row[] = []
 let selectedId: number | null = null
 
 const tbodyRef: DomRef<HTMLTableSectionElement> = { current: null }
+const rowsHandleRef: ComponentRef = { current: null }
 
 const renderRows = () => {
   if (!tbodyRef.current) return
-  const rowChildren = rows.map((item) =>
-    TableRow({
-      key: item.id,
-      item,
-    }),
-  )
-  renderKeyedChildren(tbodyRef.current, rowChildren)
+  if (!rowsHandleRef.current) {
+    const [rowsHandle] = renderToDOM([Rows()], tbodyRef.current)
+    rowsHandleRef.current = rowsHandle ?? null
+  } else {
+    rowsHandleRef.current.update()
+  }
 }
 
 const setRows = (nextRows: Row[]) => {
@@ -90,6 +91,18 @@ const TableRow = component<{ item: Row }>((props) => {
         ),
       ),
       td({ className: 'col-md-6' }),
+    )
+})
+
+const Rows = component(() => {
+  return () =>
+    fragment(
+      ...rows.map((item) =>
+        TableRow({
+          key: item.id,
+          item,
+        }),
+      ),
     )
 })
 
