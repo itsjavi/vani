@@ -1,5 +1,5 @@
 {
-  "name": "@vanijs/bench",
+  "name": "benchmarks",
   "private": true,
   "type": "module",
   "scripts": {

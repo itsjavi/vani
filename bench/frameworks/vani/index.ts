@@ -14,32 +14,54 @@ import {
   type DomRef,
   type Handle,
 } from 'vani'
-import { type RowItem } from '../benchmark-generators'
-import { RowsStore, SelectionStore, type BenchmarkActions } from '../benchmark-state-managers'
+import type { Row } from '../shared'
+import {
+  get10000Rows,
+  get1000Rows,
+  remove,
+  sortRows,
+  swapRows,
+  updatedEvery10thRow,
+} from '../shared'
 
 export const name = 'vani'
 
-// Global store instances
-const rowsStore = new RowsStore()
-const selectionStore = new SelectionStore()
+let rows: Row[] = []
+let selectedId: number | null = null
 
-// Row component - keyed for efficient updates
-// Each row subscribes to selection changes individually to avoid full table re-renders
-const TableRow = component<{
-  item: RowItem
-}>((props, handle) => {
-  // Subscribe to selection changes for this specific row
-  handle.effect(() => {
-    return selectionStore.subscribe(props.item.id, handle.update)
-  })
+const tbodyRef: DomRef<HTMLTableSectionElement> = { current: null }
 
-  return () => {
-    // Read selection state during render so it's always current
-    const selected = selectionStore.isSelected(props.item.id)
+const renderRows = () => {
+  if (!tbodyRef.current) return
+  const rowChildren = rows.map((item) =>
+    TableRow({
+      key: item.id,
+      item,
+    }),
+  )
+  renderKeyedChildren(tbodyRef.current, rowChildren)
+}
 
-    return tr(
+const setRows = (nextRows: Row[]) => {
+  rows = nextRows
+  renderRows()
+}
+
+const setSelected = (id: number | null) => {
+  selectedId = id
+  renderRows()
+}
+
+const removeRow = (id: number) => {
+  if (selectedId === id) selectedId = null
+  setRows(remove(rows, id))
+}
+
+const TableRow = component<{ item: Row }>((props) => {
+  return () =>
+    tr(
       {
-        className: { danger: selected },
+        className: { danger: selectedId === props.item.id },
       },
       td({ className: 'col-md-1' }, String(props.item.id)),
       td(
@@ -49,7 +71,7 @@ const TableRow = component<{
             className: 'lbl',
             onclick: (e: MouseEvent) => {
               e.preventDefault()
-              selectionStore.selectRow(props.item.id)
+              setSelected(props.item.id)
             },
           },
           props.item.label,
@@ -59,80 +81,21 @@ const TableRow = component<{
         { className: 'col-md-1' },
         a(
           {
-            className: 'remove btn btn-default btn-xs',
             onclick: (e: MouseEvent) => {
               e.preventDefault()
-              rowsStore.deleteRow(props.item.id)
-              if (selectionStore.isSelected(props.item.id)) {
-                selectionStore.clearSelection()
-              }
+              removeRow(props.item.id)
             },
           },
-          span({ className: '', ariaHidden: 'true' }, 'X'),
+          span({ className: 'glyphicon glyphicon-remove', ariaHidden: 'true' }),
         ),
       ),
       td({ className: 'col-md-6' }),
     )
-  }
 })
 
-// Table body component that manages rows state
 const DataTable = component((_, handle: Handle) => {
-  const tbodyRef: DomRef<HTMLTableSectionElement> = { current: null }
-
-  const renderRows = () => {
-    if (!tbodyRef.current) return
-    const rowChildren = rowsStore.getRows().map((item) =>
-      TableRow({
-        key: item.id,
-        item,
-      }),
-    )
-    renderKeyedChildren(tbodyRef.current, rowChildren)
-  }
-
   handle.effect(() => {
-    const subscriptionHandle: Handle = {
-      update: renderRows,
-      updateSync: renderRows,
-      dispose() {},
-      onCleanup() {},
-      effect() {},
-    }
-
-    const unsubscribe = rowsStore.subscribe(subscriptionHandle.update)
     queueMicrotask(renderRows)
-    return unsubscribe
-  })
-
-  // Expose actions to window for benchmark driver
-  handle.effect(() => {
-    ;(globalThis as typeof globalThis & { benchmarkActions: BenchmarkActions }).benchmarkActions = {
-      create1000Rows: () => {
-        rowsStore.create1000Rows()
-        selectionStore.clearSelection()
-      },
-      create10000Rows: () => {
-        rowsStore.create10000Rows()
-        selectionStore.clearSelection()
-      },
-      append1000Rows: () => rowsStore.append1000Rows(),
-      updateEvery10thRow: () => rowsStore.updateEvery10thRow(),
-      clear: () => {
-        rowsStore.clear()
-        selectionStore.clearSelection()
-      },
-      swapRows: () => rowsStore.swapRows(),
-      deleteRow: (id: number) => {
-        rowsStore.deleteRow(id)
-        if (selectionStore.isSelected(id)) {
-          selectionStore.clearSelection()
-        }
-      },
-      selectRow: (id: number) => selectionStore.selectRow(id),
-      sortRowsAsc: () => rowsStore.sortRowsAsc(),
-      sortRowsDesc: () => rowsStore.sortRowsDesc(),
-    }
   })
 
   return () =>
@@ -157,7 +120,6 @@ const SmallpadButton = component(
 
 const Controls = component(() => {
   return () => {
-    console.log('Controls re-rendered')
     return div(
       { className: 'jumbotron' },
       div(
@@ -172,8 +134,8 @@ const Controls = component(() => {
               id: 'run',
               label: 'Create 1,000 rows',
               onClick: () => {
-                rowsStore.create1000Rows()
-                selectionStore.clearSelection()
+                selectedId = null
+                setRows(get1000Rows())
               },
             }),
             SmallpadButton({
@@ -181,48 +143,48 @@ const Controls = component(() => {
               id: 'runlots',
               label: 'Create 10,000 rows',
               onClick: () => {
-                rowsStore.create10000Rows()
-                selectionStore.clearSelection()
+                selectedId = null
+                setRows(get10000Rows())
               },
             }),
             SmallpadButton({
               key: 'add',
               id: 'add',
               label: 'Append 1,000 rows',
-              onClick: () => rowsStore.append1000Rows(),
+              onClick: () => setRows([...rows, ...get1000Rows()]),
             }),
             SmallpadButton({
               key: 'update',
               id: 'update',
               label: 'Update every 10th row',
-              onClick: () => rowsStore.updateEvery10thRow(),
+              onClick: () => setRows(updatedEvery10thRow(rows)),
             }),
             SmallpadButton({
               key: 'clear',
               id: 'clear',
               label: 'Clear',
               onClick: () => {
-                rowsStore.clear()
-                selectionStore.clearSelection()
+                selectedId = null
+                setRows([])
               },
             }),
             SmallpadButton({
               key: 'swaprows',
               id: 'swaprows',
               label: 'Swap Rows',
-              onClick: () => rowsStore.swapRows(),
+              onClick: () => setRows(swapRows(rows)),
             }),
             SmallpadButton({
               key: 'sortasc',
               id: 'sortasc',
               label: 'Sort Asc',
-              onClick: () => rowsStore.sortRowsAsc(),
+              onClick: () => setRows(sortRows(rows, true)),
             }),
             SmallpadButton({
               key: 'sortdesc',
               id: 'sortdesc',
               label: 'Sort Desc',
-              onClick: () => rowsStore.sortRowsDesc(),
+              onClick: () => setRows(sortRows(rows, false)),
             }),
           ),
         ),

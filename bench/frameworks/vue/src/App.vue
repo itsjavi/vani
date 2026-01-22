@@ -1,24 +1,28 @@
 <script setup>
 import { ref, shallowRef } from 'vue'
-import { buildData } from './data'
+import {
+  get10000Rows,
+  get1000Rows,
+  remove,
+  sortRows,
+  swapRows as swapRowsData,
+  updatedEvery10thRow,
+} from '../../shared.js'
 
-const selected = ref()
+const selected = ref(null)
 const rows = shallowRef([])
 
-function setRows(update = rows.value.slice()) {
+function setRows(update) {
   rows.value = update
 }
 
 function add() {
-  rows.value = rows.value.concat(buildData(1000))
+  setRows(rows.value.concat(get1000Rows()))
 }
 
-function remove(id) {
-  rows.value.splice(
-    rows.value.findIndex((d) => d.id === id),
-    1,
-  )
-  setRows()
+function removeRow(id) {
+  setRows(remove(rows.value, id))
+  if (selected.value === id) selected.value = null
 }
 
 function select(id) {
@@ -26,37 +30,34 @@ function select(id) {
 }
 
 function run() {
-  setRows(buildData())
-  selected.value = undefined
+  setRows(get1000Rows())
+  selected.value = null
 }
 
 function update() {
-  const _rows = rows.value
-  for (let i = 0; i < _rows.length; i += 10) {
-    _rows[i].label += ' !!!'
-  }
-  setRows()
+  setRows(updatedEvery10thRow(rows.value))
 }
 
 function runLots() {
-  setRows(buildData(10000))
-  selected.value = undefined
+  setRows(get10000Rows())
+  selected.value = null
 }
 
 function clear() {
   setRows([])
-  selected.value = undefined
+  selected.value = null
 }
 
 function swapRows() {
-  const _rows = rows.value
-  if (_rows.length > 998) {
-    const d1 = _rows[1]
-    const d998 = _rows[998]
-    _rows[1] = d998
-    _rows[998] = d1
-    setRows()
-  }
+  setRows(swapRowsData(rows.value))
+}
+
+function sortAsc() {
+  setRows(sortRows(rows.value, true))
+}
+
+function sortDesc() {
+  setRows(sortRows(rows.value, false))
 }
 </script>
 
@@ -98,6 +99,16 @@ function swapRows() {
               Swap Rows
             </button>
           </div>
+          <div class="col-sm-6 smallpad">
+            <button type="button" class="btn btn-primary btn-block" id="sortasc" @click="sortAsc">
+              Sort Ascending
+            </button>
+          </div>
+          <div class="col-sm-6 smallpad">
+            <button type="button" class="btn btn-primary btn-block" id="sortdesc" @click="sortDesc">
+              Sort Descending
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -116,7 +127,7 @@ function swapRows() {
           <a @click="select(id)">{{ label }}</a>
         </td>
         <td class="col-md-1">
-          <a @click="remove(id)">
+          <a @click="removeRow(id)">
             <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
           </a>
         </td>

@@ -182,8 +182,8 @@ importers:
   bench/frameworks/svelte:
     dependencies:
       svelte:
-        specifier: ^5.47.1
-        version: 5.47.1
+        specifier: ^5.48.0
+        version: 5.48.0
     devDependencies:
       '@rollup/plugin-node-resolve':
         specifier: ^16.0.3
@@ -196,7 +196,7 @@ importers:
         version: 4.55.3
       rollup-plugin-svelte:
         specifier: ^7.2.3
-        version: 7.2.3(rollup@4.55.3)(svelte@5.47.1)
+        version: 7.2.3(rollup@4.55.3)(svelte@5.48.0)
 
   bench/frameworks/vani: {}
 
@@ -2709,8 +2709,8 @@ packages:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
 
-  svelte@5.47.1:
-    resolution: {integrity: sha512-MhSWfWEpG5T57z0Oyfk9D1GhAz/KTZKZZlWtGEsy9zNk2fafpuU7sJQlXNSA8HtvwKxVC9XlDyl5YovXUXjjHA==}
+  svelte@5.48.0:
+    resolution: {integrity: sha512-+NUe82VoFP1RQViZI/esojx70eazGF4u0O/9ucqZ4rPcOZD+n5EVp17uYsqwdzjUjZyTpGKunHbDziW6AIAVkQ==}
     engines: {node: '>=18'}
 
   tailwind-merge@3.4.0:
@@ -5194,12 +5194,12 @@ snapshots:
       '@rolldown/binding-win32-arm64-msvc': 1.0.0-beta.60
       '@rolldown/binding-win32-x64-msvc': 1.0.0-beta.60
 
-  rollup-plugin-svelte@7.2.3(rollup@4.55.3)(svelte@5.47.1):
+  rollup-plugin-svelte@7.2.3(rollup@4.55.3)(svelte@5.48.0):
     dependencies:
       '@rollup/pluginutils': 4.2.1
       resolve.exports: 2.0.3
       rollup: 4.55.3
-      svelte: 5.47.1
+      svelte: 5.48.0
 
   rollup@4.55.3:
     dependencies:
@@ -5358,7 +5358,7 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
-  svelte@5.47.1:
+  svelte@5.48.0:
     dependencies:
       '@jridgewell/remapping': 2.3.5
       '@jridgewell/sourcemap-codec': 1.5.5

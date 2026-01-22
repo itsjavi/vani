@@ -1,123 +1,45 @@
 <script>
-  let rowId = 1
+  import {
+    get10000Rows,
+    get1000Rows,
+    remove,
+    sortRows,
+    swapRows as swapRowsData,
+    updatedEvery10thRow,
+  } from '../../shared.js'
+
   let data = $state.raw([])
-  let selected = $state.raw()
+  let selected = $state.raw(null)
 
-  const adjectives = [
-    'pretty',
-    'large',
-    'big',
-    'small',
-    'tall',
-    'short',
-    'long',
-    'handsome',
-    'plain',
-    'quaint',
-    'clean',
-    'elegant',
-    'easy',
-    'angry',
-    'crazy',
-    'helpful',
-    'mushy',
-    'odd',
-    'unsightly',
-    'adorable',
-    'important',
-    'inexpensive',
-    'cheap',
-    'expensive',
-    'fancy',
-  ]
-  const colours = [
-    'red',
-    'yellow',
-    'blue',
-    'green',
-    'pink',
-    'brown',
-    'purple',
-    'brown',
-    'white',
-    'black',
-    'orange',
-  ]
-  const nouns = [
-    'table',
-    'chair',
-    'house',
-    'bbq',
-    'desk',
-    'car',
-    'pony',
-    'cookie',
-    'sandwich',
-    'burger',
-    'pizza',
-    'mouse',
-    'keyboard',
-  ]
-
-  const add = () => (data = [...data, ...buildData(1000)]),
+  const add = () => (data = [...data, ...get1000Rows()]),
     clear = () => {
       data = []
+      selected = null
     },
     partialUpdate = () => {
-      for (let i = 0; i < data.length; i += 10) {
-        const row = data[i]
-        row.label = row.label + ' !!!'
-      }
+      data = updatedEvery10thRow(data)
     },
-    remove = (row) => {
-      const clone = data.slice()
-      clone.splice(clone.indexOf(row), 1)
-      data = clone
+    removeRow = (id) => {
+      data = remove(data, id)
+      if (selected === id) selected = null
     },
     run = () => {
-      data = buildData(1000)
+      data = get1000Rows()
+      selected = null
     },
     runLots = () => {
-      data = buildData(10000)
+      data = get10000Rows()
+      selected = null
     },
     swapRows = () => {
-      if (data.length > 998) {
-        const clone = data.slice()
-        const tmp = clone[1]
-        clone[1] = clone[998]
-        clone[998] = tmp
-        data = clone
-      }
+      data = swapRowsData(data)
     },
     sortAsc = () => {
-      const clone = data.slice()
-      clone.sort((a, b) => a.id - b.id)
-      data = clone
+      data = sortRows(data, true)
     },
     sortDesc = () => {
-      const clone = data.slice()
-      clone.sort((a, b) => b.id - a.id)
-      data = clone
+      data = sortRows(data, false)
     }
-
-  function _random(max) {
-    return Math.round(Math.random() * 1000) % max
-  }
-
-  class Item {
-    id = rowId++
-    label = $state.raw(
-      `${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`,
-    )
-  }
-
-  function buildData(count = 1000) {
-    const data = new Array(count)
-    for (let i = 0; i < count; i++) {
-      data[i] = new Item()
-    }
-    return data
-  }
 </script>
 
 <div id="app" class="container">
@@ -189,13 +111,14 @@
   </div>
   <table class="table table-hover table-striped test-data">
     <tbody>
-      {#each data as row (row)}
+      {#each data as row (row.id)}
         <tr class={selected === row.id ? 'danger' : ''}>
           <td class="col-md-1">{row.id}</td>
           <td class="col-md-4">
             <a
               href="#/"
-              onclick={() => {
+              onclick={(event) => {
+                event.preventDefault()
                 selected = row.id
               }}
             >
@@ -203,7 +126,14 @@
             </a>
           </td>
           <td class="col-md-1">
-            <a href="#/" onclick={() => remove(row)} aria-label="Remove">
+            <a
+              href="#/"
+              onclick={(event) => {
+                event.preventDefault()
+                removeRow(row.id)
+              }}
+              aria-label="Remove"
+            >
               <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
             </a>
           </td>

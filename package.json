@@ -64,8 +64,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "bench": "pnpm run --filter @vanijs/bench bench",
-    "bench:dev": "pnpm run --filter @vanijs/bench dev",
+    "bench": "pnpm run --filter benchmarks bench",
+    "bench:dev": "pnpm run --filter benchmarks dev",
     "build": "rm -rf dist && vite build && pnpm run build:lib",
     "build:lib": "pnpm tsdown src/vani/index.ts src/vani/jsx-runtime.ts src/vani/jsx-dev-runtime.ts --minify --out-dir dist/lib --dts",
     "build:lucide-vani": "bun run src/ecosystem/scripts/generate-lucide-vani.ts",

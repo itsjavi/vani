@@ -6,8 +6,11 @@ export default defineConfig({
   plugins: [vue()],
   build: {
     rollupOptions: {
-      input: {
-        app: './src/main.html',
+      input: './src/main.js',
+      output: {
+        entryFileNames: 'main.js',
+        chunkFileNames: 'chunks/[name].js',
+        assetFileNames: 'assets/[name][extname]',
       },
     },
   },
