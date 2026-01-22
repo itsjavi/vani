@@ -9,7 +9,8 @@ Instructions for batching updates across independent regions with predictable ti
 
 ## When to Use
 
-Use this when a UI has multiple regions that should update independently or when updates are expensive.
+Use this when a UI has multiple regions that should update independently or when updates are
+expensive.
 
 ## Steps
 

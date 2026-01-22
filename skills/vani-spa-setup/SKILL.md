@@ -9,7 +9,8 @@ Instructions for the agent to scaffold a basic Vani SPA using explicit updates.
 
 ## When to Use
 
-Use this when a user needs a new Vani SPA root, a simple component, or a quick demo that mounts to a DOM element.
+Use this when a user needs a new Vani SPA root, a simple component, or a quick demo that mounts to a
+DOM element.
 
 ## Steps
 
@@ -46,4 +47,5 @@ Notes: Uses handle.update() for all state changes.
 
 # Present Results to User
 
-Provide a short explanation of how the root is mounted, list the files touched, and mention where explicit updates occur.
+Provide a short explanation of how the root is mounted, list the files touched, and mention where
+explicit updates occur.

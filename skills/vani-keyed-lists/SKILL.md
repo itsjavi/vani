@@ -46,11 +46,11 @@ Notes: Row updates call ref.current?.update().
 
 # Present Results to User
 
-Describe the list data structure, how refs are stored, and when the list handle updates.
----
-name: vani-keyed-lists
-description: Build scalable Vani lists with keyed rows and per-item updates.
+## Describe the list data structure, how refs are stored, and when the list handle updates.
+
+name: vani-keyed-lists description: Build scalable Vani lists with keyed rows and per-item updates.
 argument-hint: "[list feature]"
+
 ---
 
 # Vani Keyed Lists Command
@@ -62,6 +62,7 @@ Use this skill when building lists or collections that require efficient updates
 ## Instructions
 
 Follow these steps:
+
 1. Model list items by id (Map or array with stable ids).
 2. Create a `Row` component and pass `key`, `ref`, and item accessors.
 3. Update a single item by mutating its data and calling `ref.current?.update()`.

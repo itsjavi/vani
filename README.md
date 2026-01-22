@@ -12,6 +12,28 @@ Docs: [DOCS.md](https://github.com/itsjavi/vani/blob/main/DOCS.md)
 
 ---
 
+## Installation
+
+```bash
+pnpm add @vanijs/vani
+# or
+npm install @vanijs/vani
+# or
+bun add @vanijs/vani
+# or
+deno add @vanijs/vani
+# or
+yarn add @vanijs/vani
+```
+
+## Install skills (AI commands)
+
+Supercharge your AI Agents with Vani skills:
+
+```bash
+npx add-skill itsjavi/vani
+```
+
 ## Philosophy
 
 ### 1. Explicit intent over implicit magic

@@ -15,7 +15,8 @@ Use this when you need form handling, text inputs, or focus-safe controlled inpu
 
 1. Keep input values in local variables and avoid re-rendering on every keystroke.
 2. On submit, update local state and call `handle.update()`.
-3. For controlled inputs, store a `DomRef`, call `handle.updateSync()`, then restore focus/selection.
+3. For controlled inputs, store a `DomRef`, call `handle.updateSync()`, then restore
+   focus/selection.
 4. Prefer splitting inputs into their own components if a sibling preview must update live.
 
 ## Arguments
@@ -45,11 +46,11 @@ Notes: Inputs are uncontrolled until submit.
 
 # Present Results to User
 
-Explain the update strategy (submit vs controlled) and where focus is preserved.
----
-name: vani-forms-inputs
-description: Implement Vani forms and inputs without losing focus.
+## Explain the update strategy (submit vs controlled) and where focus is preserved.
+
+name: vani-forms-inputs description: Implement Vani forms and inputs without losing focus.
 argument-hint: "[form or input behavior]"
+
 ---
 
 # Vani Forms and Inputs Command
@@ -61,6 +62,7 @@ Use this skill when handling inputs, forms, or focus-sensitive UI in Vani.
 ## Instructions
 
 Follow these steps:
+
 1. Keep input values in local variables.
 2. Read input changes via `oninput` without calling `handle.update()`.
 3. On submit or blur, update state and call `handle.update()`.

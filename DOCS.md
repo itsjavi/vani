@@ -15,6 +15,14 @@ DOM subtree delimited by anchors and only update when you explicitly ask them to
 pnpm add @vanijs/vani
 ```
 
+## Install skills (AI commands)
+
+Vani ships AI skills (commands) you can add to your agent tooling:
+
+```bash
+npx add-skill itsjavi/vani
+```
+
 ---
 
 ## Quick Start (SPA)

@@ -46,11 +46,11 @@ Notes: Hydration binds to anchors; update() activates UI.
 
 # Present Results to User
 
-Summarize the SSR/hydration flow, note which handles are activated, and list file changes.
----
-name: vani-ssr-hydration
-description: Apply Vani SSR, hydration, and client-only islands correctly.
+## Summarize the SSR/hydration flow, note which handles are activated, and list file changes.
+
+name: vani-ssr-hydration description: Apply Vani SSR, hydration, and client-only islands correctly.
 argument-hint: "[rendering mode or feature]"
+
 ---
 
 # Vani SSR and Hydration Command
@@ -62,6 +62,7 @@ Use this skill when implementing SSR, SSG, hydration, or client-only islands.
 ## Instructions
 
 Follow these steps:
+
 1. For SSR/SSG, render with `renderToString()` on the server.
 2. Bind on the client with `hydrateToDOM()`; do not expect it to render.
 3. Activate UI by calling `handle.update()` on chosen handles.

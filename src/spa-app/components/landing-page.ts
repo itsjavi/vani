@@ -449,6 +449,8 @@ const apiCode = [
   'renderToDOM([Counter()], document.getElementById("app"));',
 ].join('\n')
 const apiTokens = getHighlightedTokens(apiCode, 'ts')
+const skillsCode = 'npx add-skill itsjavi/vani'
+const skillsTokens = getHighlightedTokens(skillsCode, 'shell')
 
 const ApiSection = component(() => {
   return () =>
@@ -477,6 +479,23 @@ const ApiSection = component(() => {
           h.h3({ className: 'text-base font-semibold text-white' }, 'Install'),
           h.p({ className: 'mt-2 text-sm text-slate-300' }, 'Choose your package manager:'),
           PackageManagerTabs(),
+        ),
+        h.div(
+          {
+            className: cn(
+              'rounded-3xl border border-white/10 bg-white/5 p-6',
+              'text-sm text-slate-200',
+            ),
+          },
+          h.h3({ className: 'text-base font-semibold text-white' }, 'Install skills'),
+          h.p(
+            { className: 'mt-2 text-sm text-slate-300' },
+            'Supercharge your AI Agents with Vani skills:',
+          ),
+          h.div(
+            { className: 'mt-3' },
+            CopyableCodeBlock({ code: skillsCode, tokens: skillsTokens }),
+          ),
         ),
         h.div(
           {
