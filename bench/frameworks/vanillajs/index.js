@@ -1,4 +1,11 @@
-import { get10000Rows, get1000Rows, remove, sortRows, swapRows, updatedEvery10thRow } from '../shared.js'
+import {
+  get10000Rows,
+  get1000Rows,
+  remove,
+  sortRows,
+  swapRows,
+  updatedEvery10thRow,
+} from '../shared.js'
 
 const tbody = document.querySelector('#tbody')
 const template = document.querySelector('template')
@@ -7,23 +14,33 @@ let rows = []
 let selectedId = null
 
 const rowTemplate = template.content.firstElementChild
+// Keep direct element references to avoid repeated DOM queries.
+let rowById = new Map()
+let labelById = new Map()
+let selectedRowEl = null
 
 const createRow = (row) => {
   const cloned = rowTemplate.cloneNode(true)
   cloned.dataset.id = String(row.id)
   cloned.firstElementChild.textContent = String(row.id)
-  cloned.querySelector('a.lbl').textContent = row.label
+  const labelEl = cloned.querySelector('a.lbl')
+  labelEl.textContent = row.label
+  rowById.set(row.id, cloned)
+  labelById.set(row.id, labelEl)
   if (selectedId === row.id) cloned.classList.add('danger')
   return cloned
 }
 
 const renderRows = () => {
+  rowById.clear()
+  labelById.clear()
   const fragment = document.createDocumentFragment()
   for (const row of rows) {
     fragment.appendChild(createRow(row))
   }
-  tbody.textContent = ''
-  tbody.appendChild(fragment)
+  // replaceChildren avoids an extra clear pass and reduces layout churn.
+  tbody.replaceChildren(fragment)
+  selectedRowEl = selectedId === null ? null : (rowById.get(selectedId) ?? null)
 }
 
 const appendRows = (newRows) => {
@@ -35,15 +52,12 @@ const appendRows = (newRows) => {
 }
 
 const updateSelectedRow = (nextSelectedId) => {
-  if (selectedId !== null) {
-    const prevRow = tbody.querySelector(`tr[data-id="${selectedId}"]`)
-    if (prevRow) prevRow.classList.remove('danger')
+  if (selectedRowEl) {
+    selectedRowEl.classList.remove('danger')
   }
   selectedId = nextSelectedId
-  if (selectedId !== null) {
-    const nextRow = tbody.querySelector(`tr[data-id="${selectedId}"]`)
-    if (nextRow) nextRow.classList.add('danger')
-  }
+  selectedRowEl = selectedId === null ? null : (rowById.get(selectedId) ?? null)
+  if (selectedRowEl) selectedRowEl.classList.add('danger')
 }
 
 const app = {
@@ -65,17 +79,18 @@ const app = {
   update() {
     rows = updatedEvery10thRow(rows)
     for (let i = 0; i < rows.length; i += 10) {
-      const rowEl = tbody.children[i]
-      if (rowEl) {
-        const label = rowEl.querySelector('a.lbl')
-        if (label) label.textContent = rows[i].label
-      }
+      const row = rows[i]
+      const label = labelById.get(row.id)
+      if (label) label.textContent = row.label
     }
   },
   clear() {
     rows = []
     selectedId = null
-    tbody.textContent = ''
+    selectedRowEl = null
+    rowById.clear()
+    labelById.clear()
+    tbody.replaceChildren()
   },
   swaprows() {
     rows = swapRows(rows)
@@ -110,7 +125,12 @@ tbody.addEventListener('click', (event) => {
     const id = Number(rowElement.dataset.id)
     rows = remove(rows, id)
     rowElement.remove()
-    if (selectedId === id) selectedId = null
+    rowById.delete(id)
+    labelById.delete(id)
+    if (selectedId === id) {
+      selectedId = null
+      selectedRowEl = null
+    }
   }
 })
 
