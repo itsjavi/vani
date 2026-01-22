@@ -348,7 +348,7 @@ const operations: Operation[] = [
   {
     name: 'removeRow',
     setup: create1k,
-    action: (page) => clickAndMeasure(page, 'tbody tr:first-child td.col-md-1 a', 'removeRow'),
+    action: (page) => clickAndMeasure(page, 'tbody tr:first-child button.remove', 'removeRow'),
     teardown: clear,
   },
   {
@@ -1211,6 +1211,7 @@ async function main(): Promise<void> {
     })
 
     console.log('Benchmark complete!')
+    console.log('View results with: pnpm bench:dev')
   } finally {
     console.log('Cleaning up...')
     if (browser) {
