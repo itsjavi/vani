@@ -4,6 +4,7 @@ import * as path from 'node:path'
 import { parseArgs } from 'node:util'
 
 import { chromium, type Browser, type Page } from 'playwright'
+import { getProjects } from './macros'
 
 const PORT = 44100
 const BASE_URL = `http://localhost:${PORT}`
@@ -23,14 +24,8 @@ interface SavedArgs {
 
 // Get list of frameworks
 function getFrameworks(): string[] {
-  let frameworksDir = path.join(import.meta.dirname, 'frameworks')
-  let entries = fs.readdirSync(frameworksDir, { withFileTypes: true })
-  return entries
-    .filter(
-      (entry) =>
-        entry.isDirectory() && fs.existsSync(path.join(frameworksDir, entry.name, 'index.html')),
-    )
-    .map((entry) => entry.name)
+  return getProjects('frameworks')
+    .map((project) => project.name)
     .sort()
 }
 
@@ -348,9 +343,11 @@ function startServer(): Promise<ChildProcess> {
 
     server.stdout?.on('data', (data: Buffer) => {
       let output = data.toString()
-      if (output.includes(BASE_URL) && !started) {
+      if (output.includes('frameworks/') && output.includes('index.html') && !started) {
         started = true
         resolve(server)
+      } else {
+        console.warn('Unexpected server output:\n\n', output)
       }
     })
 
@@ -368,7 +365,7 @@ function startServer(): Promise<ChildProcess> {
         server.kill()
         reject(new Error('Server failed to start within timeout'))
       }
-    }, 10000)
+    }, 5000)
   })
 }
 
@@ -512,7 +509,7 @@ async function benchmarkFramework(
   let results: BenchmarkResult[] = []
   let profiles = new Map<string, FunctionProfile[][]>()
 
-  let url = `${BASE_URL}/frameworks/${framework}`
+  let url = `${BASE_URL}/${framework}`
 
   // Filter operations if benchmark filter is specified
   let filteredOperations =
@@ -524,6 +521,19 @@ async function benchmarkFramework(
     let scriptingTimes: number[] = []
     let totalTimes: number[] = []
     let runProfiles: FunctionProfile[][] = []
+
+    // const body = await page.textContent('body')
+
+    // if (!body) {
+    //   console.error(`Framework ${framework} not found (body is null)`)
+    //   // process.exit(1)
+    // }
+
+    // // If page containts "Not found" string, fail
+    // if (body?.toLowerCase().includes('not found')) {
+    //   console.error(`Framework ${framework} not found (body includes "Not Found")`)
+    //   // process.exit(1)
+    // }
 
     // Reload page before each operation to reset all JS state (idCounter, etc.)
     await page.goto(url)

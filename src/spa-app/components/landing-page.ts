@@ -1,7 +1,6 @@
 import { GithubIcon, NotepadTextIcon } from '@/ecosystem/lucide-vani'
 import { component, type DomRef } from '@/vani'
 import * as h from '@/vani/html'
-import { renderSvgString } from '@/vani/svg'
 import { CopyableCodeBlock } from './copyable-code-block'
 import { LandingPageExamples } from './landing-page-examples'
 import { LiveSandboxDialog } from './live-sandbox'
@@ -61,13 +60,6 @@ const principles = [
     description: 'Stack traces and behavior are readable and obvious.',
   },
 ]
-
-const svgIcon = (svg: string, options: { size?: number; className?: string } = {}) =>
-  renderSvgString(svg, {
-    size: options.size,
-    className: options.className,
-    attributes: { 'aria-hidden': 'true' },
-  })
 
 const Header = component(() => {
   return () =>

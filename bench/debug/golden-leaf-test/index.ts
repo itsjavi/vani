@@ -69,10 +69,7 @@ function renderRendersUI() {
   if (!tableBody) return
   const renders = (window as any).__renders as Record<string, number>
   tableBody.innerHTML = Object.entries(renders)
-    .map(
-      ([name, count]) =>
-        `<tr><td>${name}</td><td class="text-right">${count}</td></tr>`,
-    )
+    .map(([name, count]) => `<tr><td>${name}</td><td class="text-right">${count}</td></tr>`)
     .join('')
 
   const timestampEl = document.getElementById(timestampId)
@@ -142,10 +139,7 @@ const App = component(() => {
   return () =>
     div(
       { className: 'container' },
-      div(
-        { className: 'page-header' },
-        h1('Golden leaf test ', small('UI runner')),
-      ),
+      div({ className: 'page-header' }, h1('Golden leaf test ', small('UI runner'))),
       p(
         { className: 'lead' },
         'Only Item B should re-render when it updates. All other nodes must stay untouched.',
@@ -167,10 +161,7 @@ const App = component(() => {
             div({ className: 'panel-heading' }, h3({ className: 'panel-title' }, 'Debug info')),
             div(
               { className: 'panel-body' },
-              div(
-                { className: 'alert alert-info', id: statusElId },
-                'Waiting for test to run...',
-              ),
+              div({ className: 'alert alert-info', id: statusElId }, 'Waiting for test to run...'),
               div(
                 { className: 'clearfix' },
                 span({ className: 'text-muted' }, 'Last update: '),

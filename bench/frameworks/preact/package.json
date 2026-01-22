@@ -1,0 +1,8 @@
+{
+  "name": "benchmark-preact",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "preact": "^10.28.2"
+  }
+}
