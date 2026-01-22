@@ -34,6 +34,7 @@ type SnapshotPayload = {
   runs: number
   warmups: number
   headless: boolean
+  preflightUsed?: boolean
   frameworks: SnapshotFramework[]
   results: SnapshotResult[]
   calculated?: SnapshotCalculated
@@ -163,7 +164,7 @@ function render(snapshot: SnapshotPayload): void {
           snapshot.cpuThrottling
         }x | ${snapshot.warmups} warmups | ${snapshot.runs} runs | headless ${
           snapshot.headless ? 'yes' : 'no'
-        }
+        } | preflight ${(snapshot.preflightUsed ?? true) ? 'yes' : 'no'}
       </p>
       <div class="table-responsive shadow-sm rounded bg-white">
         <table class="table table-bordered table-hover align-middle mb-0 test-results">

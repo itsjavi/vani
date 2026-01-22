@@ -104,7 +104,7 @@ const DataTable = component((_, handle: Handle) => {
 
   return () =>
     table(
-      { className: 'table table-hover table-striped align-middle test-data' },
+      { className: 'table-hover table-striped test-data table align-middle' },
       tbody({ id: 'tbody', ref: tbodyRef }),
     )
 })

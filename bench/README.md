@@ -56,8 +56,10 @@ framework benchmark implementations in this repo:
 
 - Reuse the `bench/frameworks/shared.js` helpers so implementations share baseline behavior and
   avoid accidental slow paths that skew results.
-- Keep the HTML output identical to the vanillajs reference (in
-  `bench/frameworks/vanillajs/index.html`), including `aria-hidden` attributes.
+- Keep the the initial HTML rendered by the framework identical to the reference (in
+  `bench/frameworks/blueprint.html`), including `aria-hidden` attributes. The runner will run a
+  preflight check to ensure the initial HTML rendered by the framework is identical to the
+  reference.
 - Do not change button IDs (`run`, `runlots`, `add`, `update`, `clear`, `swaprows`, `sortasc`,
   `sortdesc`). Playwright will use these IDs to interact with the UI.
 - Use the shared `styles.css` from the `bench` directory (do not use other Bootstrap copies).

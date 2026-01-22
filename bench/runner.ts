@@ -12,6 +12,7 @@ const RESULTS_DIR = path.join(import.meta.dirname, 'snapshot/results')
 const LAST_ARGS_FILE = path.join(RESULTS_DIR, 'bench-last-args.json')
 const SNAPSHOT_FILE = path.join(RESULTS_DIR, 'bench-results.json')
 const VANI_RESULTS_FILE = path.join(RESULTS_DIR, 'bench-results-vani.json')
+const BLUEPRINT_FILE = path.join(import.meta.dirname, 'frameworks/blueprint.html')
 
 interface SavedArgs {
   cpu: string
@@ -20,6 +21,8 @@ interface SavedArgs {
   headless: boolean
   table: boolean
   profile: boolean
+  'preflight-only': boolean
+  'no-preflight': boolean
   framework: string[]
   benchmark: string[]
 }
@@ -59,6 +62,8 @@ let { values: args } = parseArgs({
     headless: { type: 'boolean', default: false },
     table: { type: 'boolean', default: false },
     profile: { type: 'boolean', default: false },
+    'preflight-only': { type: 'boolean', default: false },
+    'no-preflight': { type: 'boolean', default: false },
     framework: {
       type: 'string',
       multiple: true,
@@ -89,6 +94,8 @@ if (isRepeat) {
     headless: args.headless!,
     table: args.table!,
     profile: args.profile!,
+    'preflight-only': args['preflight-only'] ?? false,
+    'no-preflight': args['no-preflight'] ?? false,
     framework: args.framework || [],
     benchmark: args.benchmark || [],
   })
@@ -100,6 +107,8 @@ let warmupRuns = parseInt(args.warmups!, 10)
 let headless = args.headless!
 let useTable = args.table!
 let showProfile = args.profile!
+let preflightOnly = args['preflight-only'] ?? false
+let noPreflight = args['no-preflight'] ?? false
 let frameworkFilter = args.framework || []
 let benchmarkFilter = args.benchmark || []
 
@@ -135,6 +144,7 @@ interface SnapshotPayload {
   runs: number
   warmups: number
   headless: boolean
+  preflightUsed: boolean
   frameworks: SnapshotFramework[]
   results: BenchmarkResult[]
   calculated: SnapshotCalculated
@@ -424,6 +434,200 @@ function saveSnapshot(payload: SnapshotPayload): void {
   fs.mkdirSync(RESULTS_DIR, { recursive: true })
   fs.writeFileSync(SNAPSHOT_FILE, JSON.stringify(payload, null, 2))
   console.log(`Saved snapshot to ${SNAPSHOT_FILE}`)
+}
+
+function formatDiffLines(markup: string): string[] {
+  return markup
+    .replace(/></g, '>\n<')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+}
+
+async function getCanonicalBodyFromMarkup(page: Page, markup: string): Promise<string> {
+  return page.evaluate((html) => {
+    function escapeAttribute(value: string): string {
+      return value
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+    }
+
+    function normalizeText(text: string): string {
+      return text.replace(/\s+/g, ' ').trim()
+    }
+
+    function serializeNode(node: Node): string {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        let element = node as Element
+        let tag = element.tagName.toLowerCase()
+        if (tag === 'script' || tag === 'template') {
+          return ''
+        }
+        let attrs = element
+          .getAttributeNames()
+          .filter((name) => !name.startsWith('data-'))
+          .sort()
+        let attrString = attrs
+          .map((name) => {
+            let value = element.getAttribute(name) ?? ''
+            if (name === 'class') {
+              value = value.split(/\s+/g).filter(Boolean).sort().join(' ')
+            }
+            return ` ${name}="${escapeAttribute(value)}"`
+          })
+          .join('')
+        let children = serializeChildren(element)
+        return `<${tag}${attrString}>${children}</${tag}>`
+      }
+
+      if (node.nodeType === Node.TEXT_NODE) {
+        let text = normalizeText(node.nodeValue ?? '')
+        return text.length > 0 ? text : ''
+      }
+
+      return ''
+    }
+
+    function serializeChildren(parent: Node): string {
+      let output = ''
+      parent.childNodes.forEach((child) => {
+        output += serializeNode(child)
+      })
+      return output
+    }
+
+    let parser = new DOMParser()
+    let doc = parser.parseFromString(html, 'text/html')
+    return serializeChildren(doc.body)
+  }, markup)
+}
+
+async function getCanonicalBodyFromPage(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    function escapeAttribute(value: string): string {
+      return value
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+    }
+
+    function normalizeText(text: string): string {
+      return text.replace(/\s+/g, ' ').trim()
+    }
+
+    function serializeNode(node: Node): string {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        let element = node as Element
+        let tag = element.tagName.toLowerCase()
+        if (tag === 'script' || tag === 'template') {
+          return ''
+        }
+        let attrs = element
+          .getAttributeNames()
+          .filter((name) => !name.startsWith('data-'))
+          .sort()
+        let attrString = attrs
+          .map((name) => {
+            let value = element.getAttribute(name) ?? ''
+            if (name === 'class') {
+              value = value.split(/\s+/g).filter(Boolean).sort().join(' ')
+            }
+            return ` ${name}="${escapeAttribute(value)}"`
+          })
+          .join('')
+        let children = serializeChildren(element)
+        return `<${tag}${attrString}>${children}</${tag}>`
+      }
+
+      if (node.nodeType === Node.TEXT_NODE) {
+        let text = normalizeText(node.nodeValue ?? '')
+        return text.length > 0 ? text : ''
+      }
+
+      return ''
+    }
+
+    function serializeChildren(parent: Node): string {
+      let output = ''
+      parent.childNodes.forEach((child) => {
+        output += serializeNode(child)
+      })
+      return output
+    }
+
+    return serializeChildren(document.body)
+  })
+}
+
+function buildFirstDiff(expected: string, actual: string): string {
+  let expectedLines = formatDiffLines(expected)
+  let actualLines = formatDiffLines(actual)
+  let maxLen = Math.max(expectedLines.length, actualLines.length)
+  let mismatchIndex = -1
+  for (let i = 0; i < maxLen; i++) {
+    if (expectedLines[i] !== actualLines[i]) {
+      mismatchIndex = i
+      break
+    }
+  }
+
+  if (mismatchIndex === -1) {
+    return 'No diff found after normalization.'
+  }
+
+  let start = Math.max(0, mismatchIndex - 3)
+  let end = Math.min(maxLen - 1, mismatchIndex + 3)
+  let diffLines: string[] = []
+  diffLines.push('--- blueprint')
+  diffLines.push('+++ actual')
+  for (let i = start; i <= end; i++) {
+    diffLines.push(`- ${expectedLines[i] ?? ''}`)
+    diffLines.push(`+ ${actualLines[i] ?? ''}`)
+  }
+  return diffLines.join('\n')
+}
+
+async function preflightFrameworks(
+  page: Page,
+  frameworks: string[],
+  blueprintBody: string,
+): Promise<string[]> {
+  let failures: string[] = []
+  let canonicalBlueprint = await getCanonicalBodyFromMarkup(page, blueprintBody)
+  let firstDiff: { framework: string; diff: string } | null = null
+
+  for (let framework of frameworks) {
+    let url = `${BASE_URL}/${framework}`
+    await page.goto(url)
+    await page.waitForSelector('#run')
+    await page.evaluate(() => {
+      let title = document.querySelector<HTMLElement>('.bench-title')
+      if (title) {
+        title.textContent = 'TITLE'
+      }
+    })
+
+    let canonicalBody = await getCanonicalBodyFromPage(page)
+    if (canonicalBody !== canonicalBlueprint) {
+      failures.push(framework)
+      if (!firstDiff) {
+        firstDiff = {
+          framework,
+          diff: buildFirstDiff(canonicalBlueprint, canonicalBody),
+        }
+      }
+    }
+  }
+
+  if (firstDiff) {
+    console.error(`Preflight diff for first failing framework: ${firstDiff.framework}`)
+    console.error(firstDiff.diff)
+  }
+
+  return failures
 }
 
 // Load previous vani results if they exist
@@ -899,6 +1103,7 @@ async function main(): Promise<void> {
     let client = await page.context().newCDPSession(page)
     await client.send('Emulation.setCPUThrottlingRate', { rate: cpuThrottling })
 
+    let blueprintBody = fs.readFileSync(BLUEPRINT_FILE, 'utf-8')
     let allFrameworks = getFrameworks()
     let frameworks = allFrameworks
 
@@ -911,6 +1116,29 @@ async function main(): Promise<void> {
         process.exit(1)
       }
       frameworks = frameworkFilter
+    }
+
+    if (preflightOnly && noPreflight) {
+      console.error('Error: --preflight-only cannot be used with --no-preflight')
+      process.exit(1)
+    }
+
+    if (!noPreflight) {
+      console.log('Running preflight DOM check...')
+      let preflightFailures = await preflightFrameworks(page, frameworks, blueprintBody)
+      if (preflightFailures.length > 0) {
+        console.error(
+          `Preflight failed: initial body does not match blueprint for ${preflightFailures.length} framework(s): ${preflightFailures.join(
+            ', ',
+          )}`,
+        )
+        console.error('Fix the mismatched framework markup before running benchmarks.')
+        process.exit(1)
+      }
+      if (preflightOnly) {
+        console.log('Preflight complete.')
+        return
+      }
     }
 
     let allResults: BenchmarkResult[] = []
@@ -976,6 +1204,7 @@ async function main(): Promise<void> {
       runs: benchmarkRuns,
       warmups: warmupRuns,
       headless,
+      preflightUsed: !noPreflight,
       frameworks: frameworkDetails,
       results: snapshotResults,
       calculated: buildCalculatedSnapshot(snapshotResults, frameworkDetails),

@@ -31,7 +31,7 @@ function getVersion(pkg: FrameworkPackage | null) {
     return '0.0.0'
   }
   if (frameworkPackage === 'vani') {
-    return vaniPkg.version
+    return vaniPkg.version + '-HEAD'
   }
   const version = pkg.version || pkg.dependencies?.[frameworkPackage] || '0.0.0'
   return version.replace(/[vV~^]/, '')

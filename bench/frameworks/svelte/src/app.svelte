@@ -94,7 +94,7 @@
       </div>
     </div>
   </div>
-  <table class="table table-hover table-striped align-middle test-data">
+  <table class="table-hover table-striped test-data table align-middle">
     <tbody id="tbody">
       {#each data as row (row.id)}
         <tr class={selected === row.id ? 'table-active' : ''}>
