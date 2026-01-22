@@ -8,6 +8,12 @@ on:
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+    inputs:
+      regenerate_benchmarks:
+        description: Regenerate benchmark results
+        type: boolean
+        required: false
+        default: false
 
 # Sets the GITHUB_TOKEN permissions to allow deployment to GitHub Pages
 permissions:
@@ -86,7 +92,7 @@ jobs:
       - name: Decide whether to run benchmarks
         id: bench_run
         run: |
-          if [ "${{ steps.bench_changes.outputs.changed }}" = "true" ] || [ "${{ steps.bench_results.outputs.has_results }}" != "true" ]; then
+          if [ "${{ github.event.inputs.regenerate_benchmarks }}" = "true" ] || [ "${{ steps.bench_changes.outputs.changed }}" = "true" ] || [ "${{ steps.bench_results.outputs.has_results }}" != "true" ]; then
             echo "run_bench=true" >> "$GITHUB_OUTPUT"
           else
             echo "run_bench=false" >> "$GITHUB_OUTPUT"
