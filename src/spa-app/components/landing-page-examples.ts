@@ -1,5 +1,5 @@
 import SparklesIcon from 'lucide-static/icons/sparkles.svg?vani'
-import { component, startTransition, type DomRef, type Handle } from '@/vani'
+import { component, signal, startTransition, text, type DomRef, type Handle } from '@/vani'
 import * as h from '@/vani/html'
 import { CopyableCodeBlock } from './copyable-code-block'
 import { jsxExamples } from './jsx-examples'
@@ -29,6 +29,27 @@ const CounterExample = component((_, handle: Handle) => {
             count += 1
             handle.update()
           },
+        },
+        'Increment',
+      ),
+    )
+})
+
+const SignalExample = component(() => {
+  const [count, setCount] = signal(0)
+
+  return () =>
+    h.div(
+      { className: 'space-y-3' },
+      h.p(
+        { className: 'text-sm text-slate-300' },
+        text(() => `Count: ${count()}`),
+      ),
+      h.button(
+        {
+          type: 'button',
+          className: 'rounded-full bg-indigo-400/90 px-4 py-2 text-xs font-semibold text-slate-900',
+          onclick: () => setCount((value) => value + 1),
         },
         'Increment',
       ),
@@ -667,6 +688,19 @@ const svgCode = [
   '  );',
 ].join('\n')
 
+const signalCode = [
+  "import { component, button, div, signal, text } from '@vanijs/vani';",
+  '',
+  'const Counter = component(() => {',
+  '  const [count, setCount] = signal(0);',
+  '  return () =>',
+  '    div(',
+  '      text(() => `Count: ${count()}`),',
+  '      button({ onclick: () => setCount((value) => value + 1) }, "Increment")',
+  '    );',
+  '});',
+].join('\n')
+
 const examples: Example[] = [
   {
     title: 'Explicit updates',
@@ -674,6 +708,13 @@ const examples: Example[] = [
     code: counterCode,
     tokens: getHighlightedTokens(counterCode, 'ts'),
     demo: () => CounterExample(),
+  },
+  {
+    title: 'Signals (optional)',
+    description: 'Fine-grained updates with signal(), text(), and attr().',
+    code: signalCode,
+    tokens: getHighlightedTokens(signalCode, 'ts'),
+    demo: () => SignalExample(),
   },
   {
     title: 'JSX mode counter',

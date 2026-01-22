@@ -28,6 +28,22 @@ type SnapshotResult = {
   total: SnapshotStats
 }
 
+type SnapshotResourceMetrics = {
+  framework: string
+  firstRender: ResourceMetrics
+  afterSuite: ResourceMetrics
+  delta: ResourceMetrics
+}
+
+type ResourceMetrics = {
+  jsHeapUsedSize: number
+  jsHeapTotalSize: number
+  taskDuration: number
+  scriptDuration: number
+  layoutDuration: number
+  recalcStyleDuration: number
+}
+
 type SnapshotPayload = {
   generatedAt: string
   cpuThrottling: number
@@ -37,6 +53,7 @@ type SnapshotPayload = {
   preflightUsed?: boolean
   frameworks: SnapshotFramework[]
   results: SnapshotResult[]
+  resourceMetrics?: SnapshotResourceMetrics[]
   calculated?: SnapshotCalculated
 }
 
@@ -111,6 +128,16 @@ function formatNumber(value: number): string {
   return value.toFixed(1)
 }
 
+function formatBytesToMB(value: number): string {
+  if (!Number.isFinite(value)) return '-'
+  return (value / (1024 * 1024)).toFixed(1)
+}
+
+function formatSecondsToMs(value: number): string {
+  if (!Number.isFinite(value)) return '-'
+  return (value * 1000).toFixed(1)
+}
+
 function cellClass(ratio: number): string {
   if (ratio <= 1.1) return 'cell-good'
   if (ratio <= 1.3) return 'cell-ok'
@@ -161,6 +188,9 @@ function render(snapshot: SnapshotPayload): void {
   let frameworkNames = frameworks.map((fw) => fw.name)
   let overallScores = frameworkNames.map(
     (frameworkName) => calculated.overallScores[frameworkName] ?? null,
+  )
+  let resourceMetricsByFramework = new Map(
+    (snapshot.resourceMetrics ?? []).map((entry) => [entry.framework, entry]),
   )
 
   let html = `
@@ -252,6 +282,74 @@ function render(snapshot: SnapshotPayload): void {
           </tbody>
         </table>
       </div>
+      ${
+        snapshot.resourceMetrics && snapshot.resourceMetrics.length > 0
+          ? `
+      <div class="table-responsive shadow-sm rounded bg-white mt-4">
+        <table class="table table-bordered table-hover align-middle mb-0 test-results">
+          <thead>
+            <tr class="table-active">
+              <th style="width: 32%">Resource metrics<br /><small>CDP Performance.getMetrics</small></th>
+              ${frameworks.map((fw) => `<th class="text-center">${buildHeaderCell(fw)}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="table-active" style="--bs-table-bg-state: #f5f5f5 !important;">
+              <td>Heap used (first render, MB)</td>
+              ${frameworkNames
+                .map((frameworkName) => {
+                  const metrics = resourceMetricsByFramework.get(frameworkName)
+                  const value = metrics?.firstRender.jsHeapUsedSize ?? Number.NaN
+                  return `<td class="text-center">${formatBytesToMB(value)}</td>`
+                })
+                .join('')}
+            </tr>
+            <tr>
+              <td>Heap used (after suite, MB)</td>
+              ${frameworkNames
+                .map((frameworkName) => {
+                  const metrics = resourceMetricsByFramework.get(frameworkName)
+                  const value = metrics?.afterSuite.jsHeapUsedSize ?? Number.NaN
+                  return `<td class="text-center">${formatBytesToMB(value)}</td>`
+                })
+                .join('')}
+            </tr>
+            <tr>
+              <td>Heap used delta (MB)</td>
+              ${frameworkNames
+                .map((frameworkName) => {
+                  const metrics = resourceMetricsByFramework.get(frameworkName)
+                  const value = metrics?.delta.jsHeapUsedSize ?? Number.NaN
+                  return `<td class="text-center">${formatBytesToMB(value)}</td>`
+                })
+                .join('')}
+            </tr>
+            <tr class="table-active" style="--bs-table-bg-state: #f5f5f5 !important;">
+              <td>CPU task duration delta (ms)</td>
+              ${frameworkNames
+                .map((frameworkName) => {
+                  const metrics = resourceMetricsByFramework.get(frameworkName)
+                  const value = metrics?.delta.taskDuration ?? Number.NaN
+                  return `<td class="text-center">${formatSecondsToMs(value)}</td>`
+                })
+                .join('')}
+            </tr>
+            <tr>
+              <td>CPU script duration delta (ms)</td>
+              ${frameworkNames
+                .map((frameworkName) => {
+                  const metrics = resourceMetricsByFramework.get(frameworkName)
+                  const value = metrics?.delta.scriptDuration ?? Number.NaN
+                  return `<td class="text-center">${formatSecondsToMs(value)}</td>`
+                })
+                .join('')}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+          `
+          : ''
+      }
     </div>
   `
 

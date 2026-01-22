@@ -1,0 +1,29 @@
+---
+alwaysApply: true
+---
+
+# General Project Rules
+
+- When we talk about Vani, or Vani's runtime code, or Vani's lib/library, we always refer to the
+  project's `src/vani` directory, where the library's code is located.
+
+- For writing `vani` code that will be run in this project, always import `vani` from the `src/vani`
+  directory. Examples in documentantion must always use the `@vanijs/vani` package name.
+
+- Before changing Vani's runtime code always keep in mind Vani's core design principles and
+  philosophy, as described in DOCS.md. Always confirm with the user any change that contradicts
+  these principles.
+
+- When changing Vani's runtime code, always update the runtime tests in `bench/debug/*`, and the
+  benchmark tests in `bench/frameworks/vani` to ensure the changes are working as expected.
+
+- When changing Vani's runtime code, always update the project's docs everywhere:
+  DOCS/skills/spa-app/landing page examples + add the decisions backed up by good reasoning in
+  CHANGELOG.md to the root of the project (keeping same format). Also review the cursur rules, and
+  any other important markdown documents, looking for any inconsistencies or outdated information.
+
+- When changing Vani's ecosystem tools (anything under `src/ecosystem`), always update the Vani docs
+  in `DOCS.md` to ensure the changes are working as expected.
+
+- When changing benchmarking code (anything under `bench`), always keep in mind the rules defined in
+  `bench/README.md`.

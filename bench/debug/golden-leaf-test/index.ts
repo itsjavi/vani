@@ -31,12 +31,15 @@ import {
   h3,
   p,
   renderToDOM,
+  signal,
   span,
   table,
   tbody,
+  text,
   th,
   thead,
   tr,
+  type Handle,
   type RenderFn,
 } from 'vani'
 
@@ -54,6 +57,35 @@ function withRenderCounter(name: string, fn: RenderFn): RenderFn {
 const statusElId = 'test-status'
 const tableBodyId = 'render-table-body'
 const timestampId = 'render-timestamp'
+
+function runRenderInputSmokeTests() {
+  const Smoke = component(() => () => div('smoke'))
+  const tempRoot = document.createElement('div')
+  tempRoot.style.display = 'none'
+  document.body.appendChild(tempRoot)
+
+  const cleanups: Handle[] = []
+  try {
+    const singleHandles = renderToDOM(Smoke(), tempRoot)
+    if (singleHandles.length !== 1) {
+      throw new Error('[renderToDOM] single component should return one handle.')
+    }
+    cleanups.push(...singleHandles)
+    singleHandles[0].updateSync()
+
+    const arrayHandles = renderToDOM([Smoke()], tempRoot)
+    if (arrayHandles.length !== 1) {
+      throw new Error('[renderToDOM] array of one component should return one handle.')
+    }
+    cleanups.push(...arrayHandles)
+    arrayHandles[0].updateSync()
+  } finally {
+    for (const handle of cleanups) {
+      handle.dispose()
+    }
+    tempRoot.remove()
+  }
+}
 
 function setStatus(kind: 'info' | 'success' | 'danger', message: string) {
   const statusEl = document.getElementById(statusElId)
@@ -103,6 +135,34 @@ const Footer = component(() => {
     div(
       { className: 'card shadow-sm border-0' },
       div({ className: 'card-body py-2 text-center fw-semibold text-secondary' }, 'Footer'),
+    ),
+  )
+})
+
+let triggerSignalUpdate: (() => void) | null = null
+
+const SignalBox = component(() => {
+  const [count, setCount] = signal(0)
+  triggerSignalUpdate = () => setCount((value) => value + 1)
+
+  return withRenderCounter('SignalBox', () =>
+    div(
+      { className: 'card shadow-sm border-0' },
+      div({ className: 'card-header bg-light' }, h3({ className: 'h6 mb-0' }, 'Signals')),
+      div(
+        { className: 'card-body d-flex align-items-center justify-content-between' },
+        span(
+          { className: 'text-muted' },
+          text(() => `Count: ${count()}`),
+        ),
+        button(
+          {
+            className: 'btn btn-sm btn-outline-secondary',
+            onclick: () => triggerSignalUpdate?.(),
+          },
+          'Increment',
+        ),
+      ),
     ),
   )
 })
@@ -161,7 +221,14 @@ const App = component(() => {
               { className: 'card-header bg-light' },
               h3({ className: 'h6 mb-0' }, 'Rendered tree'),
             ),
-            div({ className: 'card-body d-grid gap-3' }, Header(), Sidebar(), List(), Footer()),
+            div(
+              { className: 'card-body d-grid gap-3' },
+              Header(),
+              Sidebar(),
+              List(),
+              SignalBox(),
+              Footer(),
+            ),
           ),
         ),
         div(
@@ -200,6 +267,7 @@ const App = component(() => {
   Header: 0,
   Sidebar: 0,
   List: 0,
+  SignalBox: 0,
   Footer: 0,
   'Item-A': 0,
   'Item-B': 0,
@@ -207,9 +275,10 @@ const App = component(() => {
 }
 
 // mount app
-const root = document.querySelector('#app')
+const root = document.querySelector('#app') as HTMLElement | null
 if (!root) throw new Error('#app not found')
-renderToDOM([App()], root)
+runRenderInputSmokeTests()
+renderToDOM(App(), root)
 renderRendersUI()
 
 // ─────────────────────────────────────────────
@@ -256,7 +325,29 @@ queueMicrotask(() => {
       assertEqual('Header', renders['Header'], 0)
       assertEqual('Sidebar', renders['Sidebar'], 0)
       assertEqual('Footer', renders['Footer'], 0)
-      setStatus('success', '✅ Golden leaf test passed: Only Item B re-rendered.')
+      if (!triggerSignalUpdate) {
+        setStatus('success', '✅ Golden leaf test passed: Only Item B re-rendered.')
+        return
+      }
+
+      setStatus('info', 'Item B test passed. Running signal update test...')
+      renders.SignalBox = 0
+      triggerSignalUpdate()
+
+      queueMicrotask(() => {
+        renderRendersUI()
+        try {
+          assertEqual('SignalBox', renders.SignalBox, 0)
+          setStatus(
+            'success',
+            '✅ Golden leaf test passed: Only Item B re-rendered and signals avoided rerenders.',
+          )
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Signal update test failed.'
+          setStatus('danger', message)
+          throw error
+        }
+      })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Golden leaf test failed.'
       setStatus('danger', message)

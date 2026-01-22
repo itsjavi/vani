@@ -15,6 +15,10 @@ import {
 
 type Renderable = Component<any> | ComponentInstance<any>
 
+function normalizeRenderables(input: Renderable | Renderable[]): Renderable[] {
+  return Array.isArray(input) ? input : [input]
+}
+
 const voidElements = new Set([
   'area',
   'base',
@@ -139,13 +143,14 @@ async function serializeNode(node: SSRNode): Promise<string> {
   }
 }
 
-export async function renderToString(components: Renderable[]): Promise<string> {
+export async function renderToString(components: Renderable | Renderable[]): Promise<string> {
   return withRenderMode('ssr', async () => {
     if (getRenderMode() !== 'ssr') {
       throw new Error('[vani] renderToString failed to set SSR render mode.')
     }
 
-    const nodes: SSRNode[] = components.map((component) => ({
+    const normalized = normalizeRenderables(components)
+    const nodes: SSRNode[] = normalized.map((component) => ({
       type: 'component',
       instance: normalizeComponent(component),
     }))

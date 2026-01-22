@@ -23,6 +23,11 @@ const featureCards = [
     description: 'Only re-render when you call handle.update(). Predictable without magic.',
   },
   {
+    icon: '🔦',
+    title: 'Signals (optional)',
+    description: 'Opt-in fine-grained updates with signal(), text(), and attr().',
+  },
+  {
     icon: '🧱',
     title: 'Subtree Ownership',
     description: 'Each component owns a DOM range. Updates never touch parents or siblings.',
@@ -47,12 +52,22 @@ const featureCards = [
     title: 'Async Components',
     description: 'Promise‑based components with fallbacks, still explicit.',
   },
+  {
+    icon: '🧩',
+    title: 'Incremental Adoption',
+    description: 'Mount Vani widgets inside existing apps without much effort.',
+  },
+  {
+    icon: '📦',
+    title: 'ESM‑First Portability',
+    description: 'Ships small ESM modules for browsers, Node, Deno, or Bun.',
+  },
 ]
 
 const principles = [
   {
     title: 'No Hidden Work',
-    description: 'No diffing, no subscriptions, no implicit reactivity.',
+    description: 'No diffing and no implicit reactivity by default. Signals are opt-in.',
   },
   {
     title: 'Leaf‑Only Updates',
@@ -277,7 +292,7 @@ const HeroSection = component((props: HeroSectionProps) => {
               ),
               h.a(
                 {
-                  href: 'https://context7.com/itsjavi/vani/llms.txt?tokens=10000',
+                  href: 'https://context7.com/itsjavi/vani/llms.txt?tokens=15000',
                   target: '_blank',
                   rel: 'noreferrer',
                   className: cn(
@@ -446,7 +461,7 @@ const apiCode = [
   '  );',
   '});',
   '',
-  'renderToDOM([Counter()], document.getElementById("app"));',
+  'renderToDOM(Counter(), document.getElementById("app"));',
 ].join('\n')
 const apiTokens = getHighlightedTokens(apiCode, 'ts')
 const skillsCode = 'npx add-skill itsjavi/vani'

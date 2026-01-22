@@ -17,7 +17,7 @@ DOM element.
 1. Create a root component with `component` that returns a render function.
 2. Store local state in variables and call `handle.update()` from event handlers.
 3. Find the root element by id and throw if missing.
-4. Mount the component with `renderToDOM([App()], root)`.
+4. Mount the component with `renderToDOM(App(), root)` (arrays also work).
 
 ## Arguments
 

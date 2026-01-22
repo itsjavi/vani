@@ -55,7 +55,7 @@ const iframeSrcDoc = [
   JSON.stringify(
     {
       imports: {
-        '@vanijs/vani': 'https://esm.sh/@vanijs/vani@0.2.0',
+        '@vanijs/vani': 'https://esm.sh/@vanijs/vani@latest',
       },
     },
     null,
@@ -66,7 +66,7 @@ const iframeSrcDoc = [
   '<body>',
   '<div id="root"></div>',
   '<script type="module">',
-  "import { renderToDOM, isComponentInstance } from 'https://esm.sh/@vanijs/vani@0.2.0';",
+  "import { renderToDOM, isComponentInstance } from 'https://esm.sh/@vanijs/vani@0latest';",
   'const root = document.getElementById("root");',
   'let handles = [];',
   'const clearHandles = () => {',
@@ -109,7 +109,7 @@ const iframeSrcDoc = [
   '    }',
   '    clearHandles();',
   '    root.innerHTML = "";',
-  '    handles = renderToDOM([mountable], root);',
+  '    handles = renderToDOM(mountable, root);',
   '  } catch (error) {',
   '    renderError(error instanceof Error ? error.stack ?? error.message : String(error));',
   '  }',

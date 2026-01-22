@@ -4,8 +4,9 @@ Vani is a small, dependency‑free UI runtime built around a simple idea:
 
 > Rendering should be explicit, local, and predictable.
 
-Vani is **not** a Virtual DOM, not reactive‑by‑default, and not compiler‑driven. Components own a
-DOM subtree delimited by anchors and only update when you explicitly ask them to.
+Vani is **not** a Virtual DOM, not reactive‑by‑default (signals are opt‑in), and not
+compiler‑driven. Components own a DOM subtree delimited by anchors and only update when you
+explicitly ask them to.
 
 ---
 
@@ -13,6 +14,14 @@ DOM subtree delimited by anchors and only update when you explicitly ask them to
 
 ```bash
 pnpm add @vanijs/vani
+# or
+npm install @vanijs/vani
+# or
+yarn add @vanijs/vani
+# or
+bun add @vanijs/vani
+# or
+deno add @vanijs/vani
 ```
 
 ## Install skills (AI commands)
@@ -22,6 +31,11 @@ Vani ships AI skills (commands) you can add to your agent tooling:
 ```bash
 npx add-skill itsjavi/vani
 ```
+
+## Use documentation as a context
+
+You can use the documentation as a context by feeding your agents the doc file directly, or by using
+[Context7](https://context7.com/itsjavi/vani) to feed your agents the doc file.
 
 ---
 
@@ -50,7 +64,7 @@ const Counter = component((_, handle: Handle) => {
 const appRoot = document.getElementById('app')
 if (!appRoot) throw new Error('#app not found')
 
-renderToDOM([Counter()], appRoot)
+renderToDOM(Counter(), appRoot)
 ```
 
 ---
@@ -59,6 +73,17 @@ renderToDOM([Counter()], appRoot)
 
 Vani is JS-first and transpiler-free, with an optional JSX adapter. JSX mode requires
 `jsxImportSource` to be set to `@vanijs/vani` and a `.tsx` file.
+
+TypeScript config example:
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "@vanijs/vani"
+  }
+}
+```
 
 ### 1) JSX counter button
 
@@ -80,7 +105,7 @@ const Counter = component((_, handle: Handle) => {
   )
 })
 
-renderToDOM([Counter()], document.getElementById('app')!)
+renderToDOM(Counter(), document.getElementById('app')!)
 ```
 
 ### 2) JSX component inside JS-first components
@@ -151,7 +176,7 @@ export function MyReactComponent() {
     if (!containerRef.current) return
 
     // Mount Vani into a React-managed DOM element (the mounting point)
-    vaniHandlesRef.current = renderToDOM([VaniCounter()], containerRef.current)
+    vaniHandlesRef.current = renderToDOM(VaniCounter(), containerRef.current)
 
     // Cleanup when React unmounts
     return () => {
@@ -165,6 +190,146 @@ export function MyReactComponent() {
   return <div ref={containerRef} />
 }
 ```
+
+---
+
+## Philosophy and positioning
+
+### Core design principles
+
+| Principle         | Meaning                                   |
+| ----------------- | ----------------------------------------- |
+| Explicit updates  | Only `handle.update()` triggers rendering |
+| Locality          | Updates affect only the owning subtree    |
+| Determinism       | Same inputs → same DOM mutations          |
+| No hidden work    | No background tracking or diffing         |
+| Runtime clarity   | Debuggable without tooling                |
+| Opt-in complexity | Advanced features are explicit            |
+
+### Goals
+
+- Predictable performance at scale
+- Leaf-only updates by default
+- Zero runtime dependencies
+- SSR without hydration heuristics
+- Clear mental model for developers
+- Long-term maintainability over convenience
+- Web-standards-first
+- ESM-first and designed to run in any modern environment
+- Good and intuitive developer experience
+- Reduce magic and complexity, give freedom back to the developers
+
+### Ergonomic features
+
+- Real HTML attribute names, with a small set of library-specific exceptions (`ref`, `key`,
+  `fallback`, `clientOnly`)
+- Optional fine-grained state with `signal()`, `derive()`, `effect()`, plus `text()`/`attr()`
+  helpers
+- Async components with fallbacks
+- `className` accepts string, array, and object forms for ergonomic composition
+- ESM-first and designed to run in any modern environment
+
+### What Vani is NOT
+
+- ❌ Not a Virtual DOM
+- ❌ Not reactive-by-default (signals are opt-in)
+- ❌ Not JSX-mandatory (optional adapter)
+- ❌ Not compiler-driven
+- ❌ Not a template language
+- ❌ Not a framework that guesses intent
+
+### Why not Web Components (yet)
+
+Vani does not use Web Components today because the developer ergonomics are still rough and SSR
+support is a key goal. We may revisit this if Web Components bring clear benefits without harming
+productivity and cross-browser compatibility.
+
+### Comparison with popular frameworks
+
+| Feature / Framework    | Vani | React | Vue | Svelte | Solid |
+| ---------------------- | ---- | ----- | --- | ------ | ----- |
+| Virtual DOM            | ❌   | ✅    | ✅  | ❌     | ❌    |
+| Implicit reactivity    | ❌   | ⚠️    | ✅  | ✅     | ✅    |
+| Compiler required      | ❌   | ❌    | ❌  | ✅     | ❌    |
+| JSX required           | ❌   | ✅    | ❌  | ❌     | ❌    |
+| Explicit updates       | ✅   | ❌    | ❌  | ❌     | ❌    |
+| Leaf-only updates      | ✅   | ❌    | ❌  | ❌     | ❌    |
+| Runtime-only           | ✅   | ⚠️    | ⚠️  | ❌     | ⚠️    |
+| SSR without heuristics | ✅   | ❌    | ❌  | ❌     | ❌    |
+| Dependency-free core   | ✅   | ❌    | ❌  | ❌     | ❌    |
+
+⚠️ = partially / indirectly supported / average
+
+The strength of Vani is its predictability and simplicity, while other frameworks focus on developer
+productivity and ease of use, handling a lot of complexity behind the scenes automatically.
+
+### Vani's sweet spot
+
+✅ Perfect for:
+
+- Dashboard widgets
+- Micro-frontends
+- Live-coding in the browser
+- Embeddable components in other frameworks
+- Performance-critical UIs where you need exact control
+- Server-rendered sites
+- Learning UI fundamentals (no magic, direct DOM)
+- Lightweight SPAs or small Multi-Page Applications
+
+❌ Not ideal for:
+
+- Large, complex web applications with many interrelated states
+- Teams that want framework conventions to handle complexity
+- Projects needing a mature ecosystem
+
+(at least not yet)
+
+### Mental model
+
+Think of Vani as:
+
+> **“Manually invalidated, DOM-owned UI subtrees.”**
+
+You decide:
+
+- when something updates
+- how much updates
+- and why it updates
+
+Nothing else happens behind your back.
+
+### Who Vani is for
+
+Vani is a good fit if you value:
+
+- full control over rendering
+- predictable performance
+- small runtimes
+- explicit data flow
+- SSR without complexity
+- understanding your tools deeply
+
+It is **not** optimized for:
+
+- rapid prototyping
+- beginners
+- implicit magic
+- large teams that rely on conventions
+
+### Status
+
+Vani is experimental and evolving. The core architecture is intentionally small and stable.
+
+Expect:
+
+- iteration
+- refinement
+- careful additions
+
+Not:
+
+- rapid feature creep
+- breaking conceptual changes
 
 ---
 
@@ -232,12 +397,25 @@ Key ideas:
 - Represent list data by id (Map or array + id).
 - Render each row as a keyed component.
 - Store a `ComponentRef` per id so you can call `ref.current?.update()` for that item only.
-- Call the list handle only when the list structure changes (add/remove/reorder).
+- Call `renderKeyedChildren()` for structural list changes (add/remove/reorder).
+- Keys are only respected by `renderKeyedChildren()`. Passing keyed children into `div()` or another
+  component does not trigger keyed diffing.
 
 Example:
 
 ```ts
-import { component, ul, li, input, button, type Handle, type ComponentRef } from '@vanijs/vani'
+import {
+  component,
+  div,
+  ul,
+  li,
+  input,
+  button,
+  renderKeyedChildren,
+  type ComponentRef,
+  type DomRef,
+  type Handle,
+} from '@vanijs/vani'
 
 type Todo = { id: string; text: string; done: boolean }
 
@@ -275,6 +453,7 @@ const List = component((_, handle: Handle) => {
   ])
 
   const refs = new Map<string, ComponentRef>()
+  const listRef: DomRef<HTMLUListElement> = { current: null }
   const getRef = (id: string) => {
     let ref = refs.get(id)
     if (!ref) {
@@ -301,22 +480,10 @@ const List = component((_, handle: Handle) => {
 
   const rename = (id: string, text: string) => updateItem(id, { text })
 
-  const add = (text: string) => {
-    const id = String(order.length + 1)
-    items.set(id, { id, text, done: false })
-    order = [...order, id]
-    handle.update()
-  }
-
-  const remove = (id: string) => {
-    items.delete(id)
-    refs.delete(id)
-    order = order.filter((value) => value !== id)
-    handle.update()
-  }
-
-  return () =>
-    ul(
+  const renderRows = () => {
+    if (!listRef.current) return
+    renderKeyedChildren(
+      listRef.current,
       order.map((id) =>
         Row({
           key: id,
@@ -327,6 +494,29 @@ const List = component((_, handle: Handle) => {
           onRename: rename,
         }),
       ),
+    )
+  }
+  handle.effect(() => {
+    queueMicrotask(renderRows)
+  })
+
+  const add = (text: string) => {
+    const id = String(order.length + 1)
+    items.set(id, { id, text, done: false })
+    order = [...order, id]
+    renderRows()
+  }
+
+  const remove = (id: string) => {
+    items.delete(id)
+    refs.delete(id)
+    order = order.filter((value) => value !== id)
+    renderRows()
+  }
+
+  return () =>
+    div(
+      ul({ ref: listRef }),
       button({ onclick: () => add('New item') }, 'Add'),
       button(
         {
@@ -342,7 +532,7 @@ const List = component((_, handle: Handle) => {
 ```
 
 This pattern keeps updates local: changing an item triggers only that row’s subtree update, while
-structural list changes re-render the list container and reuse keyed rows.
+structural changes are handled by `renderKeyedChildren()` on the list container.
 
 ---
 
@@ -479,7 +669,31 @@ component’s subtree; the conditional element is added or removed accordingly.
 
 ---
 
-### 7) Scheduling across independent regions
+### 7) Signals (optional)
+
+Signals are opt-in fine-grained state. They do **not** auto-render components; you either bind them
+directly to DOM helpers like `text()` / `attr()` or explicitly call `handle.update()`.
+
+Example:
+
+```ts
+import { component, button, div, signal, text } from '@vanijs/vani'
+
+const Counter = component(() => {
+  const [count, setCount] = signal(0)
+  return () =>
+    div(
+      text(() => `Count: ${count()}`),
+      button({ onclick: () => setCount((value) => value + 1) }, 'Inc'),
+    )
+})
+```
+
+Use `derive()` for computed getters and `effect()` for side effects tied to signals.
+
+---
+
+### 8) Scheduling across independent regions
 
 In large apps, keep each UI region as its own component root, and schedule updates explicitly. Use
 microtasks for immediate batching and `startTransition()` for non‑urgent work. This lets you control
@@ -902,22 +1116,31 @@ export const UserRow = component<{ id: string; name: string }>((props, handle) =
 
 ### Explicit batching (optional)
 
-If you dispatch many invalidations in a single tick, queue them and update once per handle.
+If you dispatch many invalidations in a single tick, you can wrap them in `batch()` or queue them
+and update once per handle.
+
+Useful cases:
+
+- Multiple store mutations in one click (only one update per handle).
+- Toggling many rows or cards at once.
+- Applying filters that update multiple feature roots.
 
 ```ts
-import type { Handle } from '@vanijs/vani'
+import { batch, type Handle } from '@vanijs/vani'
 
 const pending = new Set<Handle>()
 let scheduled = false
 
 export const queueUpdate = (handle: Handle) => {
-  pending.add(handle)
-  if (scheduled) return
-  scheduled = true
-  queueMicrotask(() => {
-    scheduled = false
-    for (const item of pending) item.update()
-    pending.clear()
+  batch(() => {
+    pending.add(handle)
+    if (scheduled) return
+    scheduled = true
+    queueMicrotask(() => {
+      scheduled = false
+      for (const item of pending) item.update()
+      pending.clear()
+    })
   })
 }
 ```
@@ -980,38 +1203,40 @@ const Page = component(() => {
 
 ### `renderToDOM(components, root)`
 
-Mounts components and schedules the first render on the next microtask.
+Mounts components and schedules the first render on the next microtask. Accepts a single component
+or an array of components.
 
 ```ts
 import { renderToDOM, component, div } from '@vanijs/vani'
 
 const App = component(() => () => div('App'))
-renderToDOM([App()], document.getElementById('app')!)
+renderToDOM(App(), document.getElementById('app')!)
 ```
 
 ### `hydrateToDOM(components, root)`
 
-Binds handles to existing DOM (SSR/SSG) without rendering. You must call `handle.update()` to
-activate.
+Binds handles to existing DOM (SSR/SSG) without rendering. Accepts a single component or an array of
+components. You must call `handle.update()` to activate.
 
 ```ts
 import { hydrateToDOM } from '@vanijs/vani'
 import { App } from './app'
 
 const root = document.getElementById('app')!
-const handles = hydrateToDOM([App()], root)
+const handles = hydrateToDOM(App(), root)
 handles.forEach((handle) => handle.update())
 ```
 
 ### `renderToString(components)`
 
-Server‑side render to HTML with anchors. Import from `@vanijs/vani`.
+Server‑side render to HTML with anchors. Accepts a single component or an array of components.
+Import from `@vanijs/vani`.
 
 ```ts
 import { component, renderToString } from '@vanijs/vani'
 
 const App = component(() => () => 'Hello SSR')
-const html = await renderToString([App()])
+const html = await renderToString(App())
 ```
 
 ### `mount(component, props)`
@@ -1132,6 +1357,47 @@ const Timer = component((_, handle) => {
   return () => div('Timer running…')
 })
 ```
+
+### Signals and DOM bindings (optional)
+
+Signals are opt-in fine-grained state. They update only the DOM nodes bound to them.
+
+```ts
+import { component, button, div, signal, text } from '@vanijs/vani'
+
+const Counter = component(() => {
+  const [count, setCount] = signal(0)
+  return () =>
+    div(
+      text(() => `Count: ${count()}`),
+      button({ onclick: () => setCount((value) => value + 1) }, 'Inc'),
+    )
+})
+```
+
+- `signal(initial)` returns `[get, set]`.
+- `derive(fn)` returns a computed getter.
+- `effect(fn)` re-runs when signals used inside `fn` change.
+- `text(getter)` binds a text node to a signal.
+- `attr(el, name, getter)` binds an attribute/class to a signal.
+
+### Partial attribute updates
+
+When you only need to update attributes (like `className`), you can request an attribute-only
+refresh:
+
+```ts
+ref.current?.update({ onlyAttributes: true })
+```
+
+This preserves existing event listeners and children and only patches the root element’s attributes.
+It applies when the component returns a single root element.
+
+Useful cases:
+
+- Toggle a selected row class without touching children.
+- Flip aria/disabled flags on a button.
+- Update theme/state classes on a card while leaving its subtree intact.
 
 ### Transitions
 

@@ -15,7 +15,7 @@ Use this when adding a Vani widget inside a non-Vani app or server-rendered page
 
 1. Create a Vani component with explicit updates.
 2. Find or create a DOM mount node inside the host app.
-3. Call `renderToDOM([Widget()], mountNode)` and store the returned handles.
+3. Call `renderToDOM(Widget(), mountNode)` (arrays also work) and store the returned handles.
 4. On host unmount/cleanup, call `handle.dispose()` for each handle.
 
 ## Arguments

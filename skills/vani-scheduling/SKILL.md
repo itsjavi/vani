@@ -15,9 +15,10 @@ expensive.
 ## Steps
 
 1. Assign each UI region its own `Handle`.
-2. Create a scheduler that batches updates with `queueMicrotask`.
-3. Use `startTransition()` for non-urgent work to keep the UI responsive.
-4. Deduplicate updates per region within a single flush.
+2. Use `batch()` to coalesce update scheduling in the same tick.
+3. Create a scheduler that batches updates with `queueMicrotask`.
+4. Use `startTransition()` for non-urgent work to keep the UI responsive.
+5. Deduplicate updates per region within a single flush.
 
 ## Arguments
 

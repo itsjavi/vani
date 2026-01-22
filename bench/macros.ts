@@ -30,7 +30,7 @@ function getVersion(pkg: FrameworkPackage | null) {
   if (!frameworkPackage) {
     return '0.0.0'
   }
-  if (frameworkPackage === 'vani') {
+  if (frameworkPackage === 'vani' || frameworkPackage.includes('vani-')) {
     return vaniPkg.version + '-HEAD'
   }
   const version = pkg.version || pkg.dependencies?.[frameworkPackage] || '0.0.0'

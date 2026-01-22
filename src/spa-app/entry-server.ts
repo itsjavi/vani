@@ -18,7 +18,7 @@ function assembleDoc(pageBody: string) {
 
 export default {
   fetch: async () => {
-    const renderedApp = await renderToString([SpaApp({})])
+    const renderedApp = await renderToString(SpaApp({}))
     return new Response(assembleDoc(renderedApp), {
       headers: { 'Content-Type': 'text/html' },
     })

@@ -8,8 +8,7 @@ const appRoot = document.getElementById('root')
 if (!appRoot) throw new Error('[vani] #root not found')
 
 const hydrationData = {} // (globalThis as any).__vaniHydrationData || {}
-const children = [SpaApp(hydrationData)]
-const handlers = hydrateToDOM(children, appRoot)
+const handlers = hydrateToDOM(SpaApp(hydrationData), appRoot)
 
 // 🔥 update the handles to trigger the initial render
 for (const handler of handlers) {

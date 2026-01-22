@@ -9,7 +9,7 @@ Instructions for implementing a small store and wiring components to it.
 
 ## When to Use
 
-Use this when multiple components need shared state without implicit reactivity.
+Use this when multiple components need shared state without implicit reactivity by default.
 
 ## Steps
 

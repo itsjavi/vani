@@ -11,10 +11,10 @@ import {
   tbody,
   td,
   tr,
+  type ComponentRef,
   type DomRef,
   type Handle,
 } from 'vani'
-import type { Row } from '../shared'
 import {
   get10000Rows,
   get1000Rows,
@@ -22,12 +22,15 @@ import {
   sortRows,
   swapRows,
   updatedEvery10thRow,
+  type Row,
 } from '../shared'
 
 export const name = 'vani'
 
 let rows: Row[] = []
 let selectedId: number | null = null
+const rowById = new Map<number, Row>()
+const rowRefs = new Map<number, ComponentRef>()
 
 const tbodyRef: DomRef<HTMLTableSectionElement> = { current: null }
 
@@ -38,11 +41,20 @@ const renderRows = () => {
     rows.map((item) =>
       TableRow({
         key: item.id,
-        item,
-        isSelected: selectedId === item.id,
+        ref: getRowRef(item.id),
+        id: item.id,
       }),
     ),
   )
+}
+
+const getRowRef = (id: number) => {
+  let ref = rowRefs.get(id)
+  if (!ref) {
+    ref = { current: null }
+    rowRefs.set(id, ref)
+  }
+  return ref
 }
 
 const setRows = (nextRows: Row[]) => {
@@ -50,23 +62,55 @@ const setRows = (nextRows: Row[]) => {
   renderRows()
 }
 
-const setSelected = (id: number | null) => {
-  selectedId = id
+const resetRows = (nextRows: Row[]) => {
+  selectedId = null
+  rowById.clear()
+  rowRefs.clear()
+  rows = nextRows
+  for (const row of rows) rowById.set(row.id, row)
   renderRows()
 }
 
+const appendRows = (nextRows: Row[]) => {
+  rows.push(...nextRows)
+  for (const row of nextRows) rowById.set(row.id, row)
+  renderRows()
+}
+
+const clearRows = () => {
+  selectedId = null
+  rows = []
+  rowById.clear()
+  rowRefs.clear()
+  renderRows()
+}
+
+const setSelected = (id: number | null) => {
+  if (selectedId === id) return
+  const prev = selectedId
+  selectedId = id
+  if (prev !== null) {
+    rowRefs.get(prev)?.current?.update({ onlyAttributes: true })
+  }
+  if (selectedId !== null) {
+    rowRefs.get(selectedId)?.current?.update({ onlyAttributes: true })
+  }
+}
+
 const removeRow = (id: number) => {
-  if (selectedId === id) selectedId = null
+  if (selectedId === id) setSelected(null)
+  rowById.delete(id)
+  rowRefs.delete(id)
   setRows(remove(rows, id))
 }
 
-const TableRow = component<{ item: Row; isSelected: boolean }>((props) => {
+const TableRow = component<{ id: number }>((props) => {
   return () =>
     tr(
       {
-        className: { 'table-active': props.isSelected },
+        className: { 'table-active': selectedId === props.id },
       },
-      td({ className: 'col-md-1' }, String(props.item.id)),
+      td({ className: 'col-md-1' }, String(props.id)),
       td(
         { className: 'col-md-4' },
         a(
@@ -75,10 +119,10 @@ const TableRow = component<{ item: Row; isSelected: boolean }>((props) => {
             href: '/',
             onclick: (e: MouseEvent) => {
               e.preventDefault()
-              setSelected(props.item.id)
+              setSelected(props.id)
             },
           },
-          props.item.label,
+          rowById.get(props.id)?.label ?? '',
         ),
       ),
       td(
@@ -89,7 +133,7 @@ const TableRow = component<{ item: Row; isSelected: boolean }>((props) => {
           ariaLabel: 'Remove',
           onclick: (e: MouseEvent) => {
             e.preventDefault()
-            removeRow(props.item.id)
+            removeRow(props.id)
           },
         }),
       ),
@@ -109,14 +153,35 @@ const DataTable = component((_, handle: Handle) => {
     )
 })
 
-const SmallpadButton = component(
-  ({ id, label, onClick }: { id: string; label: string; onClick: () => void }) => {
-    return () =>
+const actions = [
+  { id: 'run', label: 'Create 1,000 rows', onClick: () => resetRows(get1000Rows()) },
+  { id: 'runlots', label: 'Create 10,000 rows', onClick: () => resetRows(get10000Rows()) },
+  { id: 'add', label: 'Append 1,000 rows', onClick: () => appendRows(get1000Rows()) },
+  {
+    id: 'update',
+    label: 'Update every 10th row',
+    onClick: () => {
+      rows = updatedEvery10thRow(rows)
+      for (let i = 0; i < rows.length; i += 10) {
+        const row = rows[i]
+        rowById.set(row.id, row)
+        rowRefs.get(row.id)?.current?.update()
+      }
+    },
+  },
+  { id: 'clear', label: 'Clear', onClick: clearRows },
+  { id: 'swaprows', label: 'Swap Rows', onClick: () => setRows(swapRows(rows)) },
+  { id: 'sortasc', label: 'Sort Ascending', onClick: () => setRows(sortRows(rows, true)) },
+  { id: 'sortdesc', label: 'Sort Descending', onClick: () => setRows(sortRows(rows, false)) },
+]
+
+const ActionButton = component(
+  ({ id, label, onClick }: { id: string; label: string; onClick: () => void }) =>
+    () =>
       div(
         { className: 'col-6' },
         button({ type: 'button', className: 'btn btn-primary w-100', id, onclick: onClick }, label),
-      )
-  },
+      ),
 )
 
 const Controls = component(() => {
@@ -130,63 +195,14 @@ const Controls = component(() => {
           { className: 'col-lg-6' },
           div(
             { className: 'row g-2 bench-actions', id: 'app-actions' },
-            SmallpadButton({
-              key: 'run',
-              id: 'run',
-              label: 'Create 1,000 rows',
-              onClick: () => {
-                selectedId = null
-                setRows(get1000Rows())
-              },
-            }),
-            SmallpadButton({
-              key: 'runlots',
-              id: 'runlots',
-              label: 'Create 10,000 rows',
-              onClick: () => {
-                selectedId = null
-                setRows(get10000Rows())
-              },
-            }),
-            SmallpadButton({
-              key: 'add',
-              id: 'add',
-              label: 'Append 1,000 rows',
-              onClick: () => setRows([...rows, ...get1000Rows()]),
-            }),
-            SmallpadButton({
-              key: 'update',
-              id: 'update',
-              label: 'Update every 10th row',
-              onClick: () => setRows(updatedEvery10thRow(rows)),
-            }),
-            SmallpadButton({
-              key: 'clear',
-              id: 'clear',
-              label: 'Clear',
-              onClick: () => {
-                selectedId = null
-                setRows([])
-              },
-            }),
-            SmallpadButton({
-              key: 'swaprows',
-              id: 'swaprows',
-              label: 'Swap Rows',
-              onClick: () => setRows(swapRows(rows)),
-            }),
-            SmallpadButton({
-              key: 'sortasc',
-              id: 'sortasc',
-              label: 'Sort Ascending',
-              onClick: () => setRows(sortRows(rows, true)),
-            }),
-            SmallpadButton({
-              key: 'sortdesc',
-              id: 'sortdesc',
-              label: 'Sort Descending',
-              onClick: () => setRows(sortRows(rows, false)),
-            }),
+            ...actions.map((action) =>
+              ActionButton({
+                key: action.id,
+                id: action.id,
+                label: action.label,
+                onClick: action.onClick,
+              }),
+            ),
           ),
         ),
       ),
@@ -209,4 +225,4 @@ const App = component(
     ),
 )
 
-renderToDOM([App()], rootNode)
+renderToDOM(App(), rootNode)

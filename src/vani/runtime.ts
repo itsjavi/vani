@@ -4,6 +4,16 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable unicorn/no-negated-condition */
 
+import {
+  configureSignalDom,
+  createEffect,
+  derive as createDerived,
+  signal as createSignal,
+  type Signal,
+  type SignalGetter,
+  type SignalSetter,
+} from './signals'
+
 // ─────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────
@@ -27,12 +37,12 @@ export interface Handle {
    * Schedules a render for the component.
    * This triggers a re-render on the next microtask.
    */
-  update(): void
+  update(options?: UpdateOptions): void
   /**
    * Flushes the component render.
    * This triggers a re-render immediately.
    */
-  updateSync(): void
+  updateSync(options?: UpdateOptions): void
   /**
    * Disposes the component: removes the component from the DOM and runs all cleanup functions.
    */
@@ -150,6 +160,10 @@ export type DomRef<T extends Element = Element> = {
   current: T | null
 }
 
+export type UpdateOptions = {
+  onlyAttributes?: boolean
+}
+
 type RenderMode = 'dom' | 'ssr'
 
 // ─────────────────────────────────────────────
@@ -220,6 +234,30 @@ export function withRenderMode<T>(mode: RenderMode, fn: () => T): T {
 
 export function getRenderMode(): RenderMode {
   return currentRenderMode
+}
+
+export type { Signal, SignalGetter, SignalSetter }
+
+export function signal<T>(value: T): Signal<T> {
+  return createSignal(value)
+}
+
+export { text, attr } from './signals'
+
+export function derive<T>(fn: () => T): SignalGetter<T> {
+  if (currentRenderMode === 'ssr') {
+    const value = fn()
+    return () => value
+  }
+  return createDerived(fn)
+}
+
+export function effect(fn: () => void | (() => void)): () => void {
+  if (currentRenderMode === 'ssr') {
+    fn()
+    return () => {}
+  }
+  return createEffect(fn)
 }
 
 function isSsrNode(node: VNode): node is SSRNode {
@@ -303,6 +341,25 @@ function appendChildNode(parent: VNode, child: VNode) {
   }
 }
 
+function addNodeCleanup(node: Node, cleanup: () => void) {
+  const anyNode = node as any
+  if (!anyNode.__vaniCleanup) {
+    anyNode.__vaniCleanup = [cleanup]
+    return
+  }
+  anyNode.__vaniCleanup.push(cleanup)
+}
+
+function runNodeCleanup(node: Node) {
+  const anyNode = node as any
+  const cleanups = anyNode.__vaniCleanup
+  if (!Array.isArray(cleanups)) return
+  anyNode.__vaniCleanup = null
+  for (const cleanup of cleanups) {
+    cleanup()
+  }
+}
+
 // ─────────────────────────────────────────────
 // Internal helpers
 // ─────────────────────────────────────────────
@@ -321,6 +378,7 @@ function clearBetween(start: Comment, end: Comment) {
         continue
       }
     }
+    runNodeCleanup(node)
     const anyNode = node as any
     if (anyNode.__vaniDomRef) {
       anyNode.__vaniDomRef.current = null
@@ -359,11 +417,21 @@ function normalizeDomChild(child: VChild): Node {
   throw new Error('[vani] render returned an unsupported node type in DOM mode')
 }
 
-function mountComponent<Props>(component: Component<Props>, props: Props, parent: Node): Handle {
+type MountOptions = {
+  initialRender?: 'scheduled' | 'sync'
+}
+
+function mountComponent<Props>(
+  component: Component<Props>,
+  props: Props,
+  parent: Node,
+  options?: MountOptions,
+): Handle {
   const cleanups: Array<() => void> = []
   let disposed = false
   let start: Comment
   let end: Comment
+  let currentRootElement: Element | null = null
 
   // ─────────────────────────────────────────────
   // Anchor handling (hydration-aware)
@@ -390,28 +458,69 @@ function mountComponent<Props>(component: Component<Props>, props: Props, parent
   // ─────────────────────────────────────────────
 
   const handle: Handle = {
-    update() {
+    update(options) {
       if (disposed) return
+
+      const existingOptions = (handle as any).__vaniUpdateOptions as UpdateOptions | undefined
+      const nextOptions = options?.onlyAttributes
+        ? { onlyAttributes: true }
+        : { onlyAttributes: false }
+      if (!existingOptions || !existingOptions.onlyAttributes || !nextOptions.onlyAttributes) {
+        ;(handle as any).__vaniUpdateOptions = nextOptions
+      }
 
       if (inTransition) {
         if (!urgentQueue.has(handle)) {
           transitionQueue.add(handle)
-          scheduleTransitionFlush()
+          if (batchDepth > 0) {
+            pendingTransitionFlush = true
+          } else {
+            scheduleTransitionFlush()
+          }
         }
       } else {
         transitionQueue.delete(handle)
         urgentQueue.add(handle)
-        scheduleUrgentFlush()
+        if (batchDepth > 0) {
+          pendingUrgentFlush = true
+        } else {
+          scheduleUrgentFlush()
+        }
       }
     },
 
-    updateSync() {
+    updateSync(options) {
       if (disposed) return
       if (!start.parentNode) return
 
+      const resolvedOptions =
+        options ?? ((handle as any).__vaniUpdateOptions as UpdateOptions | undefined)
+      ;(handle as any).__vaniUpdateOptions = undefined
+
+      if (resolvedOptions?.onlyAttributes && currentRootElement) {
+        const prevAttrMode = attributesOnlyMode
+        attributesOnlyMode = true
+        let nextChild: VChild
+        try {
+          nextChild = render()
+        } finally {
+          attributesOnlyMode = prevAttrMode
+        }
+
+        if (nextChild instanceof Node) {
+          const nextElement = getSingleElementFromNode(nextChild)
+          if (nextElement && nextElement.tagName === currentRootElement.tagName) {
+            patchElementAttributes(currentRootElement, nextElement)
+            return
+          }
+        }
+      }
+
       clearBetween(start, end)
       const node = normalizeDomChild(render())
+      const nextElement = getSingleElementFromNode(node)
       end.before(node, end)
+      currentRootElement = nextElement
     },
 
     onCleanup(fn) {
@@ -482,7 +591,11 @@ function mountComponent<Props>(component: Component<Props>, props: Props, parent
 
     // initial render only if not hydrating or clientOnly
     if (!isHydrating || clientOnly) {
-      handle.update()
+      if (options?.initialRender === 'sync') {
+        handle.updateSync()
+      } else {
+        handle.update()
+      }
     }
 
     result.then((realRender) => {
@@ -502,7 +615,11 @@ function mountComponent<Props>(component: Component<Props>, props: Props, parent
 
   // initial render only if not hydrating or clientOnly
   if (!isHydrating || clientOnly) {
-    handle.update()
+    if (options?.initialRender === 'sync') {
+      handle.updateSync()
+    } else {
+      handle.update()
+    }
   }
 
   return handle
@@ -512,16 +629,20 @@ function mountComponent<Props>(component: Component<Props>, props: Props, parent
 // Public render API
 // ─────────────────────────────────────────────
 
-export function renderToDOM(
-  components: Array<Component<any> | ComponentInstance<any>>,
-  root: HTMLElement,
-): Handle[] {
+type Renderable = Component<any> | ComponentInstance<any>
+
+function normalizeRenderables(input: Renderable | Renderable[]): Renderable[] {
+  return Array.isArray(input) ? input : [input]
+}
+
+export function renderToDOM(components: Renderable | Renderable[], root: HTMLElement): Handle[] {
   if (!root) {
     throw new Error('[vani] root element not found')
   }
 
   const handles: Handle[] = []
-  for (const Comp of components) {
+  const normalized = normalizeRenderables(components)
+  for (const Comp of normalized) {
     if (typeof Comp === 'function') {
       // raw component (no props)
       const handle = mountComponent(Comp, {} as any, root)
@@ -572,7 +693,12 @@ function getHandleAnchors(handle: Handle): { start: Comment; end: Comment } | nu
   return { start, end }
 }
 
-function moveAnchoredRange(parent: Node, start: Comment, end: Comment) {
+function moveAnchoredRange(
+  parent: Node,
+  start: Comment,
+  end: Comment,
+  before: ChildNode | null = null,
+) {
   const fragment = document.createDocumentFragment()
   let node: ChildNode | null = start
   while (node) {
@@ -581,7 +707,40 @@ function moveAnchoredRange(parent: Node, start: Comment, end: Comment) {
     if (node === end) break
     node = nextNode
   }
-  parent.appendChild(fragment)
+  parent.insertBefore(fragment, before)
+}
+
+function getSingleElementFromNode(node: Node): Element | null {
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    return node as Element
+  }
+  if (node.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+    const fragment = node as DocumentFragment
+    const first = fragment.firstChild
+    if (first && first.nodeType === Node.ELEMENT_NODE && first.nextSibling === null) {
+      return first as Element
+    }
+  }
+  return null
+}
+
+function patchElementAttributes(target: Element, source: Element) {
+  const nextNames = new Set(source.getAttributeNames())
+  for (const name of target.getAttributeNames()) {
+    if (!nextNames.has(name)) {
+      target.removeAttribute(name)
+    }
+  }
+  for (const name of nextNames) {
+    const value = source.getAttribute(name)
+    if (target.getAttribute(name) !== value) {
+      if (value === null) {
+        target.removeAttribute(name)
+      } else {
+        target.setAttribute(name, value)
+      }
+    }
+  }
 }
 
 function updateRecordProps(record: KeyedRecord, nextProps: unknown): boolean {
@@ -617,9 +776,15 @@ function updateRecordProps(record: KeyedRecord, nextProps: unknown): boolean {
   return changed
 }
 
-function mountKeyedRecord(domParent: Node, instance: ComponentInstance<any>): KeyedRecord {
+function mountKeyedRecord(
+  domParent: Node,
+  instance: ComponentInstance<any>,
+  before: ChildNode | null = null,
+): KeyedRecord {
   const fragment = document.createDocumentFragment()
-  const handle = mountComponent(instance.component, getMountProps(instance), fragment)
+  const handle = mountComponent(instance.component, getMountProps(instance), fragment, {
+    initialRender: 'sync',
+  })
   if (instance.ref) {
     instance.ref.current = handle
   }
@@ -633,7 +798,7 @@ function mountKeyedRecord(domParent: Node, instance: ComponentInstance<any>): Ke
     start: anchors?.start,
     end: anchors?.end,
   }
-  domParent.appendChild(fragment)
+  domParent.insertBefore(fragment, before)
   return record
 }
 
@@ -687,7 +852,7 @@ function appendChildren(parent: VNode, children: VChild[]) {
         }
 
         if (!record) {
-          record = mountKeyedRecord(domParent, child)
+          record = mountKeyedRecord(domParent, child, null)
           keyedMap.set(child.key, record)
         } else {
           if (record.ref !== child.ref) {
@@ -750,6 +915,7 @@ export function renderKeyedChildren(parent: Node, children: Array<ComponentInsta
   const domParent = parent as Node
   const keyedMap = getKeyedMap(domParent)
   const usedKeys = ((domParent as any).__vaniUsedKeys ??= new Set())
+  let cursor: ChildNode | null = domParent.firstChild
 
   for (const child of children) {
     if (!isComponentInstance(child) || child.key == null) {
@@ -767,21 +933,29 @@ export function renderKeyedChildren(parent: Node, children: Array<ComponentInsta
       record = undefined
     }
 
-    if (!record) {
-      record = mountKeyedRecord(domParent, child)
+    const isNewRecord = record == null
+    if (isNewRecord) {
+      record = mountKeyedRecord(domParent, child, cursor)
       keyedMap.set(child.key, record)
     } else {
-      if (record.ref !== child.ref) {
-        if (record.ref) record.ref.current = null
-        record.ref = child.ref
+      const existingRecord = record as KeyedRecord
+      if (existingRecord.ref !== child.ref) {
+        if (existingRecord.ref) existingRecord.ref.current = null
+        existingRecord.ref = child.ref
       }
-      if (record.ref) record.ref.current = record.handle
-      if (updateRecordProps(record, child.props)) {
-        record.handle.update()
+      if (existingRecord.ref) existingRecord.ref.current = existingRecord.handle
+      if (updateRecordProps(existingRecord, child.props)) {
+        existingRecord.handle.update()
       }
-      if (record.start && record.end) {
-        moveAnchoredRange(domParent, record.start, record.end)
+      record = existingRecord
+    }
+
+    const activeRecord = record as KeyedRecord
+    if (activeRecord.start && activeRecord.end) {
+      if (!isNewRecord && cursor && activeRecord.start !== cursor) {
+        moveAnchoredRange(domParent, activeRecord.start, activeRecord.end, cursor)
       }
+      cursor = activeRecord.end.nextSibling
     }
 
     usedKeys.add(child.key)
@@ -816,6 +990,14 @@ function normalizeAttrKey(key: string, isSvg: boolean) {
   if (isSvg) return key
   return key.toLowerCase()
 }
+
+configureSignalDom({
+  getRenderMode,
+  createTextNode: (text) => createTextNode(text) as any,
+  addNodeCleanup,
+  classNames,
+  normalizeAttrKey,
+})
 
 function setProps(el: VNode, props: Record<string, any>) {
   const isSvg = isSsrElement(el) ? svgTags.has(el.tag) : isSvgElement(el)
@@ -887,6 +1069,8 @@ export function classNames(...classes: ClassName[]): string {
 // Element helpers
 // ─────────────────────────────────────────────
 
+let attributesOnlyMode = false
+
 export function el<E extends ElementTagName>(
   tag: E,
   props?: ElementProps<E> | VChild | null,
@@ -895,7 +1079,7 @@ export function el<E extends ElementTagName>(
   const node = createElementNode(tag)
   if (isHtmlProps(props)) {
     if (props.ref) {
-      if (!isSsrElement(node)) {
+      if (!isSsrElement(node) && !attributesOnlyMode) {
         props.ref.current = node as ElementByTag<E>
         ;(node as any).__vaniDomRef = props.ref
       } else {
@@ -903,7 +1087,9 @@ export function el<E extends ElementTagName>(
       }
     }
     setProps(node, props)
-    appendChildren(node, children)
+    if (!attributesOnlyMode) {
+      appendChildren(node, children)
+    }
     return node
   }
 
@@ -949,6 +1135,9 @@ export function mount<Props>(component: Component<Props>, props: Props): VNode {
 let flushScheduled = false
 let inTransition = false
 let transitionFlushScheduled = false
+let batchDepth = 0
+let pendingUrgentFlush = false
+let pendingTransitionFlush = false
 
 const urgentQueue = new Set<Handle>()
 const transitionQueue = new Set<Handle>()
@@ -1000,7 +1189,30 @@ export function startTransition(fn: () => void): void {
     fn()
   } finally {
     inTransition = prev
-    scheduleTransitionFlush()
+    if (batchDepth > 0) {
+      pendingTransitionFlush = true
+    } else {
+      scheduleTransitionFlush()
+    }
+  }
+}
+
+export function batch(fn: () => void): void {
+  batchDepth += 1
+  try {
+    fn()
+  } finally {
+    batchDepth -= 1
+    if (batchDepth === 0) {
+      if (pendingUrgentFlush) {
+        pendingUrgentFlush = false
+        scheduleUrgentFlush()
+      }
+      if (pendingTransitionFlush) {
+        pendingTransitionFlush = false
+        scheduleTransitionFlush()
+      }
+    }
   }
 }
 
@@ -1022,7 +1234,7 @@ function scheduleUrgentFlush() {
   queueMicrotask(() => {
     flushScheduled = false
     for (const handle of urgentQueue) {
-      handle.updateSync()
+      handle.updateSync((handle as any).__vaniUpdateOptions as UpdateOptions | undefined)
     }
     urgentQueue.clear()
   })
@@ -1030,7 +1242,7 @@ function scheduleUrgentFlush() {
 
 function flushTransitionQueue() {
   for (const handle of transitionQueue) {
-    handle.updateSync()
+    handle.updateSync((handle as any).__vaniUpdateOptions as UpdateOptions | undefined)
   }
   transitionQueue.clear()
 
@@ -1104,10 +1316,7 @@ function findMatchingEndAnchor(start: Comment, componentIndex: number): Comment 
   throw new Error('[vani] hydration failed: end anchor not found')
 }
 
-export function hydrateToDOM(
-  components: Array<Component<any> | ComponentInstance<any>>,
-  root: HTMLElement,
-): Handle[] {
+export function hydrateToDOM(components: Renderable | Renderable[], root: HTMLElement): Handle[] {
   let handles: Handle[] = []
   isHydrating = true
   hydrationCursor = root.firstChild

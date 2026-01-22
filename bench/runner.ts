@@ -138,6 +138,22 @@ interface SnapshotFramework {
   benchmarkNotes?: string
 }
 
+type ResourceMetrics = {
+  jsHeapUsedSize: number
+  jsHeapTotalSize: number
+  taskDuration: number
+  scriptDuration: number
+  layoutDuration: number
+  recalcStyleDuration: number
+}
+
+type SnapshotFrameworkMetrics = {
+  framework: string
+  firstRender: ResourceMetrics
+  afterSuite: ResourceMetrics
+  delta: ResourceMetrics
+}
+
 interface SnapshotPayload {
   generatedAt: string
   cpuThrottling: number
@@ -147,6 +163,7 @@ interface SnapshotPayload {
   preflightUsed: boolean
   frameworks: SnapshotFramework[]
   results: BenchmarkResult[]
+  resourceMetrics?: SnapshotFrameworkMetrics[]
   calculated: SnapshotCalculated
 }
 
@@ -669,6 +686,71 @@ async function measureOperation(page: Page, operation: Operation): Promise<Timin
   return timing
 }
 
+function buildResourceMetricsDelta(
+  first: ResourceMetrics,
+  after: ResourceMetrics,
+): ResourceMetrics {
+  return {
+    jsHeapUsedSize: after.jsHeapUsedSize - first.jsHeapUsedSize,
+    jsHeapTotalSize: after.jsHeapTotalSize - first.jsHeapTotalSize,
+    taskDuration: after.taskDuration - first.taskDuration,
+    scriptDuration: after.scriptDuration - first.scriptDuration,
+    layoutDuration: after.layoutDuration - first.layoutDuration,
+    recalcStyleDuration: after.recalcStyleDuration - first.recalcStyleDuration,
+  }
+}
+
+function getMetric(metrics: Array<{ name: string; value: number }>, name: string): number {
+  let metric = metrics.find((item) => item.name === name)
+  return metric ? metric.value : 0
+}
+
+async function collectResourceMetrics(page: Page): Promise<ResourceMetrics> {
+  const cdp = await page.context().newCDPSession(page)
+  await cdp.send('Performance.enable')
+  const { metrics } = (await cdp.send('Performance.getMetrics')) as {
+    metrics: Array<{ name: string; value: number }>
+  }
+  await cdp.send('Performance.disable')
+  await cdp.detach()
+
+  return {
+    jsHeapUsedSize: getMetric(metrics, 'JSHeapUsedSize'),
+    jsHeapTotalSize: getMetric(metrics, 'JSHeapTotalSize'),
+    taskDuration: getMetric(metrics, 'TaskDuration'),
+    scriptDuration: getMetric(metrics, 'ScriptDuration'),
+    layoutDuration: getMetric(metrics, 'LayoutDuration'),
+    recalcStyleDuration: getMetric(metrics, 'RecalcStyleDuration'),
+  }
+}
+
+async function measureFrameworkResourceMetrics(
+  page: Page,
+  url: string,
+  operationsToRun: Operation[],
+  framework: string,
+): Promise<SnapshotFrameworkMetrics> {
+  await page.goto(url)
+  await page.waitForSelector('#run')
+  await waitForIdle(page)
+
+  const firstRender = await collectResourceMetrics(page)
+
+  for (const operation of operationsToRun) {
+    await measureOperation(page, operation)
+  }
+
+  await waitForIdle(page)
+  const afterSuite = await collectResourceMetrics(page)
+
+  return {
+    framework,
+    firstRender,
+    afterSuite,
+    delta: buildResourceMetricsDelta(firstRender, afterSuite),
+  }
+}
+
 // Calculate statistics for an array of numbers
 function calcStats(times: number[]) {
   let sorted = [...times].sort((a, b) => a - b)
@@ -857,7 +939,11 @@ function printProfileTable(profile: FunctionProfile[], operationName: string): v
 async function benchmarkFramework(
   page: Page,
   framework: string,
-): Promise<{ results: BenchmarkResult[]; profiles: Map<string, FunctionProfile[][]> }> {
+): Promise<{
+  results: BenchmarkResult[]
+  profiles: Map<string, FunctionProfile[][]>
+  resourceMetrics: SnapshotFrameworkMetrics
+}> {
   let results: BenchmarkResult[] = []
   let profiles = new Map<string, FunctionProfile[][]>()
 
@@ -868,6 +954,13 @@ async function benchmarkFramework(
     benchmarkFilter.length > 0
       ? operations.filter((op) => benchmarkFilter.some((filter) => op.name.includes(filter)))
       : operations
+
+  let resourceMetrics = await measureFrameworkResourceMetrics(
+    page,
+    url,
+    filteredOperations,
+    framework,
+  )
 
   for (let operation of filteredOperations) {
     let scriptingTimes: number[] = []
@@ -920,7 +1013,7 @@ async function benchmarkFramework(
     process.stdout.write('.')
   }
 
-  return { results, profiles }
+  return { results, profiles, resourceMetrics }
 }
 
 // ANSI color codes
@@ -1143,6 +1236,7 @@ async function main(): Promise<void> {
 
     let allResults: BenchmarkResult[] = []
     let allProfiles = new Map<string, FunctionProfile[][]>()
+    let allResourceMetrics: SnapshotFrameworkMetrics[] = []
 
     // Load previous vani results if vani is being benchmarked
     let hasVani = frameworks.includes('vani')
@@ -1161,8 +1255,9 @@ async function main(): Promise<void> {
 
     for (let framework of frameworks) {
       process.stdout.write(`  ${framework}: `)
-      let { results, profiles } = await benchmarkFramework(page, framework)
+      let { results, profiles, resourceMetrics } = await benchmarkFramework(page, framework)
       allResults.push(...results)
+      allResourceMetrics.push(resourceMetrics)
       // Store profiles keyed by framework-operation name
       for (let [operationName, runProfiles] of profiles.entries()) {
         let key = `${framework}-${operationName}`
@@ -1207,6 +1302,7 @@ async function main(): Promise<void> {
       preflightUsed: !noPreflight,
       frameworks: frameworkDetails,
       results: snapshotResults,
+      resourceMetrics: allResourceMetrics,
       calculated: buildCalculatedSnapshot(snapshotResults, frameworkDetails),
     })
 

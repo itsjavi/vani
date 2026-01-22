@@ -13,8 +13,8 @@ Use this when a project needs SSR or SSG, or when hydration must be selective.
 
 ## Steps
 
-1. Render on the server with `renderToString([App()])`.
-2. On the client, call `hydrateToDOM([App()], root)` to bind handles to anchors.
+1. Render on the server with `renderToString(App())` (arrays also work).
+2. On the client, call `hydrateToDOM(App(), root)` (arrays also work) to bind handles to anchors.
 3. Activate interactivity by calling `handle.update()` on the handles you want to run.
 4. For selective hydration, update only specific handles (e.g., header) and leave others inert.
 
@@ -63,8 +63,8 @@ Use this skill when implementing SSR, SSG, hydration, or client-only islands.
 
 Follow these steps:
 
-1. For SSR/SSG, render with `renderToString()` on the server.
-2. Bind on the client with `hydrateToDOM()`; do not expect it to render.
+1. For SSR/SSG, render with `renderToString()` on the server (single or array).
+2. Bind on the client with `hydrateToDOM()` (single or array); do not expect it to render.
 3. Activate UI by calling `handle.update()` on chosen handles.
 4. Use `clientOnly: true` for islands that should skip SSR.
 5. Keep hydration order identical to the server render order.
