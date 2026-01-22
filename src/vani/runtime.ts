@@ -136,6 +136,10 @@ type KeyedRecord = {
   handle: Handle
   fragment: DocumentFragment
   ref?: ComponentRef
+  component: Component<any>
+  props: unknown
+  start?: Comment
+  end?: Comment
 }
 
 export type ComponentRef = {
@@ -307,6 +311,16 @@ function clearBetween(start: Comment, end: Comment) {
   let node = start.nextSibling
   while (node && node !== end) {
     const next = node.nextSibling
+    if (node.nodeType === Node.COMMENT_NODE && node.nodeValue === 'vani:start') {
+      const handle = (node as any).__vaniHandle as Handle | undefined
+      if (handle) {
+        const endAnchor = (handle as any).__vaniEnd as Comment | undefined
+        const afterDisposed = endAnchor?.nextSibling ?? next
+        handle.dispose()
+        node = afterDisposed
+        continue
+      }
+    }
     const anyNode = node as any
     if (anyNode.__vaniDomRef) {
       anyNode.__vaniDomRef.current = null
@@ -407,6 +421,9 @@ function mountComponent<Props>(component: Component<Props>, props: Props, parent
     dispose() {
       if (disposed) return
       disposed = true
+      ;(start as any).__vaniHandle = null
+      ;(handle as any).__vaniStart = null
+      ;(handle as any).__vaniEnd = null
 
       urgentQueue.delete(handle)
       transitionQueue.delete(handle)
@@ -429,6 +446,10 @@ function mountComponent<Props>(component: Component<Props>, props: Props, parent
       }
     },
   }
+
+  ;(handle as any).__vaniStart = start
+  ;(handle as any).__vaniEnd = end
+  ;(start as any).__vaniHandle = handle
 
   // ─────────────────────────────────────────────
   // Setup phase
@@ -544,6 +565,78 @@ function getMountProps<Props>(instance: ComponentInstance<Props>): Props {
   return { ...base, clientOnly: true } as Props
 }
 
+function getHandleAnchors(handle: Handle): { start: Comment; end: Comment } | null {
+  const start = (handle as any).__vaniStart as Comment | null | undefined
+  const end = (handle as any).__vaniEnd as Comment | null | undefined
+  if (!start || !end) return null
+  return { start, end }
+}
+
+function moveAnchoredRange(parent: Node, start: Comment, end: Comment) {
+  const fragment = document.createDocumentFragment()
+  let node: ChildNode | null = start
+  while (node) {
+    const nextNode: ChildNode | null = node.nextSibling
+    fragment.appendChild(node)
+    if (node === end) break
+    node = nextNode
+  }
+  parent.appendChild(fragment)
+}
+
+function updateRecordProps(record: KeyedRecord, nextProps: unknown): boolean {
+  if (record.props === nextProps) return false
+  if (
+    !record.props ||
+    typeof record.props !== 'object' ||
+    !nextProps ||
+    typeof nextProps !== 'object'
+  ) {
+    record.props = nextProps
+    return true
+  }
+
+  let changed = false
+  const prev = record.props as Record<string, any>
+  const next = nextProps as Record<string, any>
+
+  for (const key in prev) {
+    if (!(key in next)) {
+      delete prev[key]
+      changed = true
+    }
+  }
+
+  for (const key in next) {
+    if (prev[key] !== next[key]) {
+      prev[key] = next[key]
+      changed = true
+    }
+  }
+
+  return changed
+}
+
+function mountKeyedRecord(domParent: Node, instance: ComponentInstance<any>): KeyedRecord {
+  const fragment = document.createDocumentFragment()
+  const handle = mountComponent(instance.component, getMountProps(instance), fragment)
+  if (instance.ref) {
+    instance.ref.current = handle
+  }
+  const anchors = getHandleAnchors(handle) ?? undefined
+  const record: KeyedRecord = {
+    component: instance.component,
+    handle,
+    fragment,
+    ref: instance.ref,
+    props: instance.props,
+    start: anchors?.start,
+    end: anchors?.end,
+  }
+  domParent.appendChild(fragment)
+  return record
+}
+
 function appendChildren(parent: VNode, children: VChild[]) {
   if (currentRenderMode === 'ssr') {
     for (const child of children) {
@@ -584,21 +677,33 @@ function appendChildren(parent: VNode, children: VChild[]) {
 
         let record = keyedMap.get(child.key)
 
-        if (!record) {
-          const fragment = document.createDocumentFragment()
-          const handle = mountComponent(child.component, getMountProps(child), fragment)
-          if (child.ref) {
-            child.ref.current = handle
+        if (record && record.component !== child.component) {
+          record.handle.dispose()
+          if (record.ref) {
+            record.ref.current = null
           }
-          record = { fragment, handle, ref: child.ref }
+          keyedMap.delete(child.key)
+          record = undefined
+        }
+
+        if (!record) {
+          record = mountKeyedRecord(domParent, child)
           keyedMap.set(child.key, record)
-          if (child.ref) {
-            child.ref.current = handle
+        } else {
+          if (record.ref !== child.ref) {
+            if (record.ref) record.ref.current = null
+            record.ref = child.ref
+          }
+          if (record.ref) record.ref.current = record.handle
+          if (updateRecordProps(record, child.props)) {
+            record.handle.update()
+          }
+          if (record.start && record.end) {
+            moveAnchoredRange(domParent, record.start, record.end)
           }
         }
 
         usedKeys.add(child.key)
-        domParent.appendChild(record.fragment)
         continue
       }
 
@@ -635,6 +740,63 @@ function appendChildren(parent: VNode, children: VChild[]) {
     }
     usedKeys.clear()
   }
+}
+
+export function renderKeyedChildren(parent: Node, children: Array<ComponentInstance<any>>): void {
+  if (currentRenderMode === 'ssr') {
+    throw new Error('[vani] renderKeyedChildren is not supported in SSR mode')
+  }
+
+  const domParent = parent as Node
+  const keyedMap = getKeyedMap(domParent)
+  const usedKeys = ((domParent as any).__vaniUsedKeys ??= new Set())
+
+  for (const child of children) {
+    if (!isComponentInstance(child) || child.key == null) {
+      continue
+    }
+
+    let record = keyedMap.get(child.key)
+
+    if (record && record.component !== child.component) {
+      record.handle.dispose()
+      if (record.ref) {
+        record.ref.current = null
+      }
+      keyedMap.delete(child.key)
+      record = undefined
+    }
+
+    if (!record) {
+      record = mountKeyedRecord(domParent, child)
+      keyedMap.set(child.key, record)
+    } else {
+      if (record.ref !== child.ref) {
+        if (record.ref) record.ref.current = null
+        record.ref = child.ref
+      }
+      if (record.ref) record.ref.current = record.handle
+      if (updateRecordProps(record, child.props)) {
+        record.handle.update()
+      }
+      if (record.start && record.end) {
+        moveAnchoredRange(domParent, record.start, record.end)
+      }
+    }
+
+    usedKeys.add(child.key)
+  }
+
+  for (const [key, record] of keyedMap) {
+    if (!usedKeys.has(key)) {
+      record.handle.dispose()
+      if (record.ref) {
+        record.ref.current = null
+      }
+      keyedMap.delete(key)
+    }
+  }
+  usedKeys.clear()
 }
 
 function isSvgElement(el: VNode): el is SVGElement {

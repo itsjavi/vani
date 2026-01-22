@@ -3,15 +3,14 @@ import {
   button,
   component,
   div,
-  fragment,
   h1,
+  renderKeyedChildren,
   renderToDOM,
   span,
   table,
   tbody,
   td,
   tr,
-  type ComponentRef,
   type DomRef,
   type Handle,
 } from 'vani'
@@ -31,16 +30,19 @@ let rows: Row[] = []
 let selectedId: number | null = null
 
 const tbodyRef: DomRef<HTMLTableSectionElement> = { current: null }
-const rowsHandleRef: ComponentRef = { current: null }
 
 const renderRows = () => {
   if (!tbodyRef.current) return
-  if (!rowsHandleRef.current) {
-    const [rowsHandle] = renderToDOM([Rows()], tbodyRef.current)
-    rowsHandleRef.current = rowsHandle ?? null
-  } else {
-    rowsHandleRef.current.update()
-  }
+  renderKeyedChildren(
+    tbodyRef.current,
+    rows.map((item) =>
+      TableRow({
+        key: item.id,
+        item,
+        isSelected: selectedId === item.id,
+      }),
+    ),
+  )
 }
 
 const setRows = (nextRows: Row[]) => {
@@ -58,11 +60,11 @@ const removeRow = (id: number) => {
   setRows(remove(rows, id))
 }
 
-const TableRow = component<{ item: Row }>((props) => {
+const TableRow = component<{ item: Row; isSelected: boolean }>((props) => {
   return () =>
     tr(
       {
-        className: { danger: selectedId === props.item.id },
+        className: { danger: props.isSelected },
       },
       td({ className: 'col-md-1' }, String(props.item.id)),
       td(
@@ -91,18 +93,6 @@ const TableRow = component<{ item: Row }>((props) => {
         ),
       ),
       td({ className: 'col-md-6' }),
-    )
-})
-
-const Rows = component(() => {
-  return () =>
-    fragment(
-      ...rows.map((item) =>
-        TableRow({
-          key: item.id,
-          item,
-        }),
-      ),
     )
 })
 
