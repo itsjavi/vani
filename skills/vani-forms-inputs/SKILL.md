@@ -44,7 +44,7 @@ Created: src/contact-form.ts
 Notes: Inputs are uncontrolled until submit.
 ```
 
-# Present Results to User
+## Present Results to User
 
 ## Explain the update strategy (submit vs controlled) and where focus is preserved.
 

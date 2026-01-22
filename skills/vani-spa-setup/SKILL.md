@@ -45,7 +45,7 @@ Updated: src/main.ts
 Notes: Uses handle.update() for all state changes.
 ```
 
-# Present Results to User
+## Present Results to User
 
 Provide a short explanation of how the root is mounted, list the files touched, and mention where
 explicit updates occur.

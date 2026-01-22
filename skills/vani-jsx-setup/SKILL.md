@@ -44,6 +44,6 @@ Created: src/counter.tsx
 Notes: JSX uses @vanijs/vani as jsxImportSource.
 ```
 
-# Present Results to User
+## Present Results to User
 
 Explain the JSX settings, highlight where explicit updates happen, and list the files changed.

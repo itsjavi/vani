@@ -81,7 +81,7 @@ Example 2 usage pattern
 
 Show example JSON or text output
 
-# Present Results to User
+## Present Results to User
 
 Here we define how the AI Agent should format and present the output to the user in a human-friendly
 way. It can be a simple text message or a JSON object, markdown, a table, etc.

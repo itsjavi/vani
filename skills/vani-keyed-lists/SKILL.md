@@ -44,7 +44,7 @@ Created: src/list.ts
 Notes: Row updates call ref.current?.update().
 ```
 
-# Present Results to User
+## Present Results to User
 
 ## Describe the list data structure, how refs are stored, and when the list handle updates.
 

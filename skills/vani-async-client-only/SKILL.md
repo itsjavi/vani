@@ -43,6 +43,6 @@ Created: src/async-card.ts
 Notes: Fallback renders in DOM mode; SSR awaits async components.
 ```
 
-# Present Results to User
+## Present Results to User
 
 Clarify when the fallback appears, how client-only rendering behaves, and list file changes.

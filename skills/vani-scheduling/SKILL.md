@@ -44,6 +44,6 @@ Created: src/scheduler.ts
 Notes: Updates are deduplicated per region.
 ```
 
-# Present Results to User
+## Present Results to User
 
 Explain the scheduling policy, which updates are urgent vs transition, and list changes.

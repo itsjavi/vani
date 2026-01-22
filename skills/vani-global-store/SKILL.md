@@ -44,6 +44,6 @@ Updated: src/counter.ts
 Notes: handle.effect() subscribes once and updates explicitly.
 ```
 
-# Present Results to User
+## Present Results to User
 
 Summarize store API, subscription wiring, and files changed.

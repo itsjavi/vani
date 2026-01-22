@@ -44,7 +44,7 @@ Updated: client/entry.ts
 Notes: Hydration binds to anchors; update() activates UI.
 ```
 
-# Present Results to User
+## Present Results to User
 
 ## Summarize the SSR/hydration flow, note which handles are activated, and list file changes.
 

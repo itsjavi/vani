@@ -44,6 +44,6 @@ Updated: src/host-integration.ts
 Notes: Handles are disposed when the host unmounts.
 ```
 
-# Present Results to User
+## Present Results to User
 
 Explain the mount point, how handles are stored and disposed, and list file changes.
