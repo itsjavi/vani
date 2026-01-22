@@ -1,0 +1,102 @@
+---
+alwaysApply: true
+---
+
+# Skills
+
+Skills are essentially modular tools that enhance AI Coding Agent's existing functionality, allowing
+them to perform specific tasks related to a certain project or library, and other operations. They
+bridge the gap between what an AI can do natively and what it needs to accomplish specific, complex
+workflows.
+
+Skills are stored in the `./skills` directory of the project or library themselves for other users
+to be able to install them in their own projects, and e.g. make their AIs experts in that matter.
+For example, we could install React skills in our own project to make our AI an expert in React.
+
+Skills can be installed in the projects that want to consume them by using
+`npx add-skill <repo-name-or-url>`.
+
+## Skills Usage in Chat
+
+- When asked to implement a feature, first check whether a relevant skill exists under `./skills`
+  and use it as a guide if applicable.
+- If multiple skills apply, prefer the most specific one and mention any secondary skills used.
+
+## Skills Creation
+
+- Skills for this repo live under `./skills/<skill-name>/SKILL.md`. They are consumer skills,
+  specific to the `vani` framework.
+- Keep skill content self-contained and only reference APIs from `@vanijs/vani` or other public
+  packages.
+- Avoid referencing source code or files outside `./skills`.
+- Use a clear `description` field so skills are discoverable and easy to invoke.
+- When a skill expects arguments, use an `## Arguments` section to describe them.
+- Skill directories can also contain other files (scripts, docs, etc.), that the SKILL.md can
+  reference.
+- Use @https://raw.githubusercontent.com/vercel-labs/add-skill/refs/heads/main/README.md for more
+  info
+- Use always the template provided bellow.
+
+### SKILL.md Markdown Template
+
+This is the skill basic markdown template, that can be of course extended. Mandatory fields are
+`name` and `description`.
+
+Replace `# My Skill` and the content of the sections with the actual name and sections content of
+the skill.
+
+Template:
+
+```md
+---
+name: my-skill
+description: What this skill does and when to use it
+---
+
+# My Skill
+
+Instructions for the agent to follow when this skill is activated.
+
+## When to Use
+
+Describe the scenarios where this skill should be used.
+
+## Steps
+
+1. First, do this
+2. Then, do that
+
+## Arguments
+
+- arg1 - Description (defaults to X)
+- arg2 - Description (defaults to Y)
+
+## Examples
+
+Example 1 usage pattern
+
+Example 2 usage pattern
+
+## Output
+
+Show example JSON or text output
+
+# Present Results to User
+
+Here we define how the AI Agent should format and present the output to the user in a human-friendly
+way. It can be a simple text message or a JSON object, markdown, a table, etc.
+```
+
+### How to ask an LLM agent to write skills?
+
+This is an example prompt:
+
+```
+Come up with a series of useful skills that would be nice to have for any dev using this project.
+
+Skills are like commands that give instructions to AI Agents about how to perform certain tasks.
+
+Write some skills based on the project documentation documented in @DOCS.md , according to the
+guidelines provided in the skills.mdc file. You can visit any links provided in this file to
+get more information.
+```
