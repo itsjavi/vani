@@ -14,7 +14,7 @@ if (process.env.production) {
 }
 
 export default {
-  input: 'src/main.js',
+  input: 'index.js',
   output: {
     file: 'dist/main.js',
     format: 'iife',
