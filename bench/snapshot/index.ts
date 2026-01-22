@@ -191,7 +191,7 @@ function render(snapshot: SnapshotPayload): void {
                 .join('')}
             </tr>
             <tr>
-              <td><strong>overall score</strong><br /><small>average of ratios</small></td>
+              <td><strong>overall score</strong><br /><small>average of ratios. baseline is the framework with the best mean time.</small></td>
               ${overallScores
                 .map((score) => {
                   if (score === null) {
