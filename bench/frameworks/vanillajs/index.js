@@ -22,8 +22,13 @@ let selectedRowEl = null
 const createRow = (row) => {
   const cloned = rowTemplate.cloneNode(true)
   cloned.dataset.id = String(row.id)
-  cloned.firstElementChild.textContent = String(row.id)
-  const labelEl = cloned.querySelector('a.lbl')
+  const cells = cloned.children
+  const idCell = cells[0]
+  const labelEl = cells[1]?.firstElementChild
+  if (idCell) idCell.textContent = String(row.id)
+  if (!labelEl) {
+    return cloned
+  }
   labelEl.textContent = row.label
   rowById.set(row.id, cloned)
   labelById.set(row.id, labelEl)
@@ -73,7 +78,7 @@ const app = {
   },
   add() {
     const newRows = get1000Rows()
-    rows = [...rows, ...newRows]
+    rows.push(...newRows)
     appendRows(newRows)
   },
   update() {
@@ -93,8 +98,19 @@ const app = {
     tbody.replaceChildren()
   },
   swaprows() {
+    if (rows.length <= 998) return
+    const rowA = rows[1]
+    const rowB = rows[998]
     rows = swapRows(rows)
-    renderRows()
+    const elA = rowById.get(rowA.id)
+    const elB = rowById.get(rowB.id)
+    if (!elA || !elB) {
+      renderRows()
+      return
+    }
+    const nextA = elA.nextSibling
+    tbody.insertBefore(elA, elB)
+    tbody.insertBefore(elB, nextA)
   },
   sortasc() {
     rows = sortRows(rows, true)
