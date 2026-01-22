@@ -8,9 +8,10 @@ import { getProjects } from './macros'
 
 const PORT = 44100
 const BASE_URL = `http://localhost:${PORT}`
-const LAST_ARGS_FILE = path.join(import.meta.dirname, 'snapshot/results/bench-last-args.json')
-const SNAPSHOT_FILE = path.join(import.meta.dirname, 'snapshot/results/bench-results.json')
-const VANI_RESULTS_FILE = path.join(import.meta.dirname, 'snapshot/results/bench-results-vani.json')
+const RESULTS_DIR = path.join(import.meta.dirname, 'snapshot/results')
+const LAST_ARGS_FILE = path.join(RESULTS_DIR, 'bench-last-args.json')
+const SNAPSHOT_FILE = path.join(RESULTS_DIR, 'bench-results.json')
+const VANI_RESULTS_FILE = path.join(RESULTS_DIR, 'bench-results-vani.json')
 
 interface SavedArgs {
   cpu: string
@@ -31,6 +32,7 @@ function getFrameworks(): string[] {
 }
 
 function saveArgs(args: SavedArgs): void {
+  fs.mkdirSync(RESULTS_DIR, { recursive: true })
   fs.writeFileSync(LAST_ARGS_FILE, JSON.stringify(args, null, 2))
 }
 
@@ -413,11 +415,13 @@ function stopServer(server: ChildProcess): Promise<void> {
 function saveVaniResults(results: BenchmarkResult[]): void {
   let vaniResults = results.filter((r) => r.framework === 'vani')
   if (vaniResults.length > 0) {
+    fs.mkdirSync(RESULTS_DIR, { recursive: true })
     fs.writeFileSync(VANI_RESULTS_FILE, JSON.stringify(vaniResults, null, 2))
   }
 }
 
 function saveSnapshot(payload: SnapshotPayload): void {
+  fs.mkdirSync(RESULTS_DIR, { recursive: true })
   fs.writeFileSync(SNAPSHOT_FILE, JSON.stringify(payload, null, 2))
   console.log(`Saved snapshot to ${SNAPSHOT_FILE}`)
 }

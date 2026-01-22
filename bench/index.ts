@@ -1,11 +1,10 @@
 // @see https://bun.com/docs/bundler/macros#macros
-import { getProjects } from './macros' with { type: 'macro' }
+import { getNotes, getProjects } from './macros' with { type: 'macro' }
 import benchResults from './snapshot/results/bench-results.json' with { type: 'json' }
 
 const frameworks = getProjects('frameworks')
 const debugTests = getProjects('debug')
-
-console.log(frameworks, debugTests)
+const notes = getNotes()
 
 type BenchResultsCalculated = {
   overallScores: Record<string, number | null>
@@ -42,6 +41,26 @@ const buildScoreBadge = (frameworkName?: string) => {
 
 const app = document.querySelector('#app')
 if (!app) throw new Error('#app not found')
+
+const notesToParagraph = (notes: string) => {
+  return `<div class="panel panel-default notes">
+  <div class="panel-heading">
+    <h3 class="panel-title">Implementation Notes</h3>
+  </div>
+  <div class="panel-body">
+    ${notes
+      .split('\n\n')
+      .map(
+        (paragraph) =>
+          `<p class="">${paragraph
+            .split('\n')
+            .map((line) => `<span>${line}</span>`)
+            .join(' ')}</p>`,
+      )
+      .join(' ')}
+  </div>
+</div>`
+}
 
 app.innerHTML = `
 <div class="container">
@@ -102,6 +121,7 @@ app.innerHTML = `
       </div>
     </div>
   </div>
+  ${notesToParagraph(notes)}
   <footer class="text-muted homepage-footer">
     <span>Last bench run: <span id="last-bench-run">Loading...</span></span>
     <span class="pull-right">
@@ -127,6 +147,12 @@ style.textContent = `
   }
   .bench-score-bad {
     background: #d9534f;
+  }
+  .notes p {
+    margin-bottom: 6px;
+  }
+  .notes p:last-child {
+    margin-bottom: 0;
   }
 `
 document.head.append(style)

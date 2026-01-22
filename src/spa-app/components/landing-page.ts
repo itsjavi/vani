@@ -1,5 +1,6 @@
 import { component, type DomRef } from '@/vani'
 import * as h from '@/vani/html'
+import BarChart3Icon from 'lucide-static/icons/bar-chart-3.svg?vani'
 import GithubIcon from 'lucide-static/icons/github.svg?vani'
 import NotepadTextIcon from 'lucide-static/icons/notepad-text.svg?vani'
 import { CopyableCodeBlock } from './copyable-code-block'
@@ -197,64 +198,68 @@ const HeroSection = component((props: HeroSectionProps) => {
             ' and a clear and predictable rendering model across SPA and static sites.',
           ),
           h.div(
-            { className: 'flex flex-wrap items-center gap-4' },
-            h.a(
-              {
-                href: '#api',
-                className: cn(
-                  'rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-950',
-                  'shadow-xl shadow-sky-500/20 transition hover:bg-slate-100',
-                ),
-              },
-              'Start building',
-            ),
-            h.button(
-              {
-                type: 'button',
-                className: cn(
-                  'rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white',
-                  'transition hover:border-white/40 hover:bg-white/10',
-                ),
-                onclick: props.onTryLive,
-              },
-              h.span(
-                { className: 'relative flex items-center gap-2' },
-                h.span(
-                  { className: 'relative flex h-2.5 w-2.5 items-center justify-center' },
-                  h.span(
-                    {
-                      className:
-                        'absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/70',
-                    },
-                    '',
+            { className: cn('flex flex-col gap-4') },
+            h.div(
+              { className: cn('flex flex-wrap items-center gap-4') },
+              h.a(
+                {
+                  href: '#api',
+                  className: cn(
+                    'rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-950',
+                    'shadow-xl shadow-sky-500/20 transition hover:bg-slate-100',
                   ),
-                  h.span({ className: 'relative h-2.5 w-2.5 rounded-full bg-amber-400' }, ''),
+                },
+                'Start building',
+              ),
+              h.button(
+                {
+                  type: 'button',
+                  className: cn(
+                    'rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white',
+                    'transition hover:border-white/40 hover:bg-white/10',
+                  ),
+                  onclick: props.onTryLive,
+                },
+                h.span(
+                  { className: 'relative flex items-center gap-2' },
+                  h.span(
+                    { className: 'relative flex h-2.5 w-2.5 items-center justify-center' },
+                    h.span(
+                      {
+                        className:
+                          'absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/70',
+                      },
+                      '',
+                    ),
+                    h.span({ className: 'relative h-2.5 w-2.5 rounded-full bg-amber-400' }, ''),
+                  ),
+                  'Try it live',
                 ),
-                'Try it live',
+              ),
+              // DemoButton({
+              //   // label: 'JSX demo',
+              //   // children: 'It is JSX live',
+              //   onclick: props.onTryLive,
+              //   className: cn(
+              //     'rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white',
+              //     'transition hover:border-white/40 hover:bg-white/10',
+              //   ),
+              // }),
+              h.a(
+                {
+                  href: 'https://github.com/itsjavi/vani',
+                  target: '_blank',
+                  rel: 'noreferrer',
+                  className: cn(
+                    'rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white',
+                    'transition hover:border-white/40 hover:bg-white/10',
+                  ),
+                },
+                'View on GitHub',
               ),
             ),
-            // DemoButton({
-            //   // label: 'JSX demo',
-            //   // children: 'It is JSX live',
-            //   onclick: props.onTryLive,
-            //   className: cn(
-            //     'rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white',
-            //     'transition hover:border-white/40 hover:bg-white/10',
-            //   ),
-            // }),
-            h.a(
-              {
-                href: 'https://github.com/itsjavi/vani',
-                target: '_blank',
-                rel: 'noreferrer',
-                className: cn(
-                  'rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white',
-                  'transition hover:border-white/40 hover:bg-white/10',
-                ),
-              },
-              'View on GitHub',
-            ),
             h.div(
+              { className: cn('flex flex-wrap items-center gap-6') },
               h.a(
                 {
                   href: 'https://context7.com/itsjavi/vani/llms.txt?tokens=10000',
@@ -268,6 +273,18 @@ const HeroSection = component((props: HeroSectionProps) => {
                 },
                 NotepadTextIcon({ size: 18, className: 'size-4' }),
                 'llms.txt',
+              ),
+              h.a(
+                {
+                  href: '/benchmarks',
+                  className: cn(
+                    'inline-flex items-center gap-2 text-base text-slate-300',
+                    'underline decoration-dotted underline-offset-4',
+                    'transition hover:text-white',
+                  ),
+                },
+                BarChart3Icon({ size: 18, className: 'size-4' }),
+                'Benchmarks',
               ),
             ),
           ),

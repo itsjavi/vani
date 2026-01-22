@@ -62,3 +62,9 @@ export function getProjects(projectType: 'frameworks' | 'debug' = 'frameworks') 
     })
     .filter((project) => project !== null)
 }
+
+export function getNotes() {
+  const notesPath = path.join(__dirname, 'index-notes.txt')
+
+  return fs.readFileSync(notesPath, 'utf8')
+}

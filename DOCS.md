@@ -522,6 +522,82 @@ This design keeps scheduling predictable: each region updates at most once per f
 decide which updates are urgent vs. deferred. If a region needs data from another, call its public
 API first, then schedule both regions explicitly in the same flush.
 
+### Explicit multi-region scheduling strategy
+
+When multiple independent UI regions update in the same tick, prefer a central scheduler that:
+
+- deduplicates updates per region (one update per flush)
+- batches synchronous state changes into a microtask
+- separates urgent vs. non‑urgent work (`queueMicrotask` vs. `startTransition`)
+- avoids cascades by flushing a single pass and re‑queueing if new work appears
+
+Example:
+
+```ts
+import { startTransition, type Handle } from '@vanijs/vani'
+
+type RegionId = 'header' | 'content' | 'sidebar' | 'status'
+type Priority = 'urgent' | 'transition'
+
+const handles = new Map<RegionId, Handle>()
+const pendingUrgent = new Set<RegionId>()
+const pendingTransition = new Set<RegionId>()
+let microtaskScheduled = false
+let transitionScheduled = false
+
+export const registerRegion = (id: RegionId, handle: Handle) => {
+  handles.set(id, handle)
+}
+
+export const scheduleRegion = (id: RegionId, priority: Priority = 'urgent') => {
+  if (priority === 'transition') {
+    pendingTransition.add(id)
+    if (!transitionScheduled) {
+      transitionScheduled = true
+      startTransition(flushTransition)
+    }
+    return
+  }
+
+  pendingUrgent.add(id)
+  if (!microtaskScheduled) {
+    microtaskScheduled = true
+    queueMicrotask(flushUrgent)
+  }
+}
+
+const flushUrgent = () => {
+  microtaskScheduled = false
+  for (const id of pendingUrgent) {
+    handles.get(id)?.update()
+  }
+  pendingUrgent.clear()
+
+  // If urgent updates caused more urgent work, queue another microtask.
+  if (pendingUrgent.size > 0 && !microtaskScheduled) {
+    microtaskScheduled = true
+    queueMicrotask(flushUrgent)
+  }
+}
+
+const flushTransition = () => {
+  transitionScheduled = false
+  for (const id of pendingTransition) {
+    handles.get(id)?.update()
+  }
+  pendingTransition.clear()
+}
+```
+
+Guidelines:
+
+- **Priority conflicts**: if a region is queued in both sets, let urgent win and clear it from
+  transition during flush.
+- **Cascading updates**: if an update triggers more updates, re‑queue explicitly rather than looping
+  synchronously.
+- **Predictability**: keep region IDs stable and avoid cross‑region reads during render; use
+  coordinators to update shared data first, then schedule regions in a known order.
+
 ---
 
 ## Advanced patterns
@@ -627,41 +703,77 @@ export const emit = (event: string, payload?: unknown) => {
 
 ## Large-scale app architecture
 
-Vani scales best when you keep update paths explicit and module boundaries clear. The core idea is
-to let feature modules own their local state and expose small, explicit APIs for coordination,
-instead of reaching into each other's state or relying on global reactive graphs. At scale, treat
-updates like messages: state lives in a module, views read from the module, and invalidation is
-triggered by module commands.
+Vani scales best when update paths stay explicit and module boundaries stay tight. Treat updates as
+messages: state lives in a feature module, views read snapshots, and invalidation is triggered by
+that module's commands. This prevents hidden dependencies and makes cross-feature coordination an
+explicit, testable surface.
+
+### Architecting large-scale, coordinated modules
+
+Use explicit feature modules with clear APIs, bind views to module subscriptions, and coordinate
+cross-module workflows through a small coordinator or typed event channel. Keep invalidation scoped
+to feature roots or keyed row components, and batch updates per handle. Avoid implicit dependencies
+by never mutating another module's state directly; instead call exported commands or emit events. At
+scale, manual invalidation challenges include fan-out, over- or under-invalidating, update
+ordering/races, stale reads during transitions, lifecycle leaks, and lack of observability. Mitigate
+with explicit contracts, centralized command surfaces, predictable ordering, cleanup via
+`handle.effect()`, and lightweight logging around invalidation helpers.
+
+Architecture sketch:
+
+```
+ [UI/View A] --subscribe--> [Feature A]
+       |                        |
+       | update()               | commands
+       v                        v
+   [Handle A]              [Coordinator] ----> [Feature B]
+       ^                        |                 |
+       | update()               | events          | notify
+ [UI/View B] --subscribe--> [Feature B] <---------+
+```
 
 ### Suggested architecture
 
 1. Feature modules (state + commands)
 
-Each module exposes:
+Each module owns its state and exposes a small API:
 
-- a small state container
-- read accessors (snapshot getters)
-- explicit commands (mutations) that notify listeners
-- a `subscribe(listener)` for views to bind invalidation
+- snapshot getters (`getState`, `getUsers`, `getFilters`)
+- commands that mutate state (`setUsers`, `applyFilter`)
+- `subscribe(listener)` to notify views of invalidation
+- optional selectors for derived data
 
 2. View adapters (bind handles)
 
 Views subscribe once via `handle.effect()` and call `handle.update()` when their module notifies.
 This keeps invalidation scoped to the subtree that owns the handle.
 
-3. Coordinator (optional)
+3. Coordinator or message hub
 
-For cross-module workflows, add a thin coordinator that:
+For workflows that span multiple modules, add a thin coordinator that:
 
-- orchestrates sequences (e.g. save → refresh → notify)
+- orchestrates sequences (save → refresh → notify)
 - calls public APIs of each module
-- never accesses private state directly
+- never reaches into private state
+- batches invalidations when multiple modules change together
 
 4. Stable, explicit contracts
 
-Use interfaces, simple message payloads, or callbacks to avoid implicit coupling. If one feature
+Use interfaces, small message payloads, or callbacks to avoid implicit coupling. If one feature
 needs another to update, it calls that module's exported command (or `invalidate()` helper) rather
 than mutating shared data.
+
+### Cross-module coordination patterns
+
+Pick one, keep it explicit, and avoid hidden dependencies:
+
+- **Coordinator**: a domain-level workflow function that calls module commands in order.
+- **Event channel**: a small bus where modules emit typed events and subscribers decide how to
+  update; views still call `handle.update()` explicitly.
+- **Shared readonly data**: for truly global data, use a shared store with strict write APIs and
+  localized subscriptions.
+
+The goal is to keep "who invalidates whom" visible at the call site.
 
 ### Example: Feature module with explicit invalidation
 
@@ -729,6 +841,33 @@ export const createCoordinator = (users: UsersFeatureApi): Coordinator => {
 }
 ```
 
+### Example: Event channel for cross-feature updates
+
+```ts
+type EventMap = {
+  userSaved: { id: string }
+  searchChanged: { query: string }
+}
+
+type Listener<K extends keyof EventMap> = (payload: EventMap[K]) => void
+const listeners = new Map<keyof EventMap, Set<Listener<keyof EventMap>>>()
+
+export const on = <K extends keyof EventMap>(event: K, listener: Listener<K>) => {
+  const set = listeners.get(event) ?? new Set()
+  set.add(listener as Listener<keyof EventMap>)
+  listeners.set(event, set)
+  return () => set.delete(listener as Listener<keyof EventMap>)
+}
+
+export const emit = <K extends keyof EventMap>(event: K, payload: EventMap[K]) => {
+  const set = listeners.get(event)
+  if (!set) return
+  for (const listener of set) {
+    listener(payload)
+  }
+}
+```
+
 ### Example: Scoped invalidation by key
 
 When a large list exists, invalidate only the affected rows.
@@ -777,22 +916,24 @@ export const queueUpdate = (handle: Handle) => {
 
 ### Challenges with manual invalidation at scale
 
-- Update fan-out: one action may need to notify several modules; keep this explicit via a
-  coordinator instead of hidden subscriptions.
-- Over-invalidating: calling `handle.update()` too broadly can re-render large subtrees; prefer
-  small, keyed targets (row components, feature roots).
-- Under-invalidating: missing an update call leaves views stale; treat "update after state change"
-  as part of the module contract and centralize commands.
-- Ordering and race conditions: when multiple modules depend on shared data, update data first, then
-  invalidate in a predictable order; avoid interleaving async updates without coordination.
-- Lifecycle leaks: if a handle isn't unsubscribed, updates keep firing; ensure `subscribe()` returns
-  a cleanup and is wired through `handle.effect()`.
-- Debugging update paths: without implicit reactivity, you must trace who called `update()`. Keep
-  module APIs narrow, name update methods clearly (`refreshUsers`, `invalidateSearch`), and consider
-  instrumentation (log or wrap invalidation helpers).
+- Update fan-out: a single command may need to notify many modules. Use a coordinator or explicit
+  event channel so the fan-out is visible and testable.
+- Over-invalidating: calling `handle.update()` on large roots can cause avoidable work. Prefer
+  small, keyed targets (row components, feature roots) and batch per handle.
+- Under-invalidating: missing a manual update leaves views stale. Make "update after mutation" part
+  of the module contract and centralize mutations behind commands.
+- Ordering and race conditions: when modules depend on shared data, update data first, then
+  invalidate in a stable order; avoid interleaving async refreshes without a coordinator.
+- Stale reads during transitions: if you defer with `startTransition()`, ensure that the render
+  reads the latest snapshot or that the transition captures the intended version.
+- Lifecycle leaks: if a handle isn't unsubscribed, updates keep firing. Always return cleanup from
+  `subscribe()` and bind it through `handle.effect()`.
+- Observability gaps: without implicit reactivity, you need traceability. Wrap invalidation helpers
+  to log or count updates per module and catch runaway loops early.
 
-Vani trades automatic coordination for transparency. In large apps, that means you should invest in
-clear module boundaries, explicit cross-module APIs, and small invalidation targets.
+Vani trades automatic coordination for transparency. In large apps, invest in clear module
+boundaries, explicit cross-module APIs, and small invalidation targets to keep manual invalidation
+manageable.
 
 ---
 
@@ -818,7 +959,7 @@ Components can return other component instances directly:
 
 ```ts
 import { component } from '@vanijs/vani'
-import * as h from 'vani/html'
+import * as h from '@vanijs/vani'
 
 const Hero = component(() => {
   return () => h.h1('Hello')
@@ -831,7 +972,7 @@ const Page = component(() => {
 
 ### `renderToDOM(components, root)`
 
-Mounts components to the DOM immediately.
+Mounts components and schedules the first render on the next microtask.
 
 ```ts
 import { renderToDOM, component, div } from '@vanijs/vani'
@@ -856,11 +997,10 @@ handles.forEach((handle) => handle.update())
 
 ### `renderToString(components)`
 
-Server‑side render to HTML with anchors. Import from `vani/ssr`.
+Server‑side render to HTML with anchors. Import from `@vanijs/vani`.
 
 ```ts
-import { component } from '@vanijs/vani'
-import { renderToString } from 'vani/ssr'
+import { component, renderToString } from '@vanijs/vani'
 
 const App = component(() => () => 'Hello SSR')
 const html = await renderToString([App()])

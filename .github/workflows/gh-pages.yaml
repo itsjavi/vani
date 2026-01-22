@@ -45,6 +45,10 @@ jobs:
           node-version: 24
           cache: 'pnpm'
 
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -61,9 +65,21 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Cache Playwright browsers
+        if: steps.bench_changes.outputs.changed == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
       - name: Run benchmarks
         if: steps.bench_changes.outputs.changed == 'true'
-        run: pnpm bench --headless --cpu 3 --runs 4 --warmups 2
+        run: |
+          export PLAYWRIGHT_BROWSERS_PATH="${{ github.workspace }}/.cache/ms-playwright"
+          pnpm exec playwright install
+          pnpm bench --headless --cpu 3 --runs 4 --warmups 2
 
       - name: Build
         run: pnpm build:pages
