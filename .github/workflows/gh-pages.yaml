@@ -65,8 +65,35 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Restore bench results cache
+        id: bench_results_cache
+        uses: actions/cache/restore@v5
+        with:
+          path: bench/snapshot/results
+          key: bench-results-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            bench-results-${{ runner.os }}-
+
+      - name: Check for cached bench results
+        id: bench_results
+        run: |
+          if [ -f bench/snapshot/results/bench-results.json ] && [ -f bench/snapshot/results/bench-results-vani.json ] && [ -f bench/snapshot/results/bench-last-args.json ]; then
+            echo "has_results=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_results=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Decide whether to run benchmarks
+        id: bench_run
+        run: |
+          if [ "${{ steps.bench_changes.outputs.changed }}" = "true" ] || [ "${{ steps.bench_results.outputs.has_results }}" != "true" ]; then
+            echo "run_bench=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_bench=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Cache Playwright browsers
-        if: steps.bench_changes.outputs.changed == 'true'
+        if: steps.bench_run.outputs.run_bench == 'true'
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.cache/ms-playwright
@@ -75,11 +102,18 @@ jobs:
             playwright-${{ runner.os }}-
 
       - name: Run benchmarks
-        if: steps.bench_changes.outputs.changed == 'true'
+        if: steps.bench_run.outputs.run_bench == 'true'
         run: |
           export PLAYWRIGHT_BROWSERS_PATH="${{ github.workspace }}/.cache/ms-playwright"
           pnpm exec playwright install
           pnpm bench --headless --cpu 3 --runs 4 --warmups 2
+
+      - name: Save bench results cache
+        if: steps.bench_run.outputs.run_bench == 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: bench/snapshot/results
+          key: bench-results-${{ runner.os }}-${{ github.sha }}
 
       - name: Build
         run: pnpm build:pages
