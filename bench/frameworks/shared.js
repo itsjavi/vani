@@ -1,20 +1,12 @@
-export interface Benchmark {
-  run(): void
-  teardown(): void
-}
-
-export interface Framework {
-  name: string
-  insert: () => Benchmark
-  // swap: Benchmark
-  // update: Benchmark
-  // replace: Benchmark
-}
-
-export type Row = { id: number; label: string }
-
 let idCounter = 1
 
+/**
+ * @typedef {Object} Row
+ * @property {number} id
+ * @property {string} label
+ */
+
+// adjectives, colors, nouns
 const A = [
     'pretty',
     'large',
@@ -71,7 +63,12 @@ const A = [
     'keyboard',
   ]
 
-export function buildData(count: number) {
+/**
+ *
+ * @param {number} count
+ * @returns {Row[]}
+ */
+export function buildData(count) {
   let data = new Array(count)
 
   for (let i = 0; i < count; i++) {
@@ -85,15 +82,25 @@ export function buildData(count: number) {
   return data
 }
 
-export function get1000Rows(): Row[] {
+/**
+ * @returns {Row[]}
+ */
+export function get1000Rows() {
   return buildData(1000)
 }
 
-export function get10000Rows(): Row[] {
+/**
+ * @returns {Row[]}
+ */
+export function get10000Rows() {
   return buildData(10000)
 }
 
-export function updatedEvery10thRow(data: Row[]): Row[] {
+/**
+ * @param {Row[]} data
+ * @returns {Row[]}
+ */
+export function updatedEvery10thRow(data) {
   let newData = data.slice(0)
   for (let i = 0, d = data, len = d.length; i < len; i += 10) {
     newData[i] = { id: data[i].id, label: data[i].label + ' !!!' }
@@ -101,7 +108,11 @@ export function updatedEvery10thRow(data: Row[]): Row[] {
   return newData
 }
 
-export function swapRows(data: Row[]): Row[] {
+/**
+ * @param {Row[]} data
+ * @returns {Row[]}
+ */
+export function swapRows(data) {
   let d = data.slice()
   if (d.length > 998) {
     let tmp = d[1]
@@ -111,11 +122,21 @@ export function swapRows(data: Row[]): Row[] {
   return d
 }
 
-export function remove(data: Row[], id: number): Row[] {
+/**
+ * @param {Row[]} data
+ * @param {number} id
+ * @returns {Row[]}
+ */
+export function remove(data, id) {
   return data.filter((d) => d.id !== id)
 }
 
-export function sortRows(data: Row[], ascending: boolean = true): Row[] {
+/**
+ * @param {Row[]} data
+ * @param {boolean} ascending
+ * @returns {Row[]}
+ */
+export function sortRows(data, ascending = true) {
   let sorted = data.slice().sort((a, b) => {
     if (ascending) {
       return a.label.localeCompare(b.label)
