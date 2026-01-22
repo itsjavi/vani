@@ -5,7 +5,7 @@
   "scripts": {
     "bench": "bun run build-frameworks && bun run runner.ts",
     "build-frameworks": "bun run --filter 'benchmark-*' build-prod && cd ../ && pnpm run build:lib",
-    "dev": "bun run build:frameworks && pnpm run start --watch",
+    "dev": "bun run build-frameworks && pnpm run start --watch",
     "start": "PORT=4555 bun run ./index.html ./frameworks/*/index.html ./debug/*/index.html"
   },
   "devDependencies": {
