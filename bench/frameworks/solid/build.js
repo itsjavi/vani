@@ -5,7 +5,7 @@ let isProduction = process.env.NODE_ENV === 'production'
 let isWatch = process.argv.includes('--watch')
 
 let buildOptions = {
-  entryPoints: ['index.tsx'],
+  entryPoints: ['src/index.tsx'],
   bundle: true,
   outfile: 'dist/index.js',
   format: 'esm',

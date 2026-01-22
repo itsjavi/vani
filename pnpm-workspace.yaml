@@ -6,10 +6,13 @@ packages:
 catalog:
   '@types/bun': ^1.3.6
   '@types/node': ^25.0.10
-  '@typescript/native-preview': 7.0.0-dev.20260120.1
+  '@typescript/native-preview': 7.0.0-dev.20260122.2
   playwright: ^1.57.0
   typescript: ^5.9.3
   vite: 8.0.0-beta.8
 
 onlyBuiltDependencies:
   - esbuild
+
+overrides:
+  bootstrap: 3.3.7

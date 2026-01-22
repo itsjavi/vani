@@ -13,6 +13,9 @@ body {
 .jumbotron {
   padding-top: 10px;
   padding-bottom: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 .test-data a {
   display: block;
@@ -27,4 +30,9 @@ body {
 }
 .jumbotron .row h1 {
   font-size: 40px;
+}
+.back-to-home {
+  display: block;
+  margin-bottom: 10px;
+  padding: 0.5rem 2rem;
 }

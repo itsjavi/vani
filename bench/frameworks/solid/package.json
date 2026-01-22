@@ -1,18 +1,18 @@
 {
-  "name": "benchmark-solid",
+  "name": "benchmark-solid-js",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "node build.js",
-    "build:prod": "NODE_ENV=production node build.js",
+    "build-prod": "NODE_ENV=production node build.js",
     "dev": "node build.js --watch"
   },
   "dependencies": {
-    "esbuild": "^0.27.2",
     "solid-js": "^1.9.10"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "esbuild": "^0.27.2",
     "esbuild-plugin-solid": "^0.6.0"
   }
 }

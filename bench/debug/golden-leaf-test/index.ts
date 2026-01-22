@@ -35,7 +35,6 @@ import {
   span,
   table,
   tbody,
-  td,
   th,
   thead,
   tr,
@@ -142,7 +141,7 @@ const App = component(() => {
       div({ className: 'page-header' }, h1('Golden leaf test ', small('UI runner'))),
       p(
         { className: 'lead' },
-        'Only Item B should re-render when it updates. All other nodes must stay untouched.',
+        'Only the buttons should re-render when they update. All other nodes must stay untouched.',
       ),
       div(
         { className: 'row' },
@@ -243,7 +242,7 @@ queueMicrotask(() => {
       assertEqual('Header', renders['Header'], 0)
       assertEqual('Sidebar', renders['Sidebar'], 0)
       assertEqual('Footer', renders['Footer'], 0)
-      setStatus('success', '✅ Golden leaf test passed.')
+      setStatus('success', '✅ Golden leaf test passed: Only Item B re-rendered.')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Golden leaf test failed.'
       setStatus('danger', message)

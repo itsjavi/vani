@@ -27,7 +27,7 @@ app.innerHTML = `
             ${frameworks
               .map(
                 (framework) =>
-                  `<a class="list-group-item" href="/${framework?.path}">${framework?.name}</a>`,
+                  `<a class="list-group-item" href="/${framework?.path}">${framework?.name} (v${framework?.version})</a>`,
               )
               .join('')}
           </div>
@@ -43,7 +43,10 @@ app.innerHTML = `
         <div class="panel-body">
           <div class="list-group">
             ${debugTests
-              .map((test) => `<a class="list-group-item" href="/${test?.path}">${test?.name}</a>`)
+              .map(
+                (test) =>
+                  `<a class="list-group-item" href="/${test?.path}">${test?.name} (v${test?.version})</a>`,
+              )
               .join('')}
           </div>
         </div>

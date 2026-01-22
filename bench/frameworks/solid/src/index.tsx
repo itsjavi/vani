@@ -1,6 +1,5 @@
 import { createSelector, createSignal, For } from 'solid-js'
 import { render } from 'solid-js/web'
-import type { Row } from '../shared'
 import {
   get10000Rows,
   get1000Rows,
@@ -8,7 +7,8 @@ import {
   sortRows,
   swapRows,
   updatedEvery10thRow,
-} from '../shared'
+  type Row,
+} from '../../shared'
 
 export const name = 'solid'
 

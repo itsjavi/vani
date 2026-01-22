@@ -1,15 +1,18 @@
 {
   "name": "benchmark-svelte",
+  "private": true,
   "type": "module",
   "scripts": {
-    "build-prod": "rollup -c --environment production",
+    "build-prod": "NODE_ENV=production rollup -c --environment production",
     "dev": "rollup -c -w"
+  },
+  "dependencies": {
+    "svelte": "^5.47.1"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-terser": "^0.4.4",
     "rollup": "^4.55.3",
-    "rollup-plugin-svelte": "^7.2.3",
-    "svelte": "^5.47.1"
+    "rollup-plugin-svelte": "^7.2.3"
   }
 }

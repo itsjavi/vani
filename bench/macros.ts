@@ -5,6 +5,20 @@
 
 import fs from 'fs'
 import path from 'path'
+import vaniPkg from '../package.json'
+
+function getVersion(packagePath: string) {
+  if (!fs.existsSync(packagePath)) {
+    return '0.0.0'
+  }
+  const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'))
+  const frameworkPackage = pkg.name.replace('benchmark-', '')
+  if (frameworkPackage === 'vani') {
+    return vaniPkg.version
+  }
+  const version = pkg.version || pkg.dependencies[frameworkPackage] || '0.0.0'
+  return version.replace(/[vV~^]/, '')
+}
 
 export function getProjects(projectType: 'frameworks' | 'debug' = 'frameworks') {
   const basePath = path.join(process.cwd(), projectType)
@@ -14,10 +28,12 @@ export function getProjects(projectType: 'frameworks' | 'debug' = 'frameworks') 
     .map((name) => {
       const dirPath = path.join(basePath, name)
       const indexPath = path.join(dirPath, 'index.html')
+      const packagePath = path.join(dirPath, 'package.json')
 
       if (fs.statSync(dirPath).isDirectory() && fs.existsSync(indexPath)) {
         return {
           name,
+          version: getVersion(packagePath),
           path: `${projectType}/${name}`,
         }
       }
