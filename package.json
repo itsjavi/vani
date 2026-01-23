@@ -102,7 +102,7 @@
     "eslint": "^9.39.2",
     "globals": "^17.1.0",
     "knip": "^5.82.1",
-    "lucide-static": "^0.562.0",
+    "lucide-static": "^0.563.0",
     "madge": "^8.0.0",
     "playwright": "catalog:",
     "prettier": "^3.8.1",
