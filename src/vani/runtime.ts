@@ -32,6 +32,13 @@ export type SSRNode =
 
 export type VNode = Node | SSRNode
 
+export class HydrationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'HydrationError'
+  }
+}
+
 export interface Handle {
   /**
    * Schedules a render for the component.
@@ -55,14 +62,21 @@ export interface Handle {
    * This is purely syntatic sugar, as it is basically the same as running the function
    * on the setup phase and calling onCleanup to add a cleanup function.
    *
-   * Using effects is necessary in SSR mode, for side effects to not run on the server
+   * Using onBeforeMount is necessary in SSR mode, for side effects to not run on the server
    * (e.g. timers, subscriptions, DOM usage, etc.)
    *
-   * Runs a side effect function when the component is mounted.
+   * Runs a side effect function during component setup, before the first render.
    * The returning function may be a cleanup function that is called when the component is disposed.
    *
    */
-  effect(fn: () => void | (() => void)): void
+  onBeforeMount(fn: () => void | (() => void)): void
+  /**
+   * Runs after the first render, once the component's nodes are in the DOM.
+   * The first argument is a lazy getter for the mounted nodes, so it only traverses
+   * the DOM if called. The second argument is the parent mount point.
+   * The returning function may be a cleanup function that is called when the component is disposed.
+   */
+  onMount(fn: (getNodes: () => Node[], parent: Node | null) => void | (() => void)): void
 }
 
 export type RenderFn = () => VChild
@@ -388,6 +402,16 @@ function clearBetween(start: Comment, end: Comment) {
   }
 }
 
+function getNodesBetween(start: Comment, end: Comment): Node[] {
+  const nodes: Node[] = []
+  let node = start.nextSibling
+  while (node && node !== end) {
+    nodes.push(node)
+    node = node.nextSibling
+  }
+  return nodes
+}
+
 // ─────────────────────────────────────────────
 // Core mounting logic
 // ─────────────────────────────────────────────
@@ -428,7 +452,11 @@ function mountComponent<Props>(
   options?: MountOptions,
 ): Handle {
   const cleanups: Array<() => void> = []
+  const mountCallbacks: Array<
+    (getNodes: () => Node[], parent: Node | null) => void | (() => void)
+  > = []
   let disposed = false
+  let hasMounted = false
   let start: Comment
   let end: Comment
   let currentRootElement: Element | null = null
@@ -521,6 +549,26 @@ function mountComponent<Props>(
       const nextElement = getSingleElementFromNode(node)
       end.before(node, end)
       currentRootElement = nextElement
+
+      if (!hasMounted) {
+        hasMounted = true
+        if (mountCallbacks.length > 0) {
+          const parentNode = start.parentNode
+          let cachedNodes: Node[] | null = null
+          const getNodes = () => {
+            if (cachedNodes) return cachedNodes
+            cachedNodes = getNodesBetween(start, end)
+            return cachedNodes
+          }
+          const callbacks = mountCallbacks.splice(0, mountCallbacks.length)
+          for (const callback of callbacks) {
+            const cleanup = callback(getNodes, parentNode)
+            if (typeof cleanup === 'function') {
+              cleanups.push(cleanup)
+            }
+          }
+        }
+      }
     },
 
     onCleanup(fn) {
@@ -548,11 +596,33 @@ function mountComponent<Props>(
       render = (() => document.createComment('disposed')) as any
     },
 
-    effect(fn) {
+    onBeforeMount(fn) {
       const cleanup = fn()
       if (typeof cleanup === 'function') {
         cleanups.push(cleanup)
       }
+    },
+
+    onMount(fn) {
+      if (disposed) return
+      if (hasMounted) {
+        queueMicrotask(() => {
+          if (disposed) return
+          const parentNode = start.parentNode
+          let cachedNodes: Node[] | null = null
+          const getNodes = () => {
+            if (cachedNodes) return cachedNodes
+            cachedNodes = getNodesBetween(start, end)
+            return cachedNodes
+          }
+          const cleanup = fn(getNodes, parentNode)
+          if (typeof cleanup === 'function') {
+            cleanups.push(cleanup)
+          }
+        })
+        return
+      }
+      mountCallbacks.push(fn)
     },
   }
 
@@ -598,11 +668,19 @@ function mountComponent<Props>(
       }
     }
 
-    result.then((realRender) => {
-      if (disposed) return
-      render = realRender
-      handle.update()
-    })
+    result
+      .then((realRender) => {
+        if (disposed) return
+        render = realRender
+        handle.update()
+      })
+      .catch((error) => {
+        if (disposed) return
+        console.error('[vani] async component failed:', error)
+        queueMicrotask(() => {
+          throw error
+        })
+      })
 
     return handle
   }
@@ -1289,7 +1367,7 @@ function findNextStartAnchor(parent: Node, componentIndex: number): Comment {
     `Expected <!--vani:start--> for component #${componentIndex}, but none was found. ` +
       `This usually means the server HTML does not match the client component tree.`,
   )
-  throw new Error('[vani] hydration failed: start anchor not found')
+  throw new HydrationError('[vani] hydration failed: start anchor not found')
 }
 
 function findMatchingEndAnchor(start: Comment, componentIndex: number): Comment {
@@ -1313,7 +1391,7 @@ function findMatchingEndAnchor(start: Comment, componentIndex: number): Comment 
     `Expected <!--vani:end--> for component #${componentIndex}, but none was found. ` +
       `This usually means the server HTML does not match the client component tree.`,
   )
-  throw new Error('[vani] hydration failed: end anchor not found')
+  throw new HydrationError('[vani] hydration failed: end anchor not found')
 }
 
 export function hydrateToDOM(components: Renderable | Renderable[], root: HTMLElement): Handle[] {
@@ -1324,7 +1402,11 @@ export function hydrateToDOM(components: Renderable | Renderable[], root: HTMLEl
   try {
     handles = renderToDOM(components, root)
   } catch (error) {
-    console.error('[vani] hydration failed:', error)
+    if (error instanceof HydrationError) {
+      console.error('[vani] hydration failed:', error)
+    } else {
+      throw error
+    }
   } finally {
     if (isDevMode() && hydrationCursor) {
       let node: ChildNode | null = hydrationCursor

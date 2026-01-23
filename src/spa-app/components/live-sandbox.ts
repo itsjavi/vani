@@ -152,7 +152,7 @@ export const LiveSandboxDialog = component((props: LiveSandboxProps, handle: Han
     debounceId = setTimeout(() => sendCode(code), 200)
   }
 
-  handle.effect(() => {
+  handle.onBeforeMount(() => {
     const initId = setTimeout(() => {
       if (!editorRef.current) return
 

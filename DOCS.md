@@ -226,6 +226,8 @@ export function MyReactComponent() {
 - Optional fine-grained state with `signal()`, `derive()`, `effect()`, plus `text()`/`attr()`
   helpers
 - Async components with fallbacks
+- `onMount(getNodes, parent)` gives access to the rendered DOM subtree without ref plumbing,
+  aligning with explicit updates and simplifying vanilla JS integrations
 - `className` accepts string, array, and object forms for ergonomic composition
 - ESM-first and designed to run in any modern environment
 
@@ -727,7 +729,7 @@ const List = component((_, handle: Handle) => {
       ),
     )
   }
-  handle.effect(() => {
+  handle.onBeforeMount(() => {
     queueMicrotask(renderRows)
   })
 
@@ -1086,7 +1088,7 @@ import { component, div, button, type Handle } from '@vanijs/vani'
 import { getState, setState, subscribe } from './store'
 
 const Counter = component((_, handle: Handle) => {
-  handle.effect(() => subscribe(() => handle.update()))
+  handle.onBeforeMount(() => subscribe(() => handle.update()))
 
   return () => {
     const { count } = getState()
@@ -1170,7 +1172,7 @@ by never mutating another module's state directly; instead call exported command
 scale, manual invalidation challenges include fan-out, over- or under-invalidating, update
 ordering/races, stale reads during transitions, lifecycle leaks, and lack of observability. Mitigate
 with explicit contracts, centralized command surfaces, predictable ordering, cleanup via
-`handle.effect()`, and lightweight logging around invalidation helpers.
+`handle.onBeforeMount()`, and lightweight logging around invalidation helpers.
 
 Architecture sketch:
 
@@ -1198,8 +1200,8 @@ Each module owns its state and exposes a small API:
 
 2. View adapters (bind handles)
 
-Views subscribe once via `handle.effect()` and call `handle.update()` when their module notifies.
-This keeps invalidation scoped to the subtree that owns the handle.
+Views subscribe once via `handle.onBeforeMount()` and call `handle.update()` when their module
+notifies. This keeps invalidation scoped to the subtree that owns the handle.
 
 3. Coordinator or message hub
 
@@ -1268,7 +1270,7 @@ export const createUsersFeature = (): { api: UsersFeatureApi; View: Component } 
   }
 
   const View = component((_, handle: Handle) => {
-    handle.effect(() => api.subscribe(() => handle.update()))
+    handle.onBeforeMount(() => api.subscribe(() => handle.update()))
     return () => div(api.getUsers().map((user) => div(user.name)))
   })
 
@@ -1340,7 +1342,7 @@ export const invalidateUserRow = (id: string) => {
 }
 
 export const UserRow = component<{ id: string; name: string }>((props, handle) => {
-  handle.effect(() => bindUserRow(props.id, handle))
+  handle.onBeforeMount(() => bindUserRow(props.id, handle))
   return () => div(props.name)
 })
 ```
@@ -1389,7 +1391,7 @@ export const queueUpdate = (handle: Handle) => {
 - Stale reads during transitions: if you defer with `startTransition()`, ensure that the render
   reads the latest snapshot or that the transition captures the intended version.
 - Lifecycle leaks: if a handle isn't unsubscribed, updates keep firing. Always return cleanup from
-  `subscribe()` and bind it through `handle.effect()`.
+  `subscribe()` and bind it through `handle.onBeforeMount()`.
 - Observability gaps: without implicit reactivity, you need traceability. Wrap invalidation helpers
   to log or count updates per module and catch runaway loops early.
 
@@ -1409,7 +1411,7 @@ Creates a component factory. The `fn` receives `props` and a `handle`.
 import { component, div, type Handle } from '@vanijs/vani'
 
 const Card = component<{ title: string }>((props, handle: Handle) => {
-  handle.effect(() => {
+  handle.onBeforeMount(() => {
     console.log('Mounted:', props.title)
   })
 
@@ -1456,6 +1458,9 @@ const root = document.getElementById('app')!
 const handles = hydrateToDOM(App(), root)
 handles.forEach((handle) => handle.update())
 ```
+
+If hydration fails due to missing anchors or mismatched structure, Vani raises a `HydrationError`
+and `hydrateToDOM()` logs it. Other errors are rethrown so they surface immediately.
 
 ### `renderToString(components)`
 
@@ -1505,7 +1510,8 @@ div(span('Label'), input({ type: 'text' }), button({ onclick: () => {} }, 'Submi
 ### SVG icons (Lucide)
 
 Use the Vite SVG plugin at `src/ecosystem/vite-plugin-vani-svg.ts` and import SVGs with `?vani`.
-This keeps the bundle small by only including the icons you actually import.
+This keeps the bundle small by only including the icons you actually import. Invalid SVG strings
+throw an error so failures stay obvious.
 
 In your `vite.config.ts`:
 
@@ -1566,25 +1572,52 @@ const Parent = component(() => {
 })
 ```
 
-### Cleanup and effects
+### Cleanup and lifecycle
 
-Effects are explicit and can return a cleanup function.
+The `onBeforeMount` hook runs once during component setup (before the first render) and can return a
+cleanup function.
 
-If you plan to use vani for a SSR/SSG application, you should use effects to run client-only code
-such as accessing the window object, accessing the DOM, etc.
+If you plan to use vani for a SSR/SSG application, you should use `onBeforeMount` to run client-only
+code such as accessing the window object, accessing the DOM, etc.
 
-Effects are very simple and run once during component setup (the component function run). They do
-not re-run on every `handle.update()`; updates only call the render function.
+The `onBeforeMount` hook is very simple and runs once during component setup (the component function
+run). It does not re-run on every `handle.update()`; updates only call the render function.
 
 ```ts
 import { component, div } from '@vanijs/vani'
 
 const Timer = component((_, handle) => {
-  handle.effect(() => {
+  handle.onBeforeMount(() => {
     const id = setInterval(() => console.log('tick'), 1000)
     return () => clearInterval(id)
   })
   return () => div('Timer running…')
+})
+```
+
+The `onMount` hook runs after the first render, once the component's nodes are in the DOM. It
+receives a lazy `getNodes()` function and the parent mount point.
+
+Benefits:
+
+- No need to set up refs ahead of time just to access nodes after render.
+- Easy to initialize external, vanilla JS libraries with all rendered nodes in one place.
+- `getNodes()` is lazy, so you only pay for DOM traversal if you actually need it.
+
+```ts
+import { component, div } from '@vanijs/vani'
+
+const Measure = component((_, handle) => {
+  handle.onMount((getNodes, parent) => {
+    const nodes = getNodes()
+    const firstElement = nodes.find((node) => node instanceof HTMLElement)
+    if (!firstElement) return
+
+    const rect = (firstElement as HTMLElement).getBoundingClientRect()
+    console.log('Mounted in', parent, 'size', rect.width, rect.height)
+  })
+
+  return () => div('Measured')
 })
 ```
 
@@ -1601,7 +1634,7 @@ const Subscription = component((_, handle) => {
 })
 ```
 
-Both patterns are equivalent. Use `handle.effect()` when the setup and cleanup are logically
+Both patterns are equivalent. Use `handle.onBeforeMount()` when the setup and cleanup are logically
 grouped, and `handle.onCleanup()` when you need to register cleanup separately from initialization.
 
 ### Signals and DOM bindings (optional)

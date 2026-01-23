@@ -29,7 +29,9 @@ import {
   div,
   h1,
   h3,
+  hydrateToDOM,
   p,
+  renderSvgString,
   renderToDOM,
   signal,
   span,
@@ -39,6 +41,7 @@ import {
   th,
   thead,
   tr,
+  HydrationError,
   type Handle,
   type RenderFn,
 } from 'vani'
@@ -79,6 +82,42 @@ function runRenderInputSmokeTests() {
     }
     cleanups.push(...arrayHandles)
     arrayHandles[0].updateSync()
+
+    const hydrationRoot = document.createElement('div')
+    hydrationRoot.style.display = 'none'
+    hydrationRoot.innerHTML = '<div>no anchors</div>'
+    document.body.appendChild(hydrationRoot)
+
+    const loggedErrors: unknown[][] = []
+    const originalError = console.error
+    console.error = (...args) => {
+      loggedErrors.push(args)
+      originalError(...args)
+    }
+
+    try {
+      hydrateToDOM(Smoke(), hydrationRoot)
+    } finally {
+      console.error = originalError
+      hydrationRoot.remove()
+    }
+
+    const sawHydrationError = loggedErrors.some((args) =>
+      args.some((arg) => arg instanceof HydrationError),
+    )
+    if (!sawHydrationError) {
+      throw new Error('[hydrateToDOM] expected HydrationError to be logged.')
+    }
+
+    let svgThrew = false
+    try {
+      renderSvgString('<svg><g></svg>')
+    } catch {
+      svgThrew = true
+    }
+    if (!svgThrew) {
+      throw new Error('[renderSvgString] expected invalid SVG to throw.')
+    }
   } finally {
     for (const handle of cleanups) {
       handle.dispose()

@@ -160,6 +160,13 @@ export const renderSvgString = (svg: string, options?: SvgRenderOptions): VNode 
   let base = svgStringCache.get(svg)
   if (!base) {
     const doc = new DOMParser().parseFromString(svg, 'image/svg+xml')
+    const parserError =
+      doc.documentElement.nodeName === 'parsererror'
+        ? doc.documentElement
+        : doc.querySelector('parsererror')
+    if (parserError) {
+      throw new Error('[vani] invalid SVG string')
+    }
     base = doc.documentElement as unknown as SVGSVGElement
     svgStringCache.set(svg, base)
   }

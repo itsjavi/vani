@@ -11,6 +11,7 @@ updates and opt-in fine-grained state.
 - Subtree ownership via anchors
 - Runtime-first, no compiler
 - Opt-in signals for fine-grained updates
+- Ref-based and Ref-free DOM subtree access on mount.
 
 ## Installation
 

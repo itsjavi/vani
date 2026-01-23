@@ -42,7 +42,8 @@ function createSsrHandle(): Handle {
     updateSync() {},
     dispose() {},
     onCleanup() {},
-    effect() {},
+    onBeforeMount() {},
+    onMount() {},
   }
 }
 

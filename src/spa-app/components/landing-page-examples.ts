@@ -213,7 +213,7 @@ const subscribeGlobal = (listener: () => void) => {
 }
 
 const GlobalStateExample = component((_, handle: Handle) => {
-  handle.effect(() => subscribeGlobal(() => handle.update()))
+  handle.onBeforeMount(() => subscribeGlobal(() => handle.update()))
 
   return () => {
     const { count } = getGlobalState()
@@ -297,7 +297,7 @@ const AsyncExample = component(async () => {
 const ClientOnlyClock = component((_, handle: Handle) => {
   let now = new Date()
 
-  handle.effect(() => {
+  handle.onBeforeMount(() => {
     const id = setInterval(() => {
       now = new Date()
       handle.update()
@@ -542,7 +542,7 @@ const globalStateCode = [
   '};',
   '',
   'const Counter = component((_, handle) => {',
-  '  handle.effect(() => subscribe(',
+  '  handle.onBeforeMount(() => subscribe(',
   '    () => handle.update()',
   '  ));',
   '  return () => {',
@@ -596,7 +596,7 @@ const asyncCode = [
 const clientOnlyCode = [
   'const Clock = component((_, handle) => {',
   '  let now = new Date();',
-  '  handle.effect(() => {',
+  '  handle.onBeforeMount(() => {',
   '    const id = setInterval(() => {',
   '      now = new Date();',
   '      handle.update();',

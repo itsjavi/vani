@@ -248,7 +248,7 @@ const TableRow = component<{ id: number }>((props) => {
 })
 
 const DataTable = component((_, handle: Handle) => {
-  handle.effect(() => {
+  handle.onBeforeMount(() => {
     queueMicrotask(renderRows)
   })
 
@@ -397,7 +397,7 @@ const BoxCard = component<{ boxIndex: number; entry: BoxEntry }>((props) => {
 })
 
 const PokeboxGrid = component((_, handle: Handle) => {
-  handle.effect(() => {
+  handle.onBeforeMount(() => {
     queueMicrotask(renderBoxes)
   })
 

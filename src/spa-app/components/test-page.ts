@@ -65,7 +65,7 @@ const CountersTest = component(() => {
 })
 
 const TimerTest = component((_, handle) => {
-  handle.effect(() => {
+  handle.onBeforeMount(() => {
     const id = setInterval(() => {
       console.log('tick')
     }, 1000)

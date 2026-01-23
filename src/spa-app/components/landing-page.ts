@@ -74,6 +74,11 @@ const principles = [
     description: 'Rendering cost scales with subtree size, not app size.',
   },
   {
+    title: 'DOM Is Yours',
+    description:
+      'Access the rendered DOM subtree directly—no hidden layer between you and the DOM.',
+  },
+  {
     title: 'Simple Debugging',
     description: 'Stack traces and behavior are readable and obvious.',
   },
@@ -437,7 +442,7 @@ const PrinciplesSection = component(() => {
           ),
         ),
         h.div(
-          { className: 'space-y-4' },
+          { className: cn('grid gap-4 sm:grid-cols-2') },
           ...principles.map((item) =>
             h.div(
               { className: 'rounded-2xl border border-white/10 bg-white/5 p-6' },

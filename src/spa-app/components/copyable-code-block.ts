@@ -34,7 +34,7 @@ export const CopyableCodeBlock = component<CopyableCodeBlockProps>((props, handl
   let showTick = false
   let tickTimeoutId: ReturnType<typeof setTimeout> | null = null
 
-  handle.effect(() => {
+  handle.onBeforeMount(() => {
     return () => {
       if (tickTimeoutId) {
         clearTimeout(tickTimeoutId)

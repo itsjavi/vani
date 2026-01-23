@@ -14,7 +14,7 @@ Use this when multiple components need shared state without implicit reactivity 
 ## Steps
 
 1. Implement a store with `getState`, `setState`, and `subscribe`.
-2. In components, call `handle.effect()` to subscribe once.
+2. In components, call `handle.onBeforeMount()` to subscribe once.
 3. On store updates, call `handle.update()` from the subscription.
 4. Keep mutations behind store commands to avoid stale views.
 
@@ -41,7 +41,7 @@ Example output:
 ```
 Created: src/store.ts
 Updated: src/counter.ts
-Notes: handle.effect() subscribes once and updates explicitly.
+Notes: handle.onBeforeMount() subscribes once and updates explicitly.
 ```
 
 ## Present Results to User
