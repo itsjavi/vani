@@ -386,6 +386,60 @@ Each component owns a DOM range delimited by anchors:
 
 Updates replace only the DOM between anchors.
 
+### 3.1) Nested component hierarchies (isolated subtrees)
+
+To build a nested tree, have a parent return child component instances as part of its render output.
+Each component instance creates its own anchor range, so parent and child updates stay isolated:
+
+- The parent’s `handle.update()` replaces only the parent’s anchors (but keeps child anchors as part
+  of its subtree).
+- The child’s `handle.update()` replaces only the child’s anchors, without re-rendering the parent.
+
+Example:
+
+```ts
+import { component, div, button, type Handle, type ComponentRef } from '@vanijs/vani'
+
+const Child = component((_, handle: Handle) => {
+  let clicks = 0
+  return () =>
+    div(
+      `Child clicks: ${clicks}`,
+      button(
+        {
+          onclick: () => {
+            clicks += 1
+            handle.update()
+          },
+        },
+        'Click child',
+      ),
+    )
+})
+
+const Parent = component((_, handle: Handle) => {
+  let title = 'Parent'
+  const childRef: ComponentRef = { current: null }
+
+  const rename = () => {
+    title = title === 'Parent' ? 'Parent (renamed)' : 'Parent'
+    handle.update()
+  }
+
+  return () =>
+    div(
+      div(`Title: ${title}`),
+      button({ onclick: rename }, 'Rename parent'),
+      // Nested component subtree (isolated updates)
+      Child({ ref: childRef }),
+    )
+})
+```
+
+When you click "Rename parent", only the parent subtree updates. When you click "Click child", only
+the child subtree updates. This is how you build deep hierarchies while keeping DOM ownership
+isolated per component.
+
 ### 4) Lists and item-level updates
 
 Lists scale well in Vani when each item is its own component. Every item owns a tiny subtree and can
