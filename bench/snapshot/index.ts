@@ -197,6 +197,12 @@ function buildHeaderCell(framework: SnapshotFramework): string {
   return `${framework.name}<br /><small>v${framework.version}</small>`
 }
 
+function buildImplementationLink(path: string, view: string): string {
+  const url = new URL(`../${path}`, window.location.href)
+  url.searchParams.set('view', view)
+  return url.toString()
+}
+
 function render(snapshot: SnapshotPayload): void {
   if (!snapshot.calculated) {
     appRoot.innerHTML = `
@@ -331,7 +337,10 @@ function render(snapshot: SnapshotPayload): void {
                 ${frameworks
                   .map(
                     (fw) =>
-                      `<td class="text-center"><a target="_blank" href="../${fw.path}">view</a></td>`,
+                      `<td class="text-center"><a target="_blank" href="${buildImplementationLink(
+                        fw.path,
+                        suite.id,
+                      )}">view</a></td>`,
                   )
                   .join('')}
               </tr>
