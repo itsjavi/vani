@@ -12,7 +12,10 @@ const RESULTS_DIR = path.join(import.meta.dirname, 'snapshot/results')
 const LAST_ARGS_FILE = path.join(RESULTS_DIR, 'bench-last-args.json')
 const SNAPSHOT_FILE = path.join(RESULTS_DIR, 'bench-results.json')
 const VANI_RESULTS_FILE = path.join(RESULTS_DIR, 'bench-results-vani.json')
-const BLUEPRINT_FILE = path.join(import.meta.dirname, 'frameworks/blueprint.html')
+const BLUEPRINTS = {
+  datatable: path.join(import.meta.dirname, 'frameworks/blueprint-datatable.html'),
+  pokeboxes: path.join(import.meta.dirname, 'frameworks/blueprint-pokeboxes.html'),
+}
 
 interface SavedArgs {
   cpu: string
@@ -25,6 +28,7 @@ interface SavedArgs {
   'no-preflight': boolean
   framework: string[]
   benchmark: string[]
+  view: string[]
 }
 
 // Get list of frameworks
@@ -71,6 +75,7 @@ let { values: args } = parseArgs({
       // default: ['vani', 'preact'],
     },
     benchmark: { type: 'string', multiple: true, short: 'b' },
+    view: { type: 'string', multiple: true, short: 'v' },
   },
   allowPositionals: true,
 })
@@ -98,6 +103,7 @@ if (isRepeat) {
     'no-preflight': args['no-preflight'] ?? false,
     framework: args.framework || [],
     benchmark: args.benchmark || [],
+    view: args.view || [],
   })
 }
 
@@ -111,6 +117,13 @@ let preflightOnly = args['preflight-only'] ?? false
 let noPreflight = args['no-preflight'] ?? false
 let frameworkFilter = args.framework || []
 let benchmarkFilter = args.benchmark || []
+let viewFilter = args.view || []
+let viewportWidth = Number.parseInt(process.env.BENCH_VIEWPORT_WIDTH ?? '', 10)
+let viewportHeight = Number.parseInt(process.env.BENCH_VIEWPORT_HEIGHT ?? '', 10)
+let viewport =
+  Number.isFinite(viewportWidth) && Number.isFinite(viewportHeight)
+    ? { width: viewportWidth, height: viewportHeight }
+    : undefined
 
 interface FunctionProfile {
   name: string
@@ -123,6 +136,8 @@ interface TimingResult {
   total: number
   profile?: FunctionProfile[]
 }
+
+type OperationView = 'datatable' | 'pokeboxes'
 
 interface BenchmarkResult {
   framework: string
@@ -178,10 +193,13 @@ type SnapshotCalculated = {
   frameworkOrder: string[]
   overallScores: Record<string, number | null>
   operationResults: Record<string, Record<string, SnapshotOperationCell>>
+  operationSuites: Record<string, OperationView>
 }
 
 interface Operation {
   name: string
+  view?: OperationView
+  readySelector?: string
   setup?: (page: Page) => Promise<void>
   action: (page: Page) => Promise<TimingResult>
   teardown?: (page: Page) => Promise<void>
@@ -321,6 +339,44 @@ async function create1k(page: Page): Promise<void> {
   await click(page, '#run')
 }
 
+const DEFAULT_VIEW: OperationView = 'datatable'
+const AVAILABLE_VIEWS: OperationView[] = ['datatable', 'pokeboxes']
+
+function resolveOperationView(operation: Operation): OperationView {
+  return operation.view ?? DEFAULT_VIEW
+}
+
+function resolveViewUrl(baseUrl: string, view: OperationView): string {
+  let url = new URL(baseUrl)
+  url.searchParams.set('view', view)
+  return url.toString()
+}
+
+function resolveOperationUrl(baseUrl: string, operation: Operation): string {
+  return resolveViewUrl(baseUrl, resolveOperationView(operation))
+}
+
+function resolveViewReadySelector(view: OperationView): string {
+  return view === 'pokeboxes' ? '#append40' : '#run'
+}
+
+function resolveOperationReadySelector(operation: Operation): string {
+  return operation.readySelector ?? resolveViewReadySelector(resolveOperationView(operation))
+}
+
+function resolveViewFilter(): OperationView[] {
+  if (viewFilter.length === 0) return AVAILABLE_VIEWS
+  const normalized = viewFilter
+    .map((view) => view.toLowerCase())
+    .filter((view): view is OperationView => (AVAILABLE_VIEWS as string[]).includes(view))
+  return normalized.length > 0 ? normalized : AVAILABLE_VIEWS
+}
+
+function filterOperationsByView(operationsToFilter: Operation[]): Operation[] {
+  const allowedViews = new Set(resolveViewFilter())
+  return operationsToFilter.filter((operation) => allowedViews.has(resolveOperationView(operation)))
+}
+
 // Define all benchmark operations
 const operations: Operation[] = [
   {
@@ -385,6 +441,61 @@ const operations: Operation[] = [
     setup: create1k,
     action: (page) => clickAndMeasure(page, '#sortdesc', 'sortDesc'),
     teardown: clear,
+  },
+  {
+    name: 'pokeAppend40',
+    view: 'pokeboxes',
+    readySelector: '#append40',
+    action: (page) => clickAndMeasure(page, '#append40', 'pokeAppend40'),
+  },
+  {
+    name: 'pokePrepend40',
+    view: 'pokeboxes',
+    readySelector: '#append40',
+    setup: (page) => click(page, '#append40'),
+    action: (page) => clickAndMeasure(page, '#prepend40', 'pokePrepend40'),
+  },
+  {
+    name: 'pokeRemoveEvery3rdBox',
+    view: 'pokeboxes',
+    readySelector: '#append40',
+    setup: (page) => click(page, '#append40'),
+    action: (page) => clickAndMeasure(page, '#remove3rdbox', 'pokeRemoveEvery3rdBox'),
+  },
+  {
+    name: 'pokeSwapBoxSets',
+    view: 'pokeboxes',
+    readySelector: '#append40',
+    setup: (page) => click(page, '#append40'),
+    action: (page) => clickAndMeasure(page, '#swapboxsets', 'pokeSwapBoxSets'),
+  },
+  {
+    name: 'pokeReplaceFirst6Boxes',
+    view: 'pokeboxes',
+    readySelector: '#append40',
+    setup: (page) => click(page, '#append40'),
+    action: (page) => clickAndMeasure(page, '#replacefirst6', 'pokeReplaceFirst6Boxes'),
+  },
+  {
+    name: 'pokeRemoveForms',
+    view: 'pokeboxes',
+    readySelector: '#append40',
+    setup: (page) => click(page, '#append40'),
+    action: (page) => clickAndMeasure(page, '#removeforms', 'pokeRemoveForms'),
+  },
+  {
+    name: 'pokeToggleAllCaught',
+    view: 'pokeboxes',
+    readySelector: '#append40',
+    setup: (page) => click(page, '#append40'),
+    action: (page) => clickAndMeasure(page, '#toggleall', 'pokeToggleAllCaught'),
+  },
+  {
+    name: 'pokeToggleEvery3rdCaught',
+    view: 'pokeboxes',
+    readySelector: '#append40',
+    setup: (page) => click(page, '#append40'),
+    action: (page) => clickAndMeasure(page, '#toggle3rd', 'pokeToggleEvery3rdCaught'),
   },
 ]
 
@@ -610,37 +721,47 @@ function buildFirstDiff(expected: string, actual: string): string {
 async function preflightFrameworks(
   page: Page,
   frameworks: string[],
-  blueprintBody: string,
+  blueprintBodies: Record<OperationView, string>,
 ): Promise<string[]> {
   let failures: string[] = []
-  let canonicalBlueprint = await getCanonicalBodyFromMarkup(page, blueprintBody)
-  let firstDiff: { framework: string; diff: string } | null = null
+  let canonicalBlueprints = new Map<OperationView, string>()
+  let firstDiff: { framework: string; view: OperationView; diff: string } | null = null
+
+  for (const view of Object.keys(blueprintBodies) as OperationView[]) {
+    canonicalBlueprints.set(view, await getCanonicalBodyFromMarkup(page, blueprintBodies[view]))
+  }
 
   for (let framework of frameworks) {
-    let url = `${BASE_URL}/${framework}`
-    await page.goto(url)
-    await page.waitForSelector('#run')
-    await page.evaluate(() => {
-      let title = document.querySelector<HTMLElement>('.bench-title')
-      if (title) {
-        title.textContent = 'TITLE'
-      }
-    })
+    for (const view of Object.keys(blueprintBodies) as OperationView[]) {
+      let url = resolveViewUrl(`${BASE_URL}/${framework}`, view)
+      await page.goto(url)
+      await page.waitForSelector(resolveViewReadySelector(view))
+      await page.evaluate(() => {
+        let title = document.querySelector<HTMLElement>('.bench-title')
+        if (title) {
+          title.textContent = 'TITLE'
+        }
+      })
 
-    let canonicalBody = await getCanonicalBodyFromPage(page)
-    if (canonicalBody !== canonicalBlueprint) {
-      failures.push(framework)
-      if (!firstDiff) {
-        firstDiff = {
-          framework,
-          diff: buildFirstDiff(canonicalBlueprint, canonicalBody),
+      let canonicalBody = await getCanonicalBodyFromPage(page)
+      let canonicalBlueprint = canonicalBlueprints.get(view) ?? ''
+      if (canonicalBody !== canonicalBlueprint) {
+        failures.push(`${framework} (${view})`)
+        if (!firstDiff) {
+          firstDiff = {
+            framework,
+            view,
+            diff: buildFirstDiff(canonicalBlueprint, canonicalBody),
+          }
         }
       }
     }
   }
 
   if (firstDiff) {
-    console.error(`Preflight diff for first failing framework: ${firstDiff.framework}`)
+    console.error(
+      `Preflight diff for first failing framework: ${firstDiff.framework} (${firstDiff.view})`,
+    )
     console.error(firstDiff.diff)
   }
 
@@ -730,13 +851,47 @@ async function measureFrameworkResourceMetrics(
   await cdp.send('Performance.enable')
 
   try {
-    await page.goto(url)
-    await page.waitForSelector('#run')
+    const firstOperation = operationsToRun[0]
+    if (!firstOperation) {
+      return {
+        framework,
+        firstRender: {
+          jsHeapUsedSize: 0,
+          jsHeapTotalSize: 0,
+          taskDuration: 0,
+          scriptDuration: 0,
+          layoutDuration: 0,
+          recalcStyleDuration: 0,
+        },
+        afterSuite: {
+          jsHeapUsedSize: 0,
+          jsHeapTotalSize: 0,
+          taskDuration: 0,
+          scriptDuration: 0,
+          layoutDuration: 0,
+          recalcStyleDuration: 0,
+        },
+        delta: {
+          jsHeapUsedSize: 0,
+          jsHeapTotalSize: 0,
+          taskDuration: 0,
+          scriptDuration: 0,
+          layoutDuration: 0,
+          recalcStyleDuration: 0,
+        },
+      }
+    }
+
+    await page.goto(resolveOperationUrl(url, firstOperation))
+    await page.waitForSelector(resolveOperationReadySelector(firstOperation))
     await waitForIdle(page)
 
     const firstRender = await collectResourceMetrics(cdp)
 
     for (const operation of operationsToRun) {
+      await page.goto(resolveOperationUrl(url, operation))
+      await page.waitForSelector(resolveOperationReadySelector(operation))
+      await waitForIdle(page)
       await measureOperation(page, operation)
     }
 
@@ -791,10 +946,10 @@ function buildCalculatedSnapshot(
     resultsByOperation.get(result.operation)!.set(result.framework, result)
   }
 
-  let operations = Array.from(resultsByOperation.keys())
+  let operationNames = Array.from(resultsByOperation.keys())
   let averageMeansByFramework = frameworks.map((framework) => {
-    let totalMeans = operations.map((operation) => {
-      let result = resultsByOperation.get(operation)?.get(framework.name)
+    let totalMeans = operationNames.map((operationName) => {
+      let result = resultsByOperation.get(operationName)?.get(framework.name)
       if (!result) return Number.POSITIVE_INFINITY
       return result.total.mean
     })
@@ -821,9 +976,15 @@ function buildCalculatedSnapshot(
       averageMean !== undefined && Number.isFinite(averageMean) ? averageMean : null
   }
 
+  let operationSuites: Record<string, OperationView> = {}
+  for (let operationName of operationNames) {
+    let operation = operations.find((op) => op.name === operationName)
+    operationSuites[operationName] = operation ? resolveOperationView(operation) : DEFAULT_VIEW
+  }
+
   let operationResults: Record<string, Record<string, SnapshotOperationCell>> = {}
-  for (let operation of operations) {
-    let opResults = resultsByOperation.get(operation)
+  for (let operationName of operationNames) {
+    let opResults = resultsByOperation.get(operationName)
     if (!opResults) continue
     let means = frameworkOrder.map((frameworkName) => {
       let result = opResults.get(frameworkName)
@@ -841,14 +1002,15 @@ function buildCalculatedSnapshot(
       let ratio = best > 0 ? mean / best : 1
       perFramework[frameworkName] = { mean, ci, ratio }
     }
-    operationResults[operation] = perFramework
+    operationResults[operationName] = perFramework
   }
 
   return {
-    operations,
+    operations: operationNames,
     frameworkOrder,
     overallScores,
     operationResults,
+    operationSuites,
   }
 }
 
@@ -929,17 +1091,18 @@ async function benchmarkFramework(
   let results: BenchmarkResult[] = []
   let profiles = new Map<string, FunctionProfile[][]>()
 
-  let url = `${BASE_URL}/${framework}`
+  let baseUrl = `${BASE_URL}/${framework}`
 
   // Filter operations if benchmark filter is specified
   let filteredOperations =
     benchmarkFilter.length > 0
       ? operations.filter((op) => benchmarkFilter.some((filter) => op.name.includes(filter)))
       : operations
+  filteredOperations = filterOperationsByView(filteredOperations)
 
   let resourceMetrics = await measureFrameworkResourceMetrics(
     page,
-    url,
+    baseUrl,
     filteredOperations,
     framework,
   )
@@ -963,8 +1126,9 @@ async function benchmarkFramework(
     // }
 
     // Reload page before each operation to reset all JS state (idCounter, etc.)
-    await page.goto(url)
-    await page.waitForSelector('#run')
+    let operationUrl = resolveOperationUrl(baseUrl, operation)
+    await page.goto(operationUrl)
+    await page.waitForSelector(resolveOperationReadySelector(operation))
 
     // Warmup runs (not recorded)
     for (let i = 0; i < warmupRuns; i++) {
@@ -1171,14 +1335,25 @@ async function main(): Promise<void> {
     server = await startServer()
 
     console.log('Launching browser...')
-    browser = await chromium.launch({ headless })
-    let page = await browser.newPage()
+    browser = await chromium.launch({
+      headless,
+      args: viewport ? [`--window-size=${viewport.width},${viewport.height}`] : undefined,
+    })
+    const context = await browser.newContext(viewport ? { viewport } : undefined)
+    let page = await context.newPage()
 
     // Enable CPU throttling via CDP
     let client = await page.context().newCDPSession(page)
     await client.send('Emulation.setCPUThrottlingRate', { rate: cpuThrottling })
 
-    let blueprintBody = fs.readFileSync(BLUEPRINT_FILE, 'utf-8')
+    const allowedViews = resolveViewFilter()
+    const blueprintBodies: Record<OperationView, string> = {} as Record<OperationView, string>
+    if (allowedViews.includes('datatable')) {
+      blueprintBodies.datatable = fs.readFileSync(BLUEPRINTS.datatable, 'utf-8')
+    }
+    if (allowedViews.includes('pokeboxes')) {
+      blueprintBodies.pokeboxes = fs.readFileSync(BLUEPRINTS.pokeboxes, 'utf-8')
+    }
     let allFrameworks = getFrameworks()
     let frameworks = allFrameworks
 
@@ -1193,6 +1368,17 @@ async function main(): Promise<void> {
       frameworks = frameworkFilter
     }
 
+    if (viewFilter.length > 0) {
+      let invalidViews = viewFilter.filter(
+        (view) => !AVAILABLE_VIEWS.includes(view.toLowerCase() as OperationView),
+      )
+      if (invalidViews.length > 0) {
+        console.error(`Error: Invalid view(s): ${invalidViews.join(', ')}`)
+        console.error(`Available views: ${AVAILABLE_VIEWS.join(', ')}`)
+        process.exit(1)
+      }
+    }
+
     if (preflightOnly && noPreflight) {
       console.error('Error: --preflight-only cannot be used with --no-preflight')
       process.exit(1)
@@ -1200,7 +1386,7 @@ async function main(): Promise<void> {
 
     if (!noPreflight) {
       console.log('Running preflight DOM check...')
-      let preflightFailures = await preflightFrameworks(page, frameworks, blueprintBody)
+      let preflightFailures = await preflightFrameworks(page, frameworks, blueprintBodies)
       if (preflightFailures.length > 0) {
         console.error(
           `Preflight failed: initial body does not match blueprint for ${preflightFailures.length} framework(s): ${preflightFailures.join(

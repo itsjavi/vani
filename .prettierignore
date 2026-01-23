@@ -21,3 +21,4 @@ package.json
 LICENSE
 
 bench/snapshot/results/
+public/

@@ -62,6 +62,7 @@ type SnapshotCalculated = {
   frameworkOrder: string[]
   overallScores: Record<string, number | null>
   operationResults: Record<string, Record<string, SnapshotOperationCell>>
+  operationSuites?: Record<string, string>
 }
 
 const OPERATION_LABELS: Record<
@@ -114,6 +115,38 @@ const OPERATION_LABELS: Record<
   sortDesc: {
     title: 'sort rows (desc)',
     description: 'sort rows descending. (5 warmup runs).',
+  },
+  pokeAppend40: {
+    title: 'append boxes',
+    description: 'appending 40 pokeboxes. (5 warmup runs).',
+  },
+  pokePrepend40: {
+    title: 'prepend boxes',
+    description: 'prepending 40 pokeboxes. (5 warmup runs).',
+  },
+  pokeRemoveEvery3rdBox: {
+    title: 'remove boxes (every 3rd)',
+    description: 'removing every 3rd pokebox. (5 warmup runs).',
+  },
+  pokeSwapBoxSets: {
+    title: 'swap box sets',
+    description: 'swapping first and last box sets. (5 warmup runs).',
+  },
+  pokeReplaceFirst6Boxes: {
+    title: 'replace box contents',
+    description: 'replacing the first 6 pokeboxes with new pokemon. (5 warmup runs).',
+  },
+  pokeRemoveForms: {
+    title: 'remove form variants',
+    description: 'removing form variants and redistributing cells. (5 warmup runs).',
+  },
+  pokeToggleAllCaught: {
+    title: 'toggle all caught',
+    description: 'toggling all pokebox cells as caught. (5 warmup runs).',
+  },
+  pokeToggleEvery3rdCaught: {
+    title: 'toggle every 3rd cell',
+    description: 'toggling caught state for every 3rd cell. (5 warmup runs).',
   },
 }
 
@@ -224,6 +257,21 @@ function render(snapshot: SnapshotPayload): void {
   let resourceMetricsByFramework = new Map(
     (snapshot.resourceMetrics ?? []).map((entry) => [entry.framework, entry]),
   )
+  let operationSuites = calculated.operationSuites ?? {}
+  let suiteOrder = ['datatable', 'pokeboxes']
+  let suiteTitles: Record<string, string> = {
+    datatable: 'Data Table Benchmarks',
+    pokeboxes: 'Pokeboxes Benchmarks',
+  }
+  let suites = suiteOrder
+    .map((suiteId) => ({
+      id: suiteId,
+      title: suiteTitles[suiteId] ?? suiteId,
+      operations: operations.filter(
+        (operation) => (operationSuites[operation] ?? 'datatable') === suiteId,
+      ),
+    }))
+    .filter((suite) => suite.operations.length > 0)
 
   let html = `
     <div class="container py-4">
@@ -254,84 +302,93 @@ function render(snapshot: SnapshotPayload): void {
           snapshot.headless ? 'yes' : 'no'
         } | preflight ${(snapshot.preflightUsed ?? true) ? 'yes' : 'no'}
       </p>
-      <div class="table-responsive shadow-sm rounded bg-white">
-        <table class="table table-bordered table-hover align-middle mb-0 test-results">
-          <thead>
-            <tr class="table-active">
-              <th style="width: 32%">Name<br /><small>Duration for...</small></th>
-              ${frameworks.map((fw) => `<th class="text-center">${buildHeaderCell(fw)}</th>`).join('')}
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="table-active" style="--bs-table-bg-state: #f5f5f5 !important;">
-              <td>Implementation notes</td>
-              ${frameworks
-                .map((framework) => {
-                  const notes = framework.benchmarkNotes?.trim()
-                  return `<td class="text-center small">${notes ? notes : '-'}</td>`
-                })
-                .join('')}
-            </tr>
-            <tr>
-              <td>Implementation link</td>
-              ${frameworks
-                .map(
-                  (fw) =>
-                    `<td class="text-center"><a target="_blank" href="../${fw.path}">view</a></td>`,
-                )
-                .join('')}
-            </tr>
-            <tr>
-              <td><strong>overall score</strong><br /><small>average total time (ms).</small></td>
-              ${overallScores
-                .map((score) => {
-                  if (score === null) {
-                    return `<td class="text-center">-</td>`
-                  }
-                  const ratio =
-                    Number.isFinite(bestOverallScore) && bestOverallScore > 0
-                      ? score / bestOverallScore
-                      : Number.NaN
-                  const className = Number.isFinite(ratio) ? ` ${cellClass(ratio)}` : ''
+      ${suites
+        .map((suite, suiteIndex) => {
+          return `
+        <div class="${suiteIndex === 0 ? '' : 'mt-4 '}table-responsive shadow-sm rounded bg-white">
+          <div class="px-3 py-2" style="background-color: #bfbfbf">
+            <h2 class="h6 mb-0">${suite.title}</h2>
+          </div>
+          <table class="table table-bordered table-hover align-middle mb-0 test-results">
+            <thead>
+              <tr class="table-active">
+                <th style="width: 32%">Name<br /><small>Duration for...</small></th>
+                ${frameworks.map((fw) => `<th class="text-center">${buildHeaderCell(fw)}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="table-active" style="--bs-table-bg-state: #f5f5f5 !important;">
+                <td>Implementation notes</td>
+                ${frameworks
+                  .map((framework) => {
+                    const notes = framework.benchmarkNotes?.trim()
+                    return `<td class="text-center small">${notes ? notes : '-'}</td>`
+                  })
+                  .join('')}
+              </tr>
+              <tr>
+                <td>Implementation link</td>
+                ${frameworks
+                  .map(
+                    (fw) =>
+                      `<td class="text-center"><a target="_blank" href="../${fw.path}">view</a></td>`,
+                  )
+                  .join('')}
+              </tr>
+              <tr>
+                <td><strong>overall score</strong><br /><small>average total time (ms).</small></td>
+                ${overallScores
+                  .map((score) => {
+                    if (score === null) {
+                      return `<td class="text-center">-</td>`
+                    }
+                    const ratio =
+                      Number.isFinite(bestOverallScore) && bestOverallScore > 0
+                        ? score / bestOverallScore
+                        : Number.NaN
+                    const className = Number.isFinite(ratio) ? ` ${cellClass(ratio)}` : ''
+                    return `
+                      <td class="text-center${className}">
+                        <strong>${formatNumber(score)} ms</strong>
+                      </td>
+                    `
+                  })
+                  .join('')}
+              </tr>
+              ${suite.operations
+                .map((operation) => {
+                  let label = OPERATION_LABELS[operation]
+                  let prettyLabel = label
+                    ? `<div><strong>${label.title}</strong></div><small>${label.description}</small>`
+                    : operation
+
                   return `
-                    <td class="text-center${className}">
-                      <strong>${formatNumber(score)} ms</strong>
-                    </td>
+                    <tr>
+                      <td>${prettyLabel}</td>
+                      ${frameworkNames
+                        .map((frameworkName) => {
+                          let result = calculated.operationResults[operation]?.[frameworkName]
+                          if (!result) {
+                            return `<td class="text-center">-</td>`
+                          }
+                          return `
+                            <td class="text-center ${cellClass(result.ratio)}">
+                              <div>${formatNumber(result.mean)} <small>+/- ${formatNumber(result.ci)}</small></div>
+                              <small>(${result.ratio.toFixed(2)})</small>
+                            </td>
+                          `
+                        })
+                        .join('')}
+                    </tr>
                   `
                 })
                 .join('')}
-            </tr>
-            ${operations
-              .map((operation) => {
-                let label = OPERATION_LABELS[operation]
-                let prettyLabel = label
-                  ? `<div><strong>${label.title}</strong></div><small>${label.description}</small>`
-                  : operation
-
-                return `
-                  <tr>
-                    <td>${prettyLabel}</td>
-                    ${frameworkNames
-                      .map((frameworkName) => {
-                        let result = calculated.operationResults[operation]?.[frameworkName]
-                        if (!result) {
-                          return `<td class="text-center">-</td>`
-                        }
-                        return `
-                          <td class="text-center ${cellClass(result.ratio)}">
-                            <div>${formatNumber(result.mean)} <small>+/- ${formatNumber(result.ci)}</small></div>
-                            <small>(${result.ratio.toFixed(2)})</small>
-                          </td>
-                        `
-                      })
-                      .join('')}
-                  </tr>
-                `
-              })
-              .join('')}
-          </tbody>
-        </table>
-      </div>
+            </tbody>
+          </table>
+        </div>
+      `
+        })
+        .join('')}
       ${
         snapshot.resourceMetrics && snapshot.resourceMetrics.length > 0
           ? `

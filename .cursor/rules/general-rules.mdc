@@ -27,3 +27,5 @@ alwaysApply: true
 
 - When changing benchmarking code (anything under `bench`), always keep in mind the rules defined in
   `bench/README.md`.
+
+- Never remove user's comments from the code, unless they are totally outdated or incorrect.

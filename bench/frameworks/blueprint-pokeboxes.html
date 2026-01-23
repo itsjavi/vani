@@ -1,0 +1,82 @@
+<body>
+  <div class="back-to-home container py-2">
+    <a class="link-secondary text-decoration-none" href="../../">Back to home</a>
+  </div>
+  <div id="main">
+    <div class="container">
+      <div class="bench-header jumbo-hero mb-3">
+        <div class="row align-items-center g-0">
+          <div class="col-lg-6">
+            <div class="bench-view-toggle" id="view-toggle">
+              <button
+                type="button"
+                class="bench-view-btn"
+                aria-pressed="false"
+                aria-label="View data table"
+                title="View data table"
+              >
+                📊
+              </button>
+              <button
+                type="button"
+                class="bench-view-btn is-active"
+                aria-pressed="true"
+                aria-label="View pokeboxes"
+                title="View pokeboxes"
+              >
+                📦
+              </button>
+            </div>
+            <h1 class="bench-title mb-0">TITLE</h1>
+          </div>
+          <div class="col-lg-6">
+            <div class="row g-2 bench-actions" id="app-actions">
+              <div class="col-6">
+                <button type="button" class="btn btn-primary w-100" id="append40">
+                  Append 40 boxes
+                </button>
+              </div>
+              <div class="col-6">
+                <button type="button" class="btn btn-primary w-100" id="prepend40">
+                  Prepend 40 boxes
+                </button>
+              </div>
+              <div class="col-6">
+                <button type="button" class="btn btn-primary w-100" id="remove3rdbox">
+                  Remove every 3rd box
+                </button>
+              </div>
+              <div class="col-6">
+                <button type="button" class="btn btn-primary w-100" id="swapboxsets">
+                  Swap box sets
+                </button>
+              </div>
+              <div class="col-6">
+                <button type="button" class="btn btn-primary w-100" id="replacefirst6">
+                  Replace first 6 boxes
+                </button>
+              </div>
+              <div class="col-6">
+                <button type="button" class="btn btn-primary w-100" id="removeforms">
+                  Remove form variants
+                </button>
+              </div>
+              <div class="col-6">
+                <button type="button" class="btn btn-primary w-100" id="toggleall">
+                  Toggle all as caught
+                </button>
+              </div>
+              <div class="col-6">
+                <button type="button" class="btn btn-primary w-100" id="toggle3rd">
+                  Toggle every 3rd cell
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pokebox-grid" id="pokebox-grid"></div>
+      <span class="preloadicon btn-close" aria-hidden="true"></span>
+    </div>
+  </div>
+</body>
