@@ -389,22 +389,54 @@ Updates replace only the DOM between anchors.
 ### 3.1) Nested component hierarchies (isolated subtrees)
 
 To build a nested tree, have a parent return child component instances as part of its render output.
-Each component instance creates its own anchor range, so parent and child updates stay isolated:
+Each component instance creates its own anchor range, so parent and child updates stay isolated.
 
-- The parent’s `handle.update()` replaces only the parent’s anchors (but keeps child anchors as part
-  of its subtree).
-- The child’s `handle.update()` replaces only the child’s anchors, without re-rendering the parent.
+#### How DOM isolation works
 
-Example:
+When you nest components, each component gets its own pair of `<!--vani:start-->` and
+`<!--vani:end-->` comment anchors. The DOM structure for a parent containing a child looks like:
+
+```html
+<!--vani:start-->
+<!-- Parent start -->
+<div>
+  <div>Parent title</div>
+  <button>Rename parent</button>
+  <!--vani:start-->
+  <!-- Child start -->
+  <div>
+    Child clicks: 0
+    <button>Click child</button>
+  </div>
+  <!--vani:end-->
+  <!-- Child end -->
+</div>
+<!--vani:end-->
+<!-- Parent end -->
+```
+
+When the parent updates, Vani replaces the DOM between the parent's anchors **but preserves the
+child's anchors and their contents**. When the child updates, only the DOM between the child's
+anchors is replaced. This anchor-based isolation is automatic—no special API is needed.
+
+#### Update isolation rules
+
+- **Parent update**: replaces parent’s subtree but leaves nested child anchor ranges intact.
+- **Child update**: replaces only the child’s subtree; parent is unaffected.
+- **Re-render with new props**: if the parent re-renders and returns the same child component with
+  new props, the child’s component instance is preserved (not recreated) and the child can read the
+  new props on its next `update()`.
+
+#### Basic parent-child example
 
 ```ts
 import { component, div, button, type Handle, type ComponentRef } from '@vanijs/vani'
 
-const Child = component((_, handle: Handle) => {
+const Child = component<{ label: string }>((props, handle: Handle) => {
   let clicks = 0
   return () =>
     div(
-      `Child clicks: ${clicks}`,
+      `${props.label} clicks: ${clicks}`,
       button(
         {
           onclick: () => {
@@ -431,14 +463,159 @@ const Parent = component((_, handle: Handle) => {
       div(`Title: ${title}`),
       button({ onclick: rename }, 'Rename parent'),
       // Nested component subtree (isolated updates)
-      Child({ ref: childRef }),
+      Child({ ref: childRef, label: 'Child' }),
     )
 })
 ```
 
 When you click "Rename parent", only the parent subtree updates. When you click "Click child", only
-the child subtree updates. This is how you build deep hierarchies while keeping DOM ownership
-isolated per component.
+the child subtree updates.
+
+#### Deeper nesting (grandparent → parent → child)
+
+You can nest components to any depth. Each level maintains its own isolated subtree:
+
+```ts
+import { component, div, button, type Handle } from '@vanijs/vani'
+
+const GrandChild = component<{ name: string }>((props, handle: Handle) => {
+  let value = 0
+  return () =>
+    div(
+      `GrandChild (${props.name}): ${value}`,
+      button(
+        {
+          onclick: () => {
+            value += 1
+            handle.update()
+          },
+        },
+        '+',
+      ),
+    )
+})
+
+const Child = component<{ id: number }>((props, handle: Handle) => {
+  let label = `Child #${props.id}`
+  return () =>
+    div(
+      div(label),
+      button(
+        {
+          onclick: () => {
+            label += '!'
+            handle.update()
+          },
+        },
+        'Edit label',
+      ),
+      GrandChild({ name: `gc-${props.id}` }),
+    )
+})
+
+const Parent = component((_, handle: Handle) => {
+  let count = 2
+  return () =>
+    div(
+      div(`Parent has ${count} children`),
+      button(
+        {
+          onclick: () => {
+            count += 1
+            handle.update()
+          },
+        },
+        'Add child',
+      ),
+      ...Array.from({ length: count }, (_, i) => Child({ id: i })),
+    )
+})
+```
+
+Each `GrandChild` can update independently of its `Child`, and each `Child` can update independently
+of the `Parent`. The anchor isolation means you can have deeply nested trees without cascading
+re-renders.
+
+#### Passing props and callbacks (prop drilling)
+
+Props flow down explicitly. If a child needs data from an ancestor, pass it through props:
+
+```ts
+import { component, div, button, type Handle } from '@vanijs/vani'
+
+const Display = component<{ value: number }>((props) => {
+  return () => div(`Current value: ${props.value}`)
+})
+
+const Controls = component<{ onIncrement: () => void }>((props) => {
+  return () => button({ onclick: props.onIncrement }, 'Increment')
+})
+
+const App = component((_, handle: Handle) => {
+  let count = 0
+  const increment = () => {
+    count += 1
+    handle.update()
+  }
+  return () => div(Display({ value: count }), Controls({ onIncrement: increment }))
+})
+```
+
+When `increment` is called, the `App` re-renders. Because `Display` and `Controls` are nested
+components with their own anchor ranges, their internal state (if any) is preserved. The new `value`
+prop is available to `Display` on the next render.
+
+#### Updating children from the parent via refs
+
+If you need to trigger a child update without re-rendering the parent, store a `ComponentRef` and
+call `update()` on it directly:
+
+```ts
+import { component, div, button, type Handle, type ComponentRef } from '@vanijs/vani'
+
+const Counter = component<{ start: number }>((props, handle: Handle) => {
+  let count = props.start
+  return () =>
+    div(
+      `Count: ${count}`,
+      button(
+        {
+          onclick: () => {
+            count += 1
+            handle.update()
+          },
+        },
+        '+',
+      ),
+    )
+})
+
+const Dashboard = component(() => {
+  const counterRef: ComponentRef = { current: null }
+
+  const resetCounter = () => {
+    // Update only the Counter subtree, not the Dashboard
+    counterRef.current?.update()
+  }
+
+  return () =>
+    div(
+      Counter({ ref: counterRef, start: 0 }),
+      button({ onclick: resetCounter }, 'Refresh counter'),
+    )
+})
+```
+
+Clicking "Refresh counter" calls `counterRef.current?.update()`, which re-renders only the `Counter`
+subtree. The `Dashboard` itself does not re-render.
+
+#### Summary
+
+- Nesting is standard component composition—no special API.
+- Each component instance owns an anchor-delimited DOM range.
+- Updates are isolated: a component’s `handle.update()` only affects its own subtree.
+- Props and callbacks flow down explicitly (prop drilling).
+- Use `ComponentRef` to update children without re-rendering parents.
 
 ### 4) Lists and item-level updates
 
@@ -1243,11 +1420,10 @@ const Card = component<{ title: string }>((props, handle: Handle) => {
 Components can return other component instances directly:
 
 ```ts
-import { component } from '@vanijs/vani'
-import * as h from '@vanijs/vani'
+import { component, h1 } from '@vanijs/vani'
 
 const Hero = component(() => {
-  return () => h.h1('Hello')
+  return () => h1('Hello')
 })
 
 const Page = component(() => {
@@ -1412,6 +1588,22 @@ const Timer = component((_, handle) => {
 })
 ```
 
+You can also register cleanup functions directly with `handle.onCleanup()`:
+
+```ts
+import { component, div } from '@vanijs/vani'
+
+const Subscription = component((_, handle) => {
+  const unsubscribe = someStore.subscribe(() => handle.update())
+  handle.onCleanup(unsubscribe)
+
+  return () => div('Subscribed')
+})
+```
+
+Both patterns are equivalent. Use `handle.effect()` when the setup and cleanup are logically
+grouped, and `handle.onCleanup()` when you need to register cleanup separately from initialization.
+
 ### Signals and DOM bindings (optional)
 
 Signals are opt-in fine-grained state. They update only the DOM nodes bound to them.
@@ -1433,7 +1625,7 @@ const Counter = component(() => {
 - `derive(fn)` returns a computed getter.
 - `effect(fn)` re-runs when signals used inside `fn` change.
 - `text(getter)` binds a text node to a signal.
-- `attr(el, name, getter)` binds an attribute/class to a signal.
+- `attr(el, name, value)` binds an attribute/class to a signal getter or static value.
 
 ### Partial attribute updates
 
