@@ -1,5 +1,4 @@
-import type { Dispatch } from 'react'
-import { memo, useReducer } from 'react'
+import { useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { Row } from '../shared'
 import {
@@ -11,124 +10,51 @@ import {
   updatedEvery10thRow,
 } from '../shared'
 
+// kept for reference. react with memoization is in index.tsx
+
 export const name = 'react'
 
-type State = {
-  rows: Row[]
-  selected: number | null
-}
-
-type Action =
-  | { type: 'run' }
-  | { type: 'runlots' }
-  | { type: 'add' }
-  | { type: 'update' }
-  | { type: 'clear' }
-  | { type: 'swap' }
-  | { type: 'remove'; id: number }
-  | { type: 'sortasc' }
-  | { type: 'sortdesc' }
-  | { type: 'select'; id: number }
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case 'run':
-      return { rows: get1000Rows(), selected: null }
-    case 'runlots':
-      return { rows: get10000Rows(), selected: null }
-    case 'add':
-      return { ...state, rows: [...state.rows, ...get1000Rows()] }
-    case 'update':
-      return { ...state, rows: updatedEvery10thRow(state.rows) }
-    case 'clear':
-      return { rows: [], selected: null }
-    case 'swap':
-      return { ...state, rows: swapRows(state.rows) }
-    case 'remove':
-      return { ...state, rows: remove(state.rows, action.id) }
-    case 'sortasc':
-      return { ...state, rows: sortRows(state.rows, true) }
-    case 'sortdesc':
-      return { ...state, rows: sortRows(state.rows, false) }
-    case 'select':
-      return { ...state, selected: action.id }
-    default:
-      return state
-  }
-}
-
-type RowItemProps = {
-  row: Row
-  isSelected: boolean
-  dispatch: Dispatch<Action>
-}
-
-const RowItem = memo(function RowItem({ row, isSelected, dispatch }: RowItemProps) {
-  let rowId = row.id
-  return (
-    <tr className={isSelected ? 'table-active' : ''}>
-      <td className="col-md-1">{rowId}</td>
-      <td className="col-md-4">
-        <a
-          className="lbl"
-          href="/"
-          onClick={(event) => {
-            event.preventDefault()
-            dispatch({ type: 'select', id: rowId })
-          }}
-        >
-          {row.label}
-        </a>
-      </td>
-      <td className="col-md-1">
-        <button
-          className="btn-close remove"
-          type="button"
-          aria-label="Remove"
-          onClick={(event) => {
-            event.preventDefault()
-            dispatch({ type: 'remove', id: rowId })
-          }}
-        />
-      </td>
-      <td className="col-md-6" />
-    </tr>
-  )
-})
-
 function App() {
-  let [state, dispatch] = useReducer(reducer, { rows: [], selected: null })
+  let [rows, setRows] = useState<Row[]>([])
+  let [selected, setSelected] = useState<number | null>(null)
 
   let run = () => {
-    dispatch({ type: 'run' })
+    setRows(get1000Rows())
+    setSelected(null)
   }
 
   let runLots = () => {
-    dispatch({ type: 'runlots' })
+    setRows(get10000Rows())
+    setSelected(null)
   }
 
   let add = () => {
-    dispatch({ type: 'add' })
+    setRows((current) => [...current, ...get1000Rows()])
   }
 
   let update = () => {
-    dispatch({ type: 'update' })
+    setRows((current) => updatedEvery10thRow(current))
   }
 
   let clear = () => {
-    dispatch({ type: 'clear' })
+    setRows([])
+    setSelected(null)
   }
 
   let swap = () => {
-    dispatch({ type: 'swap' })
+    setRows((current) => swapRows(current))
+  }
+
+  let removeRow = (id: number) => {
+    setRows((current) => remove(current, id))
   }
 
   let sortAsc = () => {
-    dispatch({ type: 'sortasc' })
+    setRows((current) => sortRows(current, true))
   }
 
   let sortDesc = () => {
-    dispatch({ type: 'sortdesc' })
+    setRows((current) => sortRows(current, false))
   }
 
   return (
@@ -211,14 +137,38 @@ function App() {
       </div>
       <table className="table-hover table-striped test-data table align-middle">
         <tbody id="tbody">
-          {state.rows.map((row) => (
-            <RowItem
-              key={row.id}
-              row={row}
-              isSelected={state.selected === row.id}
-              dispatch={dispatch}
-            />
-          ))}
+          {rows.map((row) => {
+            let rowId = row.id
+            return (
+              <tr key={rowId} className={selected === rowId ? 'table-active' : ''}>
+                <td className="col-md-1">{rowId}</td>
+                <td className="col-md-4">
+                  <a
+                    className="lbl"
+                    href="/"
+                    onClick={(event) => {
+                      event.preventDefault()
+                      setSelected(rowId)
+                    }}
+                  >
+                    {row.label}
+                  </a>
+                </td>
+                <td className="col-md-1">
+                  <button
+                    className="btn-close remove"
+                    type="button"
+                    aria-label="Remove"
+                    onClick={(event) => {
+                      event.preventDefault()
+                      removeRow(rowId)
+                    }}
+                  />
+                </td>
+                <td className="col-md-6" />
+              </tr>
+            )
+          })}
         </tbody>
       </table>
       <span className="preloadicon btn-close" aria-hidden="true" />
