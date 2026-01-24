@@ -124,25 +124,6 @@ function buildEntryPoints(mappings: PageDirMapping[], rootDir: string): Record<s
   return entryPoints
 }
 
-function normalizeRollupOutput(buildConfig: UserConfig['build']): NonNullable<UserConfig['build']> {
-  const output =
-    buildConfig?.rollupOptions?.output && !Array.isArray(buildConfig.rollupOptions.output)
-      ? buildConfig.rollupOptions.output
-      : undefined
-  return {
-    ...buildConfig,
-    rollupOptions: {
-      ...buildConfig?.rollupOptions,
-      output: {
-        ...output,
-        entryFileNames: ({ name }) => `${name}.js`,
-        chunkFileNames: 'assets/chunks/[name].js',
-        assetFileNames: 'assets/[name][extname]',
-      },
-    },
-  }
-}
-
 function resolveMapping(url: string, mappings: PageDirMapping[]): PageDirMapping | undefined {
   for (const mapping of mappings) {
     if (mapping.basePath === '/') {
@@ -166,13 +147,24 @@ export default function vitePluginMultiHtml(options: VitePluginMultiHtmlOptions)
   const configPlugin: Plugin = {
     name: 'multi-html-build-config',
     config(userConfig) {
-      const buildConfig = normalizeRollupOutput(userConfig.build)
+      const entryPointsInput = entryPoints(mappings, userConfig)
+      const existingOutput =
+        userConfig.build?.rolldownOptions?.output &&
+        !Array.isArray(userConfig.build.rolldownOptions.output)
+          ? userConfig.build.rolldownOptions.output
+          : undefined
+      // Only return rolldownOptions, don't spread build config to avoid including rollupOptions
       return {
         build: {
-          ...buildConfig,
-          rollupOptions: {
-            ...buildConfig.rollupOptions,
-            input: entryPoints(mappings, userConfig),
+          rolldownOptions: {
+            ...userConfig.build?.rolldownOptions,
+            input: entryPointsInput,
+            output: {
+              ...existingOutput,
+              entryFileNames: ({ name }: { name: string }) => `${name}.js`,
+              chunkFileNames: 'assets/chunks/[name].js',
+              assetFileNames: 'assets/[name][extname]',
+            },
           },
         },
       }
@@ -183,8 +175,12 @@ export default function vitePluginMultiHtml(options: VitePluginMultiHtmlOptions)
     name: 'multi-html-flatten',
     apply: 'build',
     enforce: 'post',
-    generateBundle(_, bundle) {
-      for (const [fileName, chunk] of Object.entries(bundle)) {
+    // Use writeBundle to move files after they're written to disk.
+    // Rolldown doesn't support mutating the bundle object in generateBundle.
+    writeBundle(options, bundle) {
+      const outDir = options.dir ?? 'dist'
+
+      for (const [fileName] of Object.entries(bundle)) {
         if (!fileName.endsWith('.html')) {
           continue
         }
@@ -193,9 +189,39 @@ export default function vitePluginMultiHtml(options: VitePluginMultiHtmlOptions)
           continue
         }
         const nextName = `${mapping.outputPrefix}${fileName.slice(mapping.dirPrefix.length)}`
-        chunk.fileName = nextName
-        delete bundle[fileName]
-        bundle[nextName] = chunk
+        if (nextName === fileName) {
+          continue
+        }
+
+        const oldPath = path.resolve(outDir, fileName)
+        const newPath = path.resolve(outDir, nextName)
+
+        // Ensure target directory exists
+        const newDir = path.dirname(newPath)
+        if (!fs.existsSync(newDir)) {
+          fs.mkdirSync(newDir, { recursive: true })
+        }
+
+        // Move the file
+        if (fs.existsSync(oldPath)) {
+          fs.renameSync(oldPath, newPath)
+
+          // Clean up empty parent directories
+          let parentDir = path.dirname(oldPath)
+          while (parentDir !== outDir && parentDir.startsWith(outDir)) {
+            try {
+              const entries = fs.readdirSync(parentDir)
+              if (entries.length === 0) {
+                fs.rmdirSync(parentDir)
+                parentDir = path.dirname(parentDir)
+              } else {
+                break
+              }
+            } catch {
+              break
+            }
+          }
+        }
       }
     },
   }

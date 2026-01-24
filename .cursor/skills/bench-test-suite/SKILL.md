@@ -38,6 +38,7 @@ description:
    - Each framework must render the same initial markup as the blueprint for the new view.
    - Parse `?view=` and render the correct view.
    - Add view toggle buttons and ensure they link to the correct `view` query param.
+   - Use design system classes from `bench/src/design-system.css` (max 3 classes per element).
 
 6. **Expose the suite in results UI**
    - Add human-friendly labels for new operations in `bench/snapshot/index.ts`.
@@ -156,13 +157,13 @@ let suiteTitles: Record<string, string> = {
 ## Commands
 
 - Run the full benchmark suite:
-  - `pnpm run bench`
+  - `pnpm --filter benchmarks bench` (or `pnpm run bench` from `bench/`)
 - Run only the new view:
-  - `pnpm run bench -- --view <view>`
+  - `pnpm --filter benchmarks bench -- --view <view>`
 - Validate markup only (preflight):
-  - `pnpm run bench -- --preflight-only --view <view>`
+  - `pnpm --filter benchmarks bench -- --preflight-only --view <view>`
 - View results UI:
-  - `pnpm run bench:dev` → open `http://localhost:4555/snapshot`
+  - `pnpm --filter benchmarks dev` → open `http://localhost:4555/snapshot`
 
 ## Notes
 

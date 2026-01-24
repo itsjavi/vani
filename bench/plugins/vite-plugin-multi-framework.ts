@@ -41,6 +41,30 @@ function scoped(plugins: Plugin[] | Plugin, test: (id: string) => boolean): Plug
   })
 }
 
+// Strip deprecated esbuild config from plugin config hooks (Vite 8+ uses oxc instead)
+function removeEsbuildConfig(plugins: Plugin[]): Plugin[] {
+  return plugins.map((plugin) => {
+    const c = plugin.config
+    if (!c) return plugin
+
+    if (typeof c === 'function') {
+      return {
+        ...plugin,
+        config(config, env) {
+          const result = c.call(this, config, env)
+          if (result && typeof result === 'object' && 'esbuild' in result) {
+            const { esbuild: _, ...rest } = result as Record<string, unknown>
+            return rest
+          }
+          return result
+        },
+      }
+    }
+
+    return plugin
+  })
+}
+
 const frameworkIds = [
   'preact',
   'react',
@@ -61,8 +85,8 @@ function getFrameworkSuffix(frameworkId: FrameworkId, defaultFrameworkId?: Frame
 function pluginsForFramework(frameworkId: FrameworkId, defaultFrameworkId?: FrameworkId): Plugin[] {
   switch (frameworkId) {
     case 'preact':
-      return scoped(preact(), (id) =>
-        id.endsWith(getFrameworkSuffix(frameworkId, defaultFrameworkId)),
+      return removeEsbuildConfig(
+        scoped(preact(), (id) => id.endsWith(getFrameworkSuffix(frameworkId, defaultFrameworkId))),
       )
 
     case 'react':
@@ -96,37 +120,14 @@ function pluginsForFramework(frameworkId: FrameworkId, defaultFrameworkId?: Fram
 }
 
 // Ensure that the build config does not include any global JSX config set by other plugins.
+// In Vite 8+, we only configure oxc (not esbuild/optimizeDeps.esbuildOptions which are deprecated).
+// Important: Only return the specific options to override, don't spread the entire config.
 const noGlobalJSXConfig = (): Plugin => {
-  const jsxUndefined = {
-    jsx: undefined,
-    jsxImportSource: undefined,
-    jsxDev: undefined,
-    jsxFactory: undefined,
-    jsxFragment: undefined,
-    jsxFragmentFactory: undefined,
-    jsxInject: undefined,
-    jsxPragma: undefined,
-    jsxPragmaFrag: undefined,
-    jsxPragmaFragFactory: undefined,
-    jsxSideEffects: undefined,
-  }
   return {
     name: 'no-global-jsx-config',
     enforce: 'post',
     config(config) {
       return {
-        ...config,
-        esbuild: {
-          ...config.esbuild,
-          ...jsxUndefined,
-        },
-        optimizeDeps: {
-          ...config.optimizeDeps,
-          esbuildOptions: {
-            ...config.optimizeDeps?.esbuildOptions,
-            ...jsxUndefined,
-          },
-        },
         oxc: {
           ...config.oxc,
           jsx: undefined,

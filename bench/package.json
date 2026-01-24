@@ -7,6 +7,7 @@
     "build": "rm -rf dist && vite build",
     "build:dev": "pnpm run build --base '/{dir}'",
     "dev": "vite --port 4555 --host 0.0.0.0",
+    "format": "cd .. && pnpm format",
     "prepare": "if [ ! -f results/bench-results.json ]; then cp results/bench-results.fallback.json results/bench-results.json; fi",
     "preview": "pnpm run serve",
     "serve": "sirv ./dist",

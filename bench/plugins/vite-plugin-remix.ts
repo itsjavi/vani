@@ -1,4 +1,4 @@
-import { transformWithEsbuild, type Plugin } from 'vite'
+import { transformWithOxc, type Plugin } from 'vite'
 
 export default function vitePluginRemix(): Plugin {
   return {
@@ -6,10 +6,11 @@ export default function vitePluginRemix(): Plugin {
     enforce: 'pre',
     transform(code, id) {
       if (id.endsWith('.remix.tsx')) {
-        return transformWithEsbuild(code, id, {
-          loader: 'tsx',
-          jsx: 'automatic',
-          jsxImportSource: 'remix/component',
+        return transformWithOxc(code, id, {
+          jsx: {
+            runtime: 'automatic',
+            importSource: 'remix/component',
+          },
         })
       }
       return null
