@@ -5,5 +5,9 @@
   "dependencies": {
     "preact": "^10.28.2"
   },
-  "benchmarkNotes": "keyed, jsx"
+  "benchmark": {
+    "libName": "Preact",
+    "libPackage": "preact",
+    "implementationNotes": "keyed, jsx"
+  }
 }

@@ -30,6 +30,7 @@ import {
   h1,
   h3,
   hydrateToDOM,
+  HydrationError,
   p,
   renderSvgString,
   renderToDOM,
@@ -41,7 +42,6 @@ import {
   th,
   thead,
   tr,
-  HydrationError,
   type Handle,
   type RenderFn,
 } from 'vani'
@@ -92,6 +92,8 @@ function runRenderInputSmokeTests() {
     const originalError = console.error
     console.error = (...args) => {
       loggedErrors.push(args)
+      const hasHydrationError = args.some((arg) => arg instanceof HydrationError)
+      if (hasHydrationError) return
       originalError(...args)
     }
 
@@ -118,6 +120,10 @@ function runRenderInputSmokeTests() {
     if (!svgThrew) {
       throw new Error('[renderSvgString] expected invalid SVG to throw.')
     }
+    console.info('[Golden leaf] Smoke tests passed ✅')
+  } catch (error) {
+    console.error('[Golden leaf] Smoke tests failed ❌', error)
+    throw error
   } finally {
     for (const handle of cleanups) {
       handle.dispose()

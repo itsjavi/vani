@@ -11,7 +11,15 @@ type FrameworkPackage = {
   name?: string
   version?: string
   dependencies?: Record<string, string>
-  benchmarkNotes?: string
+  devDependencies?: Record<string, string>
+  peerDependencies?: Record<string, string>
+  optionalDependencies?: Record<string, string>
+  benchmark?: {
+    libName?: string
+    libPackage?: string
+    libVersion?: string
+    implementationNotes?: string
+  }
 }
 
 function readPackageJson(packagePath: string): FrameworkPackage | null {
@@ -22,18 +30,31 @@ function readPackageJson(packagePath: string): FrameworkPackage | null {
   return JSON.parse(fs.readFileSync(packagePath, 'utf8')) as FrameworkPackage
 }
 
+function isVaniPackage(libPackage?: string) {
+  if (!libPackage) return false
+  return libPackage === '@vanijs/vani' || libPackage === 'vani' || libPackage.startsWith('vani-')
+}
+
 function getVersion(pkg: FrameworkPackage | null) {
   if (!pkg) {
     return '0.0.0'
   }
-  const frameworkPackage = (pkg.name ?? '').replace('benchmark-', '')
-  if (!frameworkPackage) {
-    return '0.0.0'
+  const benchmark = pkg.benchmark
+  const libPackage = benchmark?.libPackage?.trim()
+  const libVersion = benchmark?.libVersion?.trim()
+  if (libVersion) {
+    return libVersion.replace(/[vV~^]/, '')
   }
-  if (frameworkPackage === 'vani' || frameworkPackage.includes('vani-')) {
+  if (isVaniPackage(libPackage)) {
     return vaniPkg.version + '-main'
   }
-  const version = pkg.version || pkg.dependencies?.[frameworkPackage] || '0.0.0'
+  const version =
+    (libPackage && pkg.dependencies?.[libPackage]) ||
+    (libPackage && pkg.devDependencies?.[libPackage]) ||
+    (libPackage && pkg.peerDependencies?.[libPackage]) ||
+    (libPackage && pkg.optionalDependencies?.[libPackage]) ||
+    pkg.version ||
+    '0.0.0'
   return version.replace(/[vV~^]/, '')
 }
 
@@ -49,11 +70,14 @@ export function getProjects(projectType: 'frameworks' | 'debug' = 'frameworks') 
       const pkg = readPackageJson(packagePath)
 
       if (fs.statSync(dirPath).isDirectory() && fs.existsSync(indexPath)) {
-        const benchmarkNotes = pkg?.benchmarkNotes?.trim()
+        const benchmark = pkg?.benchmark
+        const displayName = benchmark?.libName?.trim() || name
+        const implementationNotes = benchmark?.implementationNotes?.trim()
         return {
-          name,
+          id: name,
+          name: displayName,
           version: getVersion(pkg),
-          benchmarkNotes: benchmarkNotes ? benchmarkNotes : undefined,
+          implementationNotes: implementationNotes ? implementationNotes : undefined,
           path: `${projectType}/${name}`,
         }
       }

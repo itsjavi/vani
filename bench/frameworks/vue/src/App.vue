@@ -325,6 +325,11 @@ function toggleCell(boxIndex: number, cellIndex: number) {
             @click.prevent="toggleCell(boxIndex, cellIndex)"
           >
             <span v-if="cell" :class="`pkm-img pkm-img-${cell.pkm.nid}`" aria-hidden="true"></span>
+            <span
+              v-if="cell?.caught"
+              class="pokeball pokeball-sm pokebox-caught-badge"
+              aria-hidden="true"
+            ></span>
           </button>
         </div>
       </div>

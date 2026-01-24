@@ -308,6 +308,12 @@ const initPokeboxView = () => {
           sprite.className = `pkm-img pkm-img-${cell.pkm.nid}`
           sprite.setAttribute('aria-hidden', 'true')
           cellButton.appendChild(sprite)
+          if (cell.caught) {
+            const badge = document.createElement('span')
+            badge.className = 'pokeball pokeball-sm pokebox-caught-badge'
+            badge.setAttribute('aria-hidden', 'true')
+            cellButton.appendChild(badge)
+          }
         }
         cells.appendChild(cellButton)
       })
@@ -408,8 +414,15 @@ const initPokeboxView = () => {
     cell.caught = !cell.caught
     if (cell.caught) {
       cellButton.dataset.caught = 'true'
+      if (!cellButton.querySelector('.pokebox-caught-badge')) {
+        const badge = document.createElement('span')
+        badge.className = 'pokeball pokeball-sm pokebox-caught-badge'
+        badge.setAttribute('aria-hidden', 'true')
+        cellButton.appendChild(badge)
+      }
     } else {
       delete cellButton.dataset.caught
+      cellButton.querySelector('.pokebox-caught-badge')?.remove()
     }
   })
 }

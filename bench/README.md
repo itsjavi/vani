@@ -44,9 +44,13 @@ All you need to add a new framework is:
 
 - Create a new directory in `bench/frameworks/` with the framework name.
 - Add a `package.json` file with every dependency you need
-- The package name should be `benchmark-<framework-npm-package-name>`
-- The version will be inferred from the framework lib dependency version, and fallback to `version`,
-  or `0.0.0` if none is found.
+- Add a `benchmark` config object to `package.json`:
+  - `libName` is what we show in the UI.
+  - `libPackage` is the dependency name used to resolve the version.
+  - `libVersion` is optional and overrides the resolved version when present.
+  - `implementationNotes` replaces the old `benchmarkNotes`.
+- The version will be inferred from `benchmark.libPackage` (or `benchmark.libVersion` if provided),
+  and fallback to `version` or `0.0.0` if none is found.
 - Add an `index.html` file (you can use vani's as a reference)
 
 ### Guidelines and Rules

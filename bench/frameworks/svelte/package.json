@@ -15,5 +15,9 @@
     "rollup": "^4.56.0",
     "rollup-plugin-svelte": "^7.2.3"
   },
-  "benchmarkNotes": "keyed, runes"
+  "benchmark": {
+    "libName": "Svelte",
+    "libPackage": "svelte",
+    "implementationNotes": "keyed, runes"
+  }
 }

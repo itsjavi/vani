@@ -3,5 +3,10 @@
   "version": "4.0.1",
   "private": true,
   "type": "module",
-  "benchmarkNotes": "non-keyed, non-jsx"
+  "benchmark": {
+    "libName": "Vanilla JS",
+    "libPackage": "vanillajs",
+    "libVersion": "4.0.1",
+    "implementationNotes": "non-keyed, non-jsx"
+  }
 }

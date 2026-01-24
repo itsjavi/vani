@@ -2,5 +2,9 @@
   "name": "benchmark-vani",
   "private": true,
   "type": "module",
-  "benchmarkNotes": "keyed, non-jsx"
+  "benchmark": {
+    "libName": "Vani",
+    "libPackage": "@vanijs/vani",
+    "implementationNotes": "keyed, non-jsx"
+  }
 }

@@ -14,8 +14,8 @@ const overallScores = (benchResults as { calculated?: BenchResultsCalculated }).
   ?.overallScores
 const sortedFrameworks = overallScores
   ? [...frameworks].sort((left, right) => {
-      const leftScore = overallScores[left?.name]
-      const rightScore = overallScores[right?.name]
+      const leftScore = overallScores[left?.id]
+      const rightScore = overallScores[right?.id]
       const leftHasScore = Number.isFinite(leftScore)
       const rightHasScore = Number.isFinite(rightScore)
       if (leftHasScore && rightHasScore) {
@@ -34,9 +34,9 @@ const scoreBadgeClass = (score: number, best: number) => {
   if (ratio <= 1.7) return 'bench-score-warn'
   return 'bench-score-bad'
 }
-const buildScoreBadge = (frameworkName?: string) => {
-  if (!frameworkName || !overallScores) return ''
-  const score = overallScores[frameworkName]
+const buildScoreBadge = (frameworkId?: string) => {
+  if (!frameworkId || !overallScores) return ''
+  const score = overallScores[frameworkId]
   if (score === null || score === undefined || !Number.isFinite(score)) return ''
   const best = Math.min(
     ...Object.values(overallScores).filter((value): value is number => Number.isFinite(value)),
@@ -108,7 +108,7 @@ app.innerHTML = `
               (framework) =>
                 `<a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center gap-2 py-3" href="./${framework?.path}">
                   <span class="fw-semibold">${framework?.name} <span class="text-muted fw-normal">(v${framework?.version})</span></span>
-                  ${buildScoreBadge(framework?.name)}
+                  ${buildScoreBadge(framework?.id)}
                 </a>`,
             )
             .join('')}

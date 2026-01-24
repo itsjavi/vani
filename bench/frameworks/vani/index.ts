@@ -390,6 +390,9 @@ const BoxCard = component<{ boxIndex: number; entry: BoxEntry }>((props) => {
             cell
               ? span({ className: `pkm-img pkm-img-${cell.pkm.nid}`, ariaHidden: 'true' })
               : null,
+            cell?.caught
+              ? span({ className: 'pokeball pokeball-sm pokebox-caught-badge', ariaHidden: 'true' })
+              : null,
           )
         }),
       ),

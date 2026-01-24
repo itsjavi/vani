@@ -316,6 +316,12 @@ function PokeboxApp() {
                         {cell ? (
                           <span class={`pkm-img pkm-img-${cell.pkm.nid}`} aria-hidden="true" />
                         ) : null}
+                        {cell && isCaught ? (
+                          <span
+                            class="pokeball pokeball-sm pokebox-caught-badge"
+                            aria-hidden="true"
+                          />
+                        ) : null}
                       </button>
                     )
                   }}

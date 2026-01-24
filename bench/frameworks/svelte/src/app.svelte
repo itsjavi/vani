@@ -300,6 +300,9 @@
               >
                 {#if cell}
                   <span class={`pkm-img pkm-img-${cell.pkm.nid}`} aria-hidden="true"></span>
+                  {#if cell.caught}
+                    <span class="pokeball pokeball-sm pokebox-caught-badge" aria-hidden="true"></span>
+                  {/if}
                 {/if}
               </button>
             {/each}

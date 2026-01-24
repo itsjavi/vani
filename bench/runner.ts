@@ -34,7 +34,7 @@ interface SavedArgs {
 // Get list of frameworks
 function getFrameworks(): string[] {
   return getProjects('frameworks')
-    .map((project) => project.name)
+    .map((project) => project.id)
     .sort()
 }
 
@@ -147,10 +147,11 @@ interface BenchmarkResult {
 }
 
 interface SnapshotFramework {
+  id: string
   name: string
   version: string
   path: string
-  benchmarkNotes?: string
+  implementationNotes?: string
 }
 
 type ResourceMetrics = {
@@ -949,7 +950,7 @@ function buildCalculatedSnapshot(
   let operationNames = Array.from(resultsByOperation.keys())
   let averageMeansByFramework = frameworks.map((framework) => {
     let totalMeans = operationNames.map((operationName) => {
-      let result = resultsByOperation.get(operationName)?.get(framework.name)
+      let result = resultsByOperation.get(operationName)?.get(framework.id)
       if (!result) return Number.POSITIVE_INFINITY
       return result.total.mean
     })
@@ -962,17 +963,17 @@ function buildCalculatedSnapshot(
   })
 
   let averageMeanMap = new Map(
-    averageMeansByFramework.map((entry) => [entry.framework.name, entry.averageMean]),
+    averageMeansByFramework.map((entry) => [entry.framework.id, entry.averageMean]),
   )
 
   let frameworkOrder = averageMeansByFramework
     .sort((a, b) => a.averageMean - b.averageMean)
-    .map((entry) => entry.framework.name)
+    .map((entry) => entry.framework.id)
 
   let overallScores: Record<string, number | null> = {}
-  for (let frameworkName of frameworkOrder) {
-    let averageMean = averageMeanMap.get(frameworkName)
-    overallScores[frameworkName] =
+  for (let frameworkId of frameworkOrder) {
+    let averageMean = averageMeanMap.get(frameworkId)
+    overallScores[frameworkId] =
       averageMean !== undefined && Number.isFinite(averageMean) ? averageMean : null
   }
 
@@ -986,21 +987,21 @@ function buildCalculatedSnapshot(
   for (let operationName of operationNames) {
     let opResults = resultsByOperation.get(operationName)
     if (!opResults) continue
-    let means = frameworkOrder.map((frameworkName) => {
-      let result = opResults.get(frameworkName)
+    let means = frameworkOrder.map((frameworkId) => {
+      let result = opResults.get(frameworkId)
       if (!result) return Number.POSITIVE_INFINITY
       return result.total.mean
     })
     let best = Math.min(...means.filter((value) => Number.isFinite(value)))
 
     let perFramework: Record<string, SnapshotOperationCell> = {}
-    for (let frameworkName of frameworkOrder) {
-      let result = opResults.get(frameworkName)
+    for (let frameworkId of frameworkOrder) {
+      let result = opResults.get(frameworkId)
       if (!result) continue
       let mean = result.total.mean
       let ci = calcConfidenceInterval(result.total.times)
       let ratio = best > 0 ? mean / best : 1
-      perFramework[frameworkName] = { mean, ci, ratio }
+      perFramework[frameworkId] = { mean, ci, ratio }
     }
     operationResults[operationName] = perFramework
   }
