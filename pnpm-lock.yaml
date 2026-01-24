@@ -169,6 +169,12 @@ importers:
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.9)
 
+  bench/frameworks/remix:
+    dependencies:
+      '@remix-run/component':
+        specifier: ^0.3.0
+        version: 0.3.0
+
   bench/frameworks/solid:
     dependencies:
       solid-js:
@@ -793,6 +799,12 @@ packages:
 
   '@quansync/fs@1.0.0':
     resolution: {integrity: sha512-4TJ3DFtlf1L5LDMaM6CanJ/0lckGNtJcMjQ1NAV6zDmA0tEHKZtxNKin8EgPaVX1YzljbxckyT2tJrpQKAtngQ==}
+
+  '@remix-run/component@0.3.0':
+    resolution: {integrity: sha512-Cq+izA+IzcE0/+1soho7ZMwkEvuU3jNnj4tV9nrt0UI6zqXN68QU5G497uXD4qXCeNCQaghdAAxK01/wdac4nA==}
+
+  '@remix-run/interaction@0.4.0':
+    resolution: {integrity: sha512-eXPPLR4TfLWkLyQtVCyqgpmwPJy5ZF6tbyyTqYbPIq8BCZkcKuyUZXrJDlAkiBNkVv3wrSLqm0Yt/cfOKyJq4Q==}
 
   '@rolldown/binding-android-arm64@1.0.0-rc.1':
     resolution: {integrity: sha512-He6ZoCfv5D7dlRbrhNBkuMVIHd0GDnjJwbICE1OWpG7G3S2gmJ+eXkcNLJjzjNDpeI2aRy56ou39AJM9AD8YFA==}
@@ -3749,6 +3761,12 @@ snapshots:
   '@quansync/fs@1.0.0':
     dependencies:
       quansync: 1.0.0
+
+  '@remix-run/component@0.3.0':
+    dependencies:
+      '@remix-run/interaction': 0.4.0
+
+  '@remix-run/interaction@0.4.0': {}
 
   '@rolldown/binding-android-arm64@1.0.0-rc.1':
     optional: true
