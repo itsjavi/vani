@@ -31,7 +31,7 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
-    rollupOptions: {
+    rolldownOptions: {
       output: {
         manualChunks: (moduleId /*, _meta*/) => {
           if (moduleId.includes('codemirror') || moduleId.includes('babel')) {

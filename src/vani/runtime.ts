@@ -6,8 +6,8 @@
 
 import {
   configureSignalDom,
-  createEffect,
   derive as createDerived,
+  createEffect,
   signal as createSignal,
   type Signal,
   type SignalGetter,
@@ -256,7 +256,7 @@ export function signal<T>(value: T): Signal<T> {
   return createSignal(value)
 }
 
-export { text, attr } from './signals'
+export { attr, text } from './signals'
 
 export function derive<T>(fn: () => T): SignalGetter<T> {
   if (currentRenderMode === 'ssr') {
@@ -717,6 +717,9 @@ export function renderToDOM(components: Renderable | Renderable[], root: HTMLEle
   if (!root) {
     throw new Error('[vani] root element not found')
   }
+
+  // flag to indicate that Vani is being used in the browser
+  ;(globalThis as any).Vani$$ = true
 
   const handles: Handle[] = []
   const normalized = normalizeRenderables(components)

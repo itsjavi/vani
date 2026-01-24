@@ -21,4 +21,9 @@ dist-ssr
 *.sln
 *.sw?
 
+# .cursor/plans/
+
+results/*.json
+!results/bench-results.fallback.json
+
 .cursor/plans/

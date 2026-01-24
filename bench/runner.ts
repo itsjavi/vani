@@ -4,17 +4,18 @@ import * as path from 'node:path'
 import { parseArgs } from 'node:util'
 
 import { chromium, type Browser, type CDPSession, type Page } from 'playwright'
-import { getProjects } from './macros'
+import { getFrameworks, pkgJson } from './src/metadata'
 
-const PORT = 44100
-const BASE_URL = `http://localhost:${PORT}`
-const RESULTS_DIR = path.join(import.meta.dirname, 'snapshot/results')
+const PORT = process.env.PORT ?? pkgJson.benchmarks.port ?? 8778
+const BASE_URL = `http://localhost:${PORT}/frameworks`
+const RESULTS_DIR = path.resolve(import.meta.dirname, 'results')
+const BLUEPRINT_DIR = path.resolve(import.meta.dirname, 'src/core')
 const LAST_ARGS_FILE = path.join(RESULTS_DIR, 'bench-last-args.json')
 const SNAPSHOT_FILE = path.join(RESULTS_DIR, 'bench-results.json')
 const VANI_RESULTS_FILE = path.join(RESULTS_DIR, 'bench-results-vani.json')
 const BLUEPRINTS = {
-  datatable: path.join(import.meta.dirname, 'frameworks/blueprint-datatable.html'),
-  pokeboxes: path.join(import.meta.dirname, 'frameworks/blueprint-pokeboxes.html'),
+  datatable: path.resolve(BLUEPRINT_DIR, 'blueprint-datatable.html'),
+  pokeboxes: path.resolve(BLUEPRINT_DIR, 'blueprint-pokeboxes.html'),
 }
 
 interface SavedArgs {
@@ -33,10 +34,9 @@ interface SavedArgs {
 }
 
 // Get list of frameworks
-function getFrameworks(): string[] {
-  return getProjects('frameworks')
-    .map((project) => project.id)
-    .sort()
+
+function getFrameworkIds(): string[] {
+  return getFrameworks().map((framework) => framework.id)
 }
 
 function saveArgs(args: SavedArgs): void {
@@ -61,9 +61,9 @@ let isRepeat = process.argv[2] === 'repeat'
 // Parse command line arguments
 let { values: args } = parseArgs({
   options: {
-    cpu: { type: 'string', default: '4' },
-    runs: { type: 'string', default: '5' },
-    warmups: { type: 'string', default: '2' },
+    cpu: { type: 'string', default: String(pkgJson.benchmarks.cpuThrottling ?? '4') },
+    runs: { type: 'string', default: String(pkgJson.benchmarks.benchmarkRuns ?? '5') },
+    warmups: { type: 'string', default: String(pkgJson.benchmarks.warmupRuns ?? '2') },
     headless: { type: 'boolean', default: false },
     table: { type: 'boolean', default: false },
     profile: { type: 'boolean', default: false },
@@ -420,13 +420,13 @@ const operations: Operation[] = [
   {
     name: 'selectRow',
     setup: create1k,
-    action: (page) => clickAndMeasure(page, 'tbody tr:first-child td.col-md-4 a', 'selectRow'),
+    action: (page) => clickAndMeasure(page, 'tbody tr:first-child .bench-data-link', 'selectRow'),
     teardown: clear,
   },
   {
     name: 'removeRow',
     setup: create1k,
-    action: (page) => clickAndMeasure(page, 'tbody tr:first-child button.remove', 'removeRow'),
+    action: (page) => clickAndMeasure(page, 'tbody tr:first-child .bench-data-remove', 'removeRow'),
     teardown: clear,
   },
   {
@@ -507,24 +507,25 @@ const operations: Operation[] = [
 // Start the benchmark server
 function startServer(): Promise<ChildProcess> {
   return new Promise((resolve, reject) => {
-    let server = spawn('bun', ['run', './frameworks/*/index.html'], {
+    let server = spawn('pnpm', ['run', 'serve', '-p', PORT.toString()], {
       env: {
         ...process.env,
         PORT: PORT.toString(),
       },
       cwd: import.meta.dirname,
       stdio: ['ignore', 'pipe', 'pipe'],
+      detached: true,
     })
 
     let started = false
+    let stdoutBuffer = ''
 
     server.stdout?.on('data', (data: Buffer) => {
-      let output = data.toString()
-      if (output.includes('frameworks/') && output.includes('index.html') && !started) {
+      stdoutBuffer += data.toString()
+      if (!started && stdoutBuffer.includes(`http://localhost:${PORT}`)) {
         started = true
+        console.log(`Server detected at http://localhost:${PORT}`)
         resolve(server)
-      } else {
-        console.warn('Unexpected server output:\n\n', output)
       }
     })
 
@@ -542,15 +543,25 @@ function startServer(): Promise<ChildProcess> {
         server.kill()
         reject(new Error('Server failed to start within timeout'))
       }
-    }, 5000)
+    }, 10_000)
   })
 }
 
 // Stop the server
 function stopServer(server: ChildProcess): Promise<void> {
   return new Promise((resolve) => {
+    if (!server.pid) {
+      console.warn('Server process not found, stopServer has no effect')
+      resolve()
+      return
+    }
     server.on('close', () => resolve())
-    server.kill('SIGTERM')
+    process.kill(-server.pid, 'SIGTERM')
+    setTimeout(() => {
+      if (server.pid) {
+        process.kill(-server.pid, 'SIGKILL')
+      }
+    }, 5_000)
   })
 }
 
@@ -1372,7 +1383,7 @@ async function main(): Promise<void> {
     if (allowedViews.includes('pokeboxes')) {
       blueprintBodies.pokeboxes = fs.readFileSync(BLUEPRINTS.pokeboxes, 'utf-8')
     }
-    let allFrameworks = getFrameworks()
+    let allFrameworks = getFrameworkIds()
     let frameworks = allFrameworks
 
     // Filter frameworks if specified
@@ -1478,7 +1489,7 @@ async function main(): Promise<void> {
     // Print benchmark results after profiles
     printResults(allResults)
 
-    let frameworkDetails = getProjects('frameworks') as SnapshotFramework[]
+    let frameworkDetails = getFrameworks()
     saveSnapshot({
       generatedAt: new Date().toISOString(),
       cpuThrottling,
@@ -1497,10 +1508,16 @@ async function main(): Promise<void> {
   } finally {
     console.log('Cleaning up...')
     if (browser) {
+      console.log('Closing browser...')
       await browser.close()
+      console.log('Browser closed')
     }
     if (server) {
-      await stopServer(server)
+      console.log('Stopping server...')
+      stopServer(server).then(() => {
+        console.log('Server stopped')
+        process.exit(0)
+      })
     }
   }
 }

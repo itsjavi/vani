@@ -1,0 +1,163 @@
+/**
+* CSS-only Pokéballs with a single HTML element
+*
+* @author Javier Aguilar (itsjavi.com)
+* @see https://codepen.io/itsjavi/pen/pvbrxzR
+* @license MIT
+* @example 
+* ```html
+* <button class="pokeball" data-type="great"></button>
+* ```
+*/
+
+/* ==== POKEBALL VARS ==== */
+.pokeball,
+pokeball {
+  --pokeball-size: clamp(100px, 30vh, 300px);
+  --pokeball-border-width: clamp(8px, 2vh, 32px);
+  --pokeball-btn-size: 30%;
+  --pokeball-btn-inner-space: 2px;
+  --pokeball-btn-inner-border-width: 2px;
+
+  --pokeball-bg-top: red;
+  --pokeball-bg-bottom: #fff;
+  --pokeball-bg-separator: #111;
+  --pokeball-border-color: #111;
+  --pokeball-btn-bg: #fff;
+  --pokeball-btn-border-color: #111;
+  --pokeball-btn-inner-border-color: #fff; /* make it white to make it disappear */
+}
+
+/* ===== .pokeball Base circle ===== */
+.pokeball,
+pokeball {
+  width: var(--pokeball-size);
+  height: var(--pokeball-size);
+  aspect-ratio: 1;
+  border-radius: 50%;
+
+  border: var(--pokeball-border-width) solid var(--pokeball-border-color);
+
+  background: linear-gradient(to bottom, var(--pokeball-bg-top) 50%, var(--pokeball-bg-bottom) 50%);
+
+  display: flex;
+  align-content: center;
+  align-items: center;
+  justify-content: center;
+  justify-items: center;
+
+  /* isolation: isolate; */
+  > * {
+    z-index: 5;
+  }
+}
+
+/* ===== .pokeball Central line ===== */
+.pokeball::before,
+pokeball::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  height: var(--pokeball-border-width);
+  background: var(--pokeball-bg-separator);
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+/* ===== .pokeball Central circle ===== */
+.pokeball::after,
+pokeball::after {
+  content: '';
+  position: absolute;
+  inset: 50%;
+  transform: translate(-50%, -50%);
+
+  width: var(--pokeball-btn-size);
+  aspect-ratio: 1;
+  border-radius: 50%;
+
+  /* real outer stroke */
+  border: var(--pokeball-border-width) solid var(--pokeball-btn-border-color);
+
+  /* inner geometry via gradients */
+  background: radial-gradient(
+    circle,
+    /* center fill */ var(--pokeball-btn-bg) 0
+      calc(50% - var(--pokeball-btn-inner-space) - var(--pokeball-btn-inner-border-width)),
+    /* inner thin ring */ var(--pokeball-btn-inner-border-color)
+      calc(50% - var(--pokeball-btn-inner-space) - var(--pokeball-btn-inner-border-width))
+      calc(50% - var(--pokeball-btn-inner-space)),
+    /* gap */ var(--pokeball-btn-bg) calc(50% - var(--pokeball-btn-inner-space)) 50%
+  );
+  z-index: 2;
+}
+
+.pokeball[data-type='great'],
+pokeball[type='great'] {
+  --pokeball-bg-top: blue;
+}
+
+.pokeball[data-type='ultra'],
+pokeball[type='ultra'] {
+  --pokeball-bg-top: gold;
+}
+
+.pokeball[data-type='master'],
+pokeball[type='master'] {
+  --pokeball-bg-top: rebeccapurple;
+}
+
+.pokeball[data-type='luxury'],
+pokeball[type='luxury'] {
+  --pokeball-bg-top: #333;
+  --pokeball-bg-separator: gold;
+  --pokeball-bg-bottom: var(--pokeball-bg-top);
+  --pokeball-btn-bg: var(--pokeball-bg-top);
+  --pokeball-btn-inner-border-color: var(--pokeball-bg-top);
+  --pokeball-btn-border-color: var(--pokeball-bg-separator);
+}
+
+.pokeball[data-type='premier'],
+pokeball[type='premier'] {
+  --pokeball-bg-top: white;
+  --pokeball-bg-separator: darkred;
+  --pokeball-btn-border-color: var(--pokeball-bg-separator);
+}
+
+.pokeball[data-type='cherish'],
+pokeball[type='cherish'] {
+  --pokeball-bg-top: red;
+  --pokeball-bg-bottom: var(--pokeball-bg-top);
+  --pokeball-btn-bg: var(--pokeball-bg-top);
+  --pokeball-btn-inner-bg: var(--pokeball-bg-top);
+  --pokeball-btn-inner-border-color: var(--pokeball-bg-top);
+  --pokeball-bg-separator: black;
+  --pokeball-btn-border-color: black;
+}
+
+.pokeball[data-clickable],
+pokeball[clickable] {
+  cursor: pointer;
+}
+
+.pokeball[data-clickable]:hover,
+pokeball[clickable]:hover {
+  transform: translate(0px, 1px) scale(0.96);
+  transform-origin: bottom bottom;
+  transition: transform 100ms ease-in-out;
+}
+
+.pokeball[data-clickable]:active,
+pokeball[clickable]:active {
+  transform: translate(0px, 3px) scale(0.9);
+  transform-origin: bottom bottom;
+  transition: transform 100ms ease-in-out;
+}
+
+/* Pokeball size variants */
+.pokeball-sm {
+  --pokeball-size: 21px;
+  --pokeball-btn-size: 9px;
+  --pokeball-border-width: 2px;
+}

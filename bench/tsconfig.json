@@ -1,15 +1,15 @@
 {
-  "compilerOptions": {
-    "strict": true,
-    "lib": ["ES2024", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "target": "ESNext",
-    "allowImportingTsExtensions": true,
-    "rewriteRelativeImportExtensions": true,
-    "verbatimModuleSyntax": true,
-    "skipLibCheck": true,
-    "types": ["node", "bun"]
-  },
-  "exclude": ["frameworks"]
+  "files": [],
+  "references": [
+    { "path": "./tsconfigs/tsconfig.app.json" },
+    { "path": "./tsconfigs/tsconfig.preact.json" },
+    { "path": "./tsconfigs/tsconfig.react.json" },
+    { "path": "./tsconfigs/tsconfig.remix.json" },
+    { "path": "./tsconfigs/tsconfig.solid.json" },
+    { "path": "./tsconfigs/tsconfig.svelte.json" },
+    { "path": "./tsconfigs/tsconfig.vani.json" },
+    { "path": "./tsconfigs/tsconfig.vanilla.json" },
+    { "path": "./tsconfigs/tsconfig.vue.json" }
+  ],
+  "exclude": []
 }

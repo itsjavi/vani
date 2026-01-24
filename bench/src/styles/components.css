@@ -1,0 +1,11 @@
+@layer components {
+  .btn {
+    /* a white one */
+  }
+  .btn-blue {
+    /*blue*/
+  }
+  .btn-green {
+    /**green*/
+  }
+}

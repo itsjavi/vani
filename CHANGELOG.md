@@ -3,6 +3,42 @@
 This changelog documents important changes done to the `vani` runtime library, and the reason behind
 the decisions made.
 
+## 2026-01-24 (Benchmark Suite Modernization)
+
+- **Migrated benchmark tooling from Bun + mixed bundlers to Vite as the central bundler**:
+  - Previously: Bun for dev server, Rollup for Svelte, esbuild for Solid, Vite for Vue, Bun for
+    React/Preact/Vani.
+  - Now: All frameworks use Vite with framework-specific plugins, providing a consistent and
+    predictable build pipeline.
+  - Reasoning: Reduces maintenance friction, improves DX with HMR support, and ensures fair
+    benchmark conditions by using the same bundler for all frameworks.
+
+- **Replaced Bootstrap 5 with Tailwind CSS 4 for benchmark UI styling**:
+  - Tailwind 4 uses CSS-based configuration (no JS config files) and provides modern utility
+    classes.
+  - Reasoning: Bun's dev server lacked Tailwind compilation and HMR support; Vite's Tailwind plugin
+    provides first-class support.
+
+- **Replaced Bun macros with Vite virtual modules**:
+  - Created `vite-plugin-bench-data.ts` to provide `virtual:bench-projects` and
+    `virtual:bench-notes` modules.
+  - These modules load project metadata and notes at build time, replacing the Bun-specific
+    `import ... with { type: 'macro' }` syntax.
+  - The plugin reads framework `package.json` files with a `benchmark` field containing `libName`,
+    `libPackage`, `libVersion`, and `implementationNotes`.
+
+- **Removed obsolete build tooling**:
+  - Deleted `bench/macros.ts`, `bench/build.ts`, `bench/frameworks/svelte/rollup.config.js`, and
+    `bench/frameworks/solid/build.js`.
+
+- **Updated benchmark scripts**:
+  - `pnpm run dev`: Builds frameworks then starts Vite dev server with HMR on port 4555.
+  - `pnpm run build`: Builds all frameworks then builds the main benchmark pages.
+  - `pnpm run build-frameworks`: Uses `pnpm run --filter 'benchmark-*' build` instead of
+    framework-specific build commands.
+
+- TS typecheck is now properly run in the benchmark suite.
+
 ## 2026-01-23
 
 - Renamed `handle.effect` to `handle.onBeforeMount` to clarify timing: it runs during setup before

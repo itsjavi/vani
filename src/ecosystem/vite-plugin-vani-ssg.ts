@@ -176,7 +176,7 @@ export default function vitePluginVaniSsg(options: VaniSsgPluginOptions = {}): P
         build: {
           outDir: 'dist/client',
           manifest: true,
-          rollupOptions: {
+          rolldownOptions: {
             input: entryClientAbs,
           },
         },

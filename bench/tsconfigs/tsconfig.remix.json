@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "remix/component"
+  },
+  "include": ["../src/**/*.ts", "../frameworks/remix/**/*"]
+}

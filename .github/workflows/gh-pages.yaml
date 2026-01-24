@@ -75,7 +75,7 @@ jobs:
         id: bench_results_cache
         uses: actions/cache/restore@v5
         with:
-          path: bench/snapshot/results
+          path: bench/results
           key: bench-results-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             bench-results-${{ runner.os }}-
@@ -83,7 +83,7 @@ jobs:
       - name: Check for cached bench results
         id: bench_results
         run: |
-          if [ -f bench/snapshot/results/bench-results.json ] && [ -f bench/snapshot/results/bench-results-vani.json ] && [ -f bench/snapshot/results/bench-last-args.json ]; then
+          if [ -f bench/results/bench-results.json ] then
             echo "has_results=true" >> "$GITHUB_OUTPUT"
           else
             echo "has_results=false" >> "$GITHUB_OUTPUT"
@@ -118,7 +118,7 @@ jobs:
         if: steps.bench_run.outputs.run_bench == 'true'
         uses: actions/cache/save@v5
         with:
-          path: bench/snapshot/results
+          path: bench/results
           key: bench-results-${{ runner.os }}-${{ github.sha }}
 
       - name: Build

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vanilla JS Benchmark Tests</title>
+    <link href="../../src/styles.css" rel="stylesheet" />
+  </head>
+  <body class="bench-shell">
+    <div class="bench-backlink bench-container">
+      <a href="../../">Back to home</a>
+    </div>
+    <div id="main">
+      <div class="bench-container">
+        <div class="bench-hero bench-section">
+          <div class="bench-grid-2">
+            <div class="relative">
+              <div class="bench-view-toggle" id="view-toggle">
+                <button
+                  type="button"
+                  class="bench-view-button bench-view-button-active"
+                  aria-pressed="true"
+                  aria-label="View data table"
+                  title="View data table"
+                >
+                  📊
+                </button>
+                <button
+                  type="button"
+                  class="bench-view-button"
+                  aria-pressed="false"
+                  aria-label="View pokeboxes"
+                  title="View pokeboxes"
+                >
+                  📦
+                </button>
+              </div>
+              <h1 class="bench-title">Vanilla JS</h1>
+            </div>
+            <div>
+              <div class="bench-actions" id="app-actions">
+                <button type="button" class="bench-button bench-button-primary w-full" id="run">
+                  Create 1,000 rows
+                </button>
+                <button type="button" class="bench-button bench-button-primary w-full" id="runlots">
+                  Create 10,000 rows
+                </button>
+                <button type="button" class="bench-button bench-button-primary w-full" id="add">
+                  Append 1,000 rows
+                </button>
+                <button type="button" class="bench-button bench-button-primary w-full" id="update">
+                  Update every 10th row
+                </button>
+                <button type="button" class="bench-button bench-button-primary w-full" id="clear">
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  class="bench-button bench-button-primary w-full"
+                  id="swaprows"
+                >
+                  Swap Rows
+                </button>
+                <button type="button" class="bench-button bench-button-primary w-full" id="sortasc">
+                  Sort Ascending
+                </button>
+                <button
+                  type="button"
+                  class="bench-button bench-button-primary w-full"
+                  id="sortdesc"
+                >
+                  Sort Descending
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <table class="bench-data-table">
+          <tbody id="tbody"></tbody>
+        </table>
+        <span class="bench-preload-icon bench-data-remove" aria-hidden="true"></span>
+      </div>
+    </div>
+    <template>
+      <tr class="bench-data-row">
+        <td class="bench-data-cell bench-data-id">{id}</td>
+        <td class="bench-data-cell">
+          <a class="bench-data-link" href="/">{lbl}</a>
+        </td>
+        <td class="bench-data-cell">
+          <button class="bench-data-remove" type="button" aria-label="Remove"></button>
+        </td>
+        <td class="bench-data-cell"></td>
+      </tr>
+    </template>
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>
