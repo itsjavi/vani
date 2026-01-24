@@ -83,7 +83,7 @@ jobs:
       - name: Check for cached bench results
         id: bench_results
         run: |
-          if [ -f bench/results/bench-results.json ] then
+          if [ -f bench/results/bench-results.json ]; then
             echo "has_results=true" >> "$GITHUB_OUTPUT"
           else
             echo "has_results=false" >> "$GITHUB_OUTPUT"
