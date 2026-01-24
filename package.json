@@ -65,7 +65,7 @@
   ],
   "scripts": {
     "bench": "pnpm run --filter benchmarks bench",
-    "bench:build": "pnpm run --filter benchmarks build --base '/benchmarks/{dir}'",
+    "bench:build": "pnpm run --filter benchmarks build:prod",
     "bench:dev": "pnpm run --filter benchmarks dev",
     "bench:wide": "BENCH_VIEWPORT_WIDTH=1280 BENCH_VIEWPORT_HEIGHT=740 pnpm run --filter benchmarks bench",
     "build": "pnpm run cleanup && vite build && pnpm run build:lib",

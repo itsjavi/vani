@@ -5,7 +5,8 @@
   "scripts": {
     "bench": "pnpm run build && bun run runner.ts",
     "build": "rm -rf dist && vite build",
-    "build:dev": "pnpm run build --base '/{dir}'",
+    "build:dev": "pnpm run build",
+    "build:prod": "pnpm run build --base '/benchmarks/'",
     "dev": "vite --port 4555 --host 0.0.0.0",
     "format": "cd .. && pnpm format",
     "prepare": "if [ ! -f results/bench-results.json ]; then cp results/bench-results.fallback.json results/bench-results.json; fi",
