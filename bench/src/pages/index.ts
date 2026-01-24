@@ -3,7 +3,7 @@ import { getFrameworks, indexNotes, pkgJson } from '../metadata'
 
 const frameworks = getFrameworks()
 const manualTests: Array<{ name: string; path: string }> = [
-  { name: 'Golden Leaf Test', path: 'manual-tests/golden-leaf-test' },
+  { name: 'Golden Leaf Test (Vani)', path: 'manual-tests/golden-leaf-test' },
 ]
 
 type BenchResultsCalculated = {
@@ -101,7 +101,7 @@ app.innerHTML = `
     <div>
       <div class="bench-card">
         <div class="bench-card-header">
-          <h3 class="bench-card-title">Benchmark Implementations</h3>
+          <h3 class="bench-card-title">Framework Rankings (by Mean Time)</h3>
         </div>
         <div class="bench-list">
           ${sortedFrameworks
