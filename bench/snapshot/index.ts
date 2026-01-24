@@ -411,19 +411,39 @@ function render(snapshot: SnapshotPayload): void {
                   let prettyLabel = label
                     ? `<div><strong>${label.title}</strong></div><small>${label.description}</small>`
                     : operation
+                  const operationResults = calculated.operationResults[operation] ?? {}
+                  const bestRatio = Math.min(
+                    ...Object.values(operationResults)
+                      .map((result) => result.ratio)
+                      .filter((ratio) => Number.isFinite(ratio)),
+                  )
+                  const worstRatio = Math.max(
+                    ...Object.values(operationResults)
+                      .map((result) => result.ratio)
+                      .filter((ratio) => Number.isFinite(ratio)),
+                  )
 
                   return `
                     <tr>
                       <td>${prettyLabel}</td>
                       ${frameworkIds
                         .map((frameworkId) => {
-                          let result = calculated.operationResults[operation]?.[frameworkId]
+                          let result = operationResults[frameworkId]
                           if (!result) {
                             return `<td class="text-center">-</td>`
                           }
+                          const isBest =
+                            Number.isFinite(bestRatio) && result.ratio <= bestRatio + 1e-6
+                          const isWorst =
+                            Number.isFinite(worstRatio) && result.ratio >= worstRatio - 1e-6
+                          const value = `${formatNumber(result.mean)} <small>+/- ${formatNumber(
+                            result.ci,
+                          )}</small>`
+                          const bestClass = isBest ? ' cell-best' : ''
+                          const worstClass = isWorst ? ' cell-worst' : ''
                           return `
-                            <td class="text-center ${cellClass(result.ratio)}">
-                              <div>${formatNumber(result.mean)} <small>+/- ${formatNumber(result.ci)}</small></div>
+                            <td class="text-center ${cellClass(result.ratio)}${bestClass}${worstClass}">
+                              <div>${isBest ? `<strong>${value}</strong>` : value}</div>
                               <small>(${result.ratio.toFixed(2)})</small>
                             </td>
                           `
@@ -622,6 +642,12 @@ style.textContent = `
     --bs-table-color: #1f3d1f;
     background-color: #5cb85c22;
   }
+  .cell-best {
+    --bs-table-bg: #5cb85c55;
+    --bs-table-color: #1f3d1f;
+    background-color: #5cb85c55;
+    font-weight: 700;
+  }
   .cell-ok {
     --bs-table-bg: #8ad17d33;
     --bs-table-color: #1f3d1f;
@@ -636,6 +662,12 @@ style.textContent = `
     --bs-table-bg: #d9534f33;
     --bs-table-color: #5a1a18;
     background-color: #d9534f33;
+  }
+  .cell-worst {
+    --bs-table-bg: #d9534f66;
+    --bs-table-color: #5a1a18;
+    background-color: #d9534f66;
+    font-weight: 700;
   }
 `
 document.head.append(style)

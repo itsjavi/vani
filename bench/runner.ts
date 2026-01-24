@@ -26,6 +26,7 @@ interface SavedArgs {
   profile: boolean
   'preflight-only': boolean
   'no-preflight': boolean
+  browser: string
   framework: string[]
   benchmark: string[]
   view: string[]
@@ -68,6 +69,7 @@ let { values: args } = parseArgs({
     profile: { type: 'boolean', default: false },
     'preflight-only': { type: 'boolean', default: false },
     'no-preflight': { type: 'boolean', default: false },
+    browser: { type: 'string', default: 'chromium' },
     framework: {
       type: 'string',
       multiple: true,
@@ -101,6 +103,7 @@ if (isRepeat) {
     profile: args.profile!,
     'preflight-only': args['preflight-only'] ?? false,
     'no-preflight': args['no-preflight'] ?? false,
+    browser: args.browser!,
     framework: args.framework || [],
     benchmark: args.benchmark || [],
     view: args.view || [],
@@ -115,6 +118,7 @@ let useTable = args.table!
 let showProfile = args.profile!
 let preflightOnly = args['preflight-only'] ?? false
 let noPreflight = args['no-preflight'] ?? false
+let browserName = (args.browser ?? 'chromium').toLowerCase()
 let frameworkFilter = args.framework || []
 let benchmarkFilter = args.benchmark || []
 let viewFilter = args.view || []
@@ -1335,8 +1339,21 @@ async function main(): Promise<void> {
     console.log('Starting benchmark server...')
     server = await startServer()
 
-    console.log('Launching browser...')
-    browser = await chromium.launch({
+    const browserLaunchers: Record<string, typeof chromium> = {
+      chromium,
+      // this runner currently doesn't support other browsers:
+      // firefox,
+      // webkit,
+    }
+    const launcher = browserLaunchers[browserName]
+    if (!launcher) {
+      console.error(`Error: Invalid browser: ${browserName}`)
+      console.error('Available browsers: chromium')
+      process.exit(1)
+    }
+
+    console.log(`🧑‍🔬 Launching ${browserName} browser...`)
+    browser = await launcher.launch({
       headless,
       args: viewport ? [`--window-size=${viewport.width},${viewport.height}`] : undefined,
     })

@@ -112,7 +112,7 @@ jobs:
         run: |
           export PLAYWRIGHT_BROWSERS_PATH="${{ github.workspace }}/.cache/ms-playwright"
           pnpm exec playwright install
-          pnpm bench --headless --cpu 3 --runs 4 --warmups 2
+          pnpm bench --headless --cpu 4 --runs 5 --warmups 2
 
       - name: Save bench results cache
         if: steps.bench_run.outputs.run_bench == 'true'
