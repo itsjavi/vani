@@ -2,6 +2,7 @@
 @import './styles/pokeballs.css';
 
 @import 'tailwindcss';
+@source '../*';
 @source '../frameworks/*';
 
 @import './design-system.css';

@@ -28,6 +28,10 @@ catalogs:
 importers:
 
   .:
+    dependencies:
+      sirv-cli:
+        specifier: ^3.0.1
+        version: 3.0.1
     devDependencies:
       '@babel/runtime':
         specifier: ^7.28.6
