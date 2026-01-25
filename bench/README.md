@@ -49,6 +49,20 @@ pnpm run bench
 This will build all frameworks and then use `playwright` to run the benchmarks and show the results
 in the terminal.
 
+## Results viewer history
+
+The results page now loads past runs from `bench/results/bench-results-index.json` and lets you
+select a run (with an optional comparison run) from a dropdown.
+
+- Each run writes a timestamped snapshot file in `bench/results/`.
+- The latest run is still written to `bench/results/bench-results.json`.
+- History retention is controlled by `benchmarks.resultsRetention` in `bench/package.json` (default:
+  30).
+- You can label a run with `--machine "Your machine label"` and it will display above the config.
+
+The results viewer fetches snapshots from `/data/` in dev and `/benchmarks/data/` in production
+(`build:pages` copies `bench/results` into `dist/client/benchmarks/data`).
+
 ## Development
 
 ### Start the dev server

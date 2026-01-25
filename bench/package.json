@@ -47,6 +47,7 @@
     "cpuThrottling": 4,
     "benchmarkRuns": 5,
     "warmupRuns": 2,
+    "resultsRetention": 30,
     "frameworks": [
       {
         "id": "vanilla",

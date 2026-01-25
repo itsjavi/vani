@@ -13,6 +13,8 @@ import {
   type SnapshotCalculated,
   type SnapshotFramework,
   type SnapshotFrameworkMetrics,
+  type SnapshotIndex,
+  type SnapshotIndexEntry,
   type SnapshotPayload,
   type Stats,
   type SuiteCalculated,
@@ -29,6 +31,7 @@ const RESULTS_DIR = path.resolve(import.meta.dirname, 'results')
 const BLUEPRINT_DIR = path.resolve(import.meta.dirname, 'src/core')
 const LAST_ARGS_FILE = path.join(RESULTS_DIR, 'bench-last-args.json')
 const SNAPSHOT_FILE = path.join(RESULTS_DIR, 'bench-results.json')
+const SNAPSHOT_INDEX_FILE = path.join(RESULTS_DIR, 'bench-results-index.json')
 const VANI_RESULTS_FILE = path.join(RESULTS_DIR, 'bench-results-vani.json')
 const BLUEPRINTS = {
   datatable: path.resolve(BLUEPRINT_DIR, 'blueprint-datatable.html'),
@@ -39,6 +42,7 @@ interface SavedArgs {
   cpu: string
   runs: string
   warmups: string
+  machine: string
   headless: boolean
   table: boolean
   profile: boolean
@@ -81,6 +85,7 @@ let { values: args } = parseArgs({
     cpu: { type: 'string', default: String(pkgJson.benchmarks.cpuThrottling ?? '4') },
     runs: { type: 'string', default: String(pkgJson.benchmarks.benchmarkRuns ?? '5') },
     warmups: { type: 'string', default: String(pkgJson.benchmarks.warmupRuns ?? '2') },
+    machine: { type: 'string', default: '' },
     headless: { type: 'boolean', default: false },
     table: { type: 'boolean', default: false },
     profile: { type: 'boolean', default: false },
@@ -115,6 +120,7 @@ if (isRepeat) {
     cpu: args.cpu!,
     runs: args.runs!,
     warmups: args.warmups!,
+    machine: args.machine ?? '',
     headless: args.headless!,
     table: args.table!,
     profile: args.profile!,
@@ -130,6 +136,7 @@ if (isRepeat) {
 let cpuThrottling = parseInt(args.cpu!, 10)
 let benchmarkRuns = parseInt(args.runs!, 10)
 let warmupRuns = parseInt(args.warmups!, 10)
+let machine = (args.machine ?? '').trim()
 let headless = args.headless!
 let useTable = args.table!
 let showProfile = args.profile!
@@ -524,9 +531,64 @@ function saveVaniResults(results: BenchmarkResult[]): void {
   }
 }
 
-function saveSnapshot(payload: SnapshotPayload): void {
+function buildRunId(date: Date): string {
+  return date.toISOString().replace(/[:.]/g, '-')
+}
+
+function loadSnapshotIndex(): SnapshotIndex {
+  try {
+    if (fs.existsSync(SNAPSHOT_INDEX_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(SNAPSHOT_INDEX_FILE, 'utf-8')) as SnapshotIndex
+      if (parsed && Array.isArray(parsed.entries)) {
+        return parsed
+      }
+    }
+  } catch {
+    // Ignore errors loading index
+  }
+  return { entries: [] }
+}
+
+function writeSnapshotIndex(index: SnapshotIndex): void {
+  fs.mkdirSync(RESULTS_DIR, { recursive: true })
+  fs.writeFileSync(SNAPSHOT_INDEX_FILE, JSON.stringify(index, null, 2))
+}
+
+function applyRetention(
+  entries: SnapshotIndexEntry[],
+  retention: number,
+): { kept: SnapshotIndexEntry[]; removed: SnapshotIndexEntry[] } {
+  const sorted = [...entries].sort((a, b) => b.generatedAt.localeCompare(a.generatedAt))
+  const limit = Math.max(1, retention)
+  return {
+    kept: sorted.slice(0, limit),
+    removed: sorted.slice(limit),
+  }
+}
+
+function saveSnapshot(
+  payload: SnapshotPayload,
+  entry: SnapshotIndexEntry,
+  retention: number,
+): void {
   fs.mkdirSync(RESULTS_DIR, { recursive: true })
   fs.writeFileSync(SNAPSHOT_FILE, JSON.stringify(payload, null, 2))
+  const runPath = path.join(RESULTS_DIR, entry.file)
+  fs.writeFileSync(runPath, JSON.stringify(payload, null, 2))
+
+  const currentIndex = loadSnapshotIndex()
+  const nextEntries = [entry, ...currentIndex.entries.filter((item) => item.id !== entry.id)]
+  const { kept, removed } = applyRetention(nextEntries, retention)
+
+  writeSnapshotIndex({ latestId: entry.id, entries: kept })
+
+  for (const removedEntry of removed) {
+    const removedPath = path.join(RESULTS_DIR, removedEntry.file)
+    if (fs.existsSync(removedPath)) {
+      fs.unlinkSync(removedPath)
+    }
+  }
+
   console.log(`Saved snapshot to ${SNAPSHOT_FILE}`)
 }
 
@@ -1289,8 +1351,14 @@ async function main(): Promise<void> {
     printResults(allResults)
 
     let frameworkDetails = getFrameworks()
-    saveSnapshot({
-      generatedAt: new Date().toISOString(),
+    const generatedAt = new Date().toISOString()
+    const runId = buildRunId(new Date(generatedAt))
+    const retention = Number.isFinite(pkgJson.benchmarks.resultsRetention)
+      ? Number(pkgJson.benchmarks.resultsRetention)
+      : 30
+    const snapshotPayload: SnapshotPayload = {
+      generatedAt,
+      machine: machine || undefined,
       cpuThrottling,
       runs: benchmarkRuns,
       warmups: warmupRuns,
@@ -1303,7 +1371,22 @@ async function main(): Promise<void> {
         let operation = operations.find((op) => op.name === operationName)
         return operation ? resolveOperationView(operation) : DEFAULT_VIEW
       }),
-    })
+    }
+
+    const indexEntry: SnapshotIndexEntry = {
+      id: runId,
+      file: `bench-results-${runId}.json`,
+      generatedAt,
+      machine: machine || undefined,
+      cpuThrottling,
+      runs: benchmarkRuns,
+      warmups: warmupRuns,
+      headless,
+      preflightUsed: !noPreflight,
+      frameworks: frameworkDetails,
+    }
+
+    saveSnapshot(snapshotPayload, indexEntry, retention)
 
     console.log('Benchmark complete!')
     console.log('View results with: pnpm bench:dev')

@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react'
 import vue from '@vitejs/plugin-vue'
 import solid from 'vite-plugin-solid'
 import remix from './vite-plugin-remix'
+import vani from './vite-plugin-vani'
 //
 import type { Plugin } from 'vite'
 
@@ -72,7 +73,7 @@ const frameworkIds = [
   'solid',
   'svelte',
   'vue',
-  // 'vani',
+  'vani',
   // 'vanilla',
 ] as const
 
@@ -113,6 +114,11 @@ function pluginsForFramework(frameworkId: FrameworkId, defaultFrameworkId?: Fram
 
     case 'vue':
       return [vue()]
+
+    case 'vani':
+      return scoped(vani(), (id) =>
+        id.endsWith(getFrameworkSuffix(frameworkId, defaultFrameworkId)),
+      )
 
     default:
       throw new Error(`Unknown framework: ${frameworkId}`)

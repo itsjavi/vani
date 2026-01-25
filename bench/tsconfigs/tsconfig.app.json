@@ -1,7 +1,15 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "composite": true
+    "composite": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "vani"
   },
-  "include": ["../src/**/*.ts", "../*.ts", "../plugins/*.ts", "../../src/vani/index.ts"]
+  "include": [
+    "../src/**/*.ts",
+    "../src/**/*.tsx",
+    "../*.ts",
+    "../plugins/*.ts",
+    "../../src/vani/index.ts"
+  ]
 }

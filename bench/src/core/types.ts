@@ -84,6 +84,7 @@ export type SnapshotCalculated = {
 // Full snapshot payload
 export type SnapshotPayload = {
   generatedAt: string
+  machine?: string
   cpuThrottling: number
   runs: number
   warmups: number
@@ -93,6 +94,24 @@ export type SnapshotPayload = {
   results: BenchmarkResult[]
   resourceMetrics?: SnapshotFrameworkMetrics[]
   calculated?: SnapshotCalculated
+}
+
+export type SnapshotIndexEntry = {
+  id: string
+  file: string
+  generatedAt: string
+  machine?: string
+  cpuThrottling: number
+  runs: number
+  warmups: number
+  headless: boolean
+  preflightUsed?: boolean
+  frameworks: SnapshotFramework[]
+}
+
+export type SnapshotIndex = {
+  latestId?: string
+  entries: SnapshotIndexEntry[]
 }
 
 // Legacy snapshot format (for backward compatibility)

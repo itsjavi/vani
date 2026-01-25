@@ -16,6 +16,7 @@ export type BenchConfig = {
   cpuThrottling: number
   benchmarkRuns: number
   warmupRuns: number
+  resultsRetention?: number
   frameworks: BenchFrameworkConfig[]
 }
 
