@@ -1,5 +1,5 @@
 import * as h from '@/vani/html'
-import { classNames, type ClassName, type VChild } from '@/vani/runtime'
+import { classNames, type ClassName, type VChild } from '@/vani/local'
 import bash from '@shikijs/langs/bash'
 import typescript from '@shikijs/langs/typescript'
 import shikiThemeConfig from '@shikijs/themes/github-dark'

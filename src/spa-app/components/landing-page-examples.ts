@@ -1,6 +1,6 @@
-import SparklesIcon from 'lucide-static/icons/sparkles.svg?vani'
-import { component, signal, startTransition, text, type DomRef, type Handle } from '@/vani'
 import * as h from '@/vani/html'
+import { component, signal, startTransition, text, type DomRef, type Handle } from '@/vani/local'
+import SparklesIcon from 'lucide-static/icons/sparkles.svg?vani'
 import { CopyableCodeBlock } from './copyable-code-block'
 import { jsxExamples } from './jsx-examples'
 import { cn, getHighlightedTokens } from './utils'

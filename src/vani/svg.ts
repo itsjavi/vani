@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable unicorn/no-array-callback-reference */
 
-import { getRenderMode, type SSRNode, type SvgProps, type VNode } from './runtime'
+import { getRenderMode } from './common'
+import { type SSRNode, type SvgProps, type VNode } from './runtime'
 
 export type SvgRenderOptions = {
   size?: number

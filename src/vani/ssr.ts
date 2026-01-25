@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable unicorn/no-array-callback-reference */
 
+import { getRenderMode } from './common'
 import {
-  getRenderMode,
   isComponentInstance,
   withRenderMode,
   type Component,

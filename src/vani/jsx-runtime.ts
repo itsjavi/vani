@@ -20,8 +20,20 @@ import {
 type ElementTagName = Extract<keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap, string>
 type IntrinsicElementProps<Tag extends ElementTagName> = ElementProps<Tag> & {
   children?: VChild | VChild[]
+  key?: string | number
 }
 type Key = string | number | null | undefined
+
+// Wrapped component type (result of component())
+type WrappedComponent<Props = any> = (
+  props?: Props & ComponentMetaProps,
+) => ComponentInstance<Props>
+
+type ComponentMetaProps = {
+  key?: string | number
+  ref?: ComponentRef
+  clientOnly?: boolean
+}
 
 export const Fragment = Symbol.for('vani.fragment')
 
@@ -59,7 +71,7 @@ function splitProps(input: Record<string, any> | null | undefined, key?: Key): S
   return { props, children, key: resolvedKey, ref, hasChildrenProp }
 }
 
-type JsxElementType = string | Component<any> | typeof Fragment
+type JsxElementType = string | Component<any> | WrappedComponent<any> | typeof Fragment
 
 export function jsx(type: JsxElementType, props: Record<string, any> | null, key?: Key) {
   const {
@@ -92,7 +104,12 @@ export function jsx(type: JsxElementType, props: Record<string, any> | null, key
     if (ref) {
       componentProps.ref = ref
     }
-    return component(type)(componentProps)
+    // Check if it's already a wrapped component (has $$vaniWrapped marker)
+    if ((type as any).$$vaniWrapped) {
+      return (type as WrappedComponent)(componentProps)
+    }
+    // Otherwise wrap it as a raw Component
+    return component(type as Component<any>)(componentProps)
   }
 
   throw new Error('[vani] jsx runtime received an unsupported element type.')

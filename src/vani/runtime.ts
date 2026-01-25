@@ -6,13 +6,12 @@
 
 import {
   configureSignalDom,
-  derive as createDerived,
-  createEffect,
-  signal as createSignal,
-  type Signal,
-  type SignalGetter,
-  type SignalSetter,
-} from './signals'
+  getRenderMode,
+  setRenderMode,
+  type ClassName,
+  type RenderMode,
+  type TextNode,
+} from './common'
 
 // ─────────────────────────────────────────────
 // Types
@@ -129,7 +128,7 @@ type ElementByTag<T extends ElementTagName> = T extends HtmlTagName
     : Element
 
 export type SvgProps<T extends SvgTagName = SvgTagName> = BaseProps<T> & {
-  [key: string]: string | number | boolean | undefined | null | ((...args: any[]) => any)
+  [key: string]: unknown
 }
 
 type BaseProps<T extends ElementTagName> = {
@@ -146,15 +145,6 @@ export type HtmlProps<T extends HtmlTagName = HtmlTagName> = BaseProps<T> &
 export type ElementProps<T extends ElementTagName> = T extends SvgTagName
   ? SvgProps<T>
   : HtmlProps<Extract<T, HtmlTagName>>
-
-export type ClassName =
-  | string
-  | undefined
-  | null
-  | {
-      [key: string]: boolean | undefined | null
-    }
-  | ClassName[]
 
 type KeyedRecord = {
   handle: Handle
@@ -178,8 +168,6 @@ export type UpdateOptions = {
   onlyAttributes?: boolean
 }
 
-type RenderMode = 'dom' | 'ssr'
-
 // ─────────────────────────────────────────────
 // component() helper
 // ─────────────────────────────────────────────
@@ -199,7 +187,7 @@ export function component<Props>(
   fn: Component<Props>,
 ): (props: Props & ComponentMetaProps) => ComponentInstance<Props>
 export function component<Props>(fn: Component<Props>) {
-  return (input?: ComponentInput<Props>): ComponentInstance<Props> => {
+  const wrapper = (input?: ComponentInput<Props>): ComponentInstance<Props> => {
     let key: string | number | undefined
     let ref: ComponentRef | undefined
     let clientOnly = false
@@ -225,53 +213,28 @@ export function component<Props>(fn: Component<Props>) {
       clientOnly,
     }
   }
+
+  // Mark as wrapped component for JSX runtime detection
+  ;(wrapper as any).$$vaniWrapped = true
+
+  return wrapper
 }
 
 // ─────────────────────────────────────────────
 // Render mode (DOM vs SSR)
 // ─────────────────────────────────────────────
 
-let currentRenderMode: RenderMode = 'dom'
-
 export function withRenderMode<T>(mode: RenderMode, fn: () => T): T {
-  const prev = currentRenderMode
-  currentRenderMode = mode
+  const prev = getRenderMode()
+  setRenderMode(mode)
   const result = fn()
   if (result && typeof (result as unknown as Promise<unknown>).finally === 'function') {
     return (result as unknown as Promise<unknown>).finally(() => {
-      currentRenderMode = prev
+      setRenderMode(prev)
     }) as T
   }
-  currentRenderMode = prev
+  setRenderMode(prev)
   return result
-}
-
-export function getRenderMode(): RenderMode {
-  return currentRenderMode
-}
-
-export type { Signal, SignalGetter, SignalSetter }
-
-export function signal<T>(value: T): Signal<T> {
-  return createSignal(value)
-}
-
-export { attr, text } from './signals'
-
-export function derive<T>(fn: () => T): SignalGetter<T> {
-  if (currentRenderMode === 'ssr') {
-    const value = fn()
-    return () => value
-  }
-  return createDerived(fn)
-}
-
-export function effect(fn: () => void | (() => void)): () => void {
-  if (currentRenderMode === 'ssr') {
-    fn()
-    return () => {}
-  }
-  return createEffect(fn)
 }
 
 function isSsrNode(node: VNode): node is SSRNode {
@@ -328,7 +291,7 @@ const svgTags = new Set<string>([
 ])
 
 function createElementNode(tag: string): VNode {
-  if (currentRenderMode === 'dom') {
+  if (getRenderMode() === 'dom') {
     if (svgTags.has(tag)) {
       return document.createElementNS('http://www.w3.org/2000/svg', tag)
     }
@@ -338,14 +301,14 @@ function createElementNode(tag: string): VNode {
 }
 
 function createTextNode(text: string): VNode {
-  if (currentRenderMode === 'dom') {
+  if (getRenderMode() === 'dom') {
     return document.createTextNode(text)
   }
   return { type: 'text', text }
 }
 
 function appendChildNode(parent: VNode, child: VNode) {
-  if (currentRenderMode === 'dom') {
+  if (getRenderMode() === 'dom') {
     ;(parent as Node).appendChild(child as Node)
     return
   }
@@ -707,7 +670,12 @@ function mountComponent<Props>(
 // Public render API
 // ─────────────────────────────────────────────
 
-type Renderable = Component<any> | ComponentInstance<any>
+// Wrapped component type (result of component())
+type WrappedComponent<Props = any> = ((
+  props?: Props & ComponentMetaProps,
+) => ComponentInstance<Props>) & { $$vaniWrapped?: true }
+
+type Renderable = Component<any> | ComponentInstance<any> | WrappedComponent<any>
 
 function normalizeRenderables(input: Renderable | Renderable[]): Renderable[] {
   return Array.isArray(input) ? input : [input]
@@ -725,8 +693,15 @@ export function renderToDOM(components: Renderable | Renderable[], root: HTMLEle
   const normalized = normalizeRenderables(components)
   for (const Comp of normalized) {
     if (typeof Comp === 'function') {
+      // Check if it's a wrapped component (created with component())
+      if ((Comp as any).$$vaniWrapped) {
+        const instance = (Comp as WrappedComponent)()
+        const handle = mountComponent(instance.component, getMountProps(instance), root)
+        handles.push(handle)
+        continue
+      }
       // raw component (no props)
-      const handle = mountComponent(Comp, {} as any, root)
+      const handle = mountComponent(Comp as Component<any>, {} as any, root)
       handles.push(handle)
       continue
     }
@@ -884,7 +859,7 @@ function mountKeyedRecord(
 }
 
 function appendChildren(parent: VNode, children: VChild[]) {
-  if (currentRenderMode === 'ssr') {
+  if (getRenderMode() === 'ssr') {
     for (const child of children) {
       if (child == null || child === false || child === undefined) continue
 
@@ -989,7 +964,7 @@ function appendChildren(parent: VNode, children: VChild[]) {
 }
 
 export function renderKeyedChildren(parent: Node, children: Array<ComponentInstance<any>>): void {
-  if (currentRenderMode === 'ssr') {
+  if (getRenderMode() === 'ssr') {
     throw new Error('[vani] renderKeyedChildren is not supported in SSR mode')
   }
 
@@ -1074,7 +1049,7 @@ function normalizeAttrKey(key: string, isSvg: boolean) {
 
 configureSignalDom({
   getRenderMode,
-  createTextNode: (text) => createTextNode(text) as any,
+  createTextNode: (text: string) => createTextNode(text) as TextNode,
   addNodeCleanup,
   classNames,
   normalizeAttrKey,
@@ -1104,6 +1079,13 @@ function setProps(el: VNode, props: Record<string, any>) {
     if (key.startsWith('on') && typeof value === 'function') {
       if (!isSsrElement(el)) {
         ;(el as any)[key.toLowerCase()] = value
+      }
+    } else if (key === 'value' || key === 'checked' || key === 'selected') {
+      // These properties must be set as DOM properties, not attributes
+      if (!isSsrElement(el)) {
+        ;(el as any)[key] = value
+      } else {
+        el.props[key] = String(value)
       }
     } else if (value === true) {
       if (isSsrElement(el)) {
@@ -1152,6 +1134,55 @@ export function classNames(...classes: ClassName[]): string {
 
 let attributesOnlyMode = false
 
+// Properties that must be set AFTER children are appended (e.g., select value needs options first)
+const DEFERRED_PROPS: Record<string, string[]> = {
+  select: ['value'],
+  // Add other elements here if needed in the future
+}
+
+type DeferredPropValues = Record<string, unknown>
+
+function extractDeferredProps(
+  tag: string,
+  props: Record<string, any>,
+): { cleanProps: Record<string, any>; deferred: DeferredPropValues } {
+  const deferredKeys = DEFERRED_PROPS[tag]
+  if (!deferredKeys) {
+    return { cleanProps: props, deferred: {} }
+  }
+
+  const deferred: DeferredPropValues = {}
+  let hasDeferred = false
+
+  for (const key of deferredKeys) {
+    if (key in props && props[key] !== undefined) {
+      deferred[key] = props[key]
+      hasDeferred = true
+    }
+  }
+
+  if (!hasDeferred) {
+    return { cleanProps: props, deferred: {} }
+  }
+
+  const cleanProps = { ...props }
+  for (const key of deferredKeys) {
+    delete cleanProps[key]
+  }
+
+  return { cleanProps, deferred }
+}
+
+function applyDeferredProps(node: VNode, deferred: DeferredPropValues): void {
+  if (isSsrElement(node)) return
+
+  for (const [key, value] of Object.entries(deferred)) {
+    if (value !== undefined) {
+      ;(node as any)[key] = value
+    }
+  }
+}
+
 export function el<E extends ElementTagName>(
   tag: E,
   props?: ElementProps<E> | VChild | null,
@@ -1167,10 +1198,15 @@ export function el<E extends ElementTagName>(
         props.ref.current = null
       }
     }
-    setProps(node, props)
+
+    const { cleanProps, deferred } = extractDeferredProps(tag, props)
+    setProps(node, cleanProps)
+
     if (!attributesOnlyMode) {
       appendChildren(node, children)
     }
+
+    applyDeferredProps(node, deferred)
     return node
   }
 
@@ -1179,7 +1215,7 @@ export function el<E extends ElementTagName>(
 }
 
 export const fragment = (...children: VChild[]) => {
-  if (currentRenderMode === 'ssr') {
+  if (getRenderMode() === 'ssr') {
     const node: SSRNode = { type: 'fragment', children: [] }
     appendChildren(node, children)
     return node
@@ -1194,7 +1230,7 @@ export const fragment = (...children: VChild[]) => {
 // Low-level mount helper for unwrapped component functions
 // ─────────────────────────────────────────────
 export function mount<Props>(component: Component<Props>, props: Props): VNode {
-  if (currentRenderMode === 'ssr') {
+  if (getRenderMode() === 'ssr') {
     return {
       type: 'component',
       instance: {

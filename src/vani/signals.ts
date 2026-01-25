@@ -1,18 +1,14 @@
+import {
+  getRenderMode,
+  getSignalDomAdapter,
+  type AttrValue,
+  type ClassName,
+  type TextNode,
+} from './common'
+
 export type SignalGetter<T> = () => T
 export type SignalSetter<T> = (value: T | ((prev: T) => T)) => void
 export type Signal<T> = [SignalGetter<T>, SignalSetter<T>]
-
-export type ClassName =
-  | string
-  | undefined
-  | null
-  | {
-      [key: string]: boolean | undefined | null
-    }
-  | ClassName[]
-
-type AttrValue = ClassName | string | number | boolean | null | undefined
-type TextNode = Node | { type: 'text'; text: string }
 
 type SignalRecord<T> = {
   value: T
@@ -99,6 +95,14 @@ export function signal<T>(value: T): Signal<T> {
   return [getter, setter]
 }
 
+export function effect(fn: () => void | (() => void)): () => void {
+  if (getRenderMode() === 'ssr') {
+    fn()
+    return () => {}
+  }
+  return createEffect(fn)
+}
+
 export function createEffect(fn: () => void | (() => void)): () => void {
   const observer: SignalObserver = {
     fn,
@@ -123,32 +127,19 @@ export function derive<T>(fn: () => T): SignalGetter<T> {
   return get
 }
 
-type SignalDomAdapter = {
-  getRenderMode: () => 'dom' | 'ssr'
-  createTextNode: (text: string) => TextNode
-  addNodeCleanup: (node: Node, cleanup: () => void) => void
-  classNames: (...classes: ClassName[]) => string
-  normalizeAttrKey: (key: string, isSvg: boolean) => string
-}
-
-let domAdapter: SignalDomAdapter | null = null
-
-export function configureSignalDom(adapter: SignalDomAdapter): void {
-  domAdapter = adapter
-}
-
 export function text(value: SignalGetter<unknown> | (() => unknown) | unknown): TextNode {
   const resolve = () => (typeof value === 'function' ? (value as () => unknown)() : value)
   const textValue = String(resolve() ?? '')
-  if (!domAdapter) {
+  const adapter = getSignalDomAdapter()
+  if (!adapter) {
     if (typeof document !== 'undefined') {
       return document.createTextNode(textValue)
     }
     return { type: 'text', text: textValue }
   }
 
-  const node = domAdapter.createTextNode(textValue)
-  if (domAdapter.getRenderMode() === 'ssr') {
+  const node = adapter.createTextNode(textValue)
+  if (adapter.getRenderMode() === 'ssr') {
     return node
   }
 
@@ -157,7 +148,7 @@ export function text(value: SignalGetter<unknown> | (() => unknown) | unknown): 
     const dispose = createEffect(() => {
       textNode.textContent = String(resolve() ?? '')
     })
-    domAdapter.addNodeCleanup(textNode, dispose)
+    getSignalDomAdapter()?.addNodeCleanup(textNode, dispose)
   }
 
   return node as TextNode
@@ -168,8 +159,8 @@ export function attr(
   name: string,
   value: SignalGetter<AttrValue> | (() => AttrValue) | AttrValue,
 ) {
-  if (!domAdapter) return () => {}
-  const adapter = domAdapter
+  const adapter = getSignalDomAdapter()
+  if (!adapter) return () => {}
   if (adapter.getRenderMode() === 'ssr') return () => {}
   if (name.startsWith('on')) return () => {}
 
