@@ -1,2 +1,2 @@
-results/*.json
-!results/bench-results.fallback.json
+results/bench-last-args.json
+results/bench-results-vani.json

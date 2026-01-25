@@ -9,7 +9,6 @@
     "build:prod": "pnpm run build --base '/benchmarks/'",
     "dev": "vite --port 4555 --host 0.0.0.0",
     "format": "cd .. && pnpm format",
-    "prepare": "if [ ! -f results/bench-results.json ]; then cp results/bench-results.fallback.json results/bench-results.json; fi",
     "preview": "pnpm run serve",
     "serve": "sirv ./dist",
     "start": "pnpm run serve",
@@ -23,6 +22,7 @@
     "sirv-cli": "^3.0.1",
     "solid-js": "^1.9.11",
     "svelte": "^5.48.2",
+    "vani-local": "workspace:*",
     "vue": "^3.5.27"
   },
   "devDependencies": {

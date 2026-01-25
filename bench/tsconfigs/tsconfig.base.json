@@ -12,9 +12,7 @@
     "types": ["node", "vite/client"],
     "baseUrl": "..",
     "paths": {
-      "@/bench/*": ["src/*"],
-      "vani": ["../src/vani/index.ts"],
-      "vani/*": ["../src/vani/index.ts"]
+      "@/bench/*": ["src/*"]
     }
   }
 }

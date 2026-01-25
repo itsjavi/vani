@@ -152,6 +152,9 @@ importers:
       svelte:
         specifier: ^5.48.2
         version: 5.48.2
+      vani-local:
+        specifier: workspace:*
+        version: link:../src/vani
       vue:
         specifier: ^3.5.27
         version: 3.5.27(typescript@5.9.3)
@@ -198,6 +201,8 @@ importers:
       vite-plugin-solid:
         specifier: ^2.11.10
         version: 2.11.10(solid-js@1.9.11)(vite@8.0.0-beta.10(@types/node@25.0.10)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.46.0))
+
+  src/vani: {}
 
 packages:
 

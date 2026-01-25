@@ -39,7 +39,7 @@ export function getVersion(
   }
   if (framework.package === vaniPkgJson.name) {
     // since we are always benchmarking against the main branch, we should add the suffix
-    return vaniPkgJson.version + '-main'
+    return vaniPkgJson.version + '-dev'
   }
   if (framework.package && !dependencies[framework.package]) {
     throw new Error(

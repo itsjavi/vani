@@ -17,5 +17,6 @@
       "@/bench/*": ["src/*"]
     }
   },
-  "include": ["../src/**/*.ts", "../frameworks/vanilla/**/*"]
+  "include": ["../src/**/*.ts", "../frameworks/vanilla/**/*"],
+  "exclude": ["../src/**/*.tsx"]
 }

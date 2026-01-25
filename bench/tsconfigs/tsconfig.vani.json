@@ -3,7 +3,7 @@
   "compilerOptions": {
     "composite": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "vani"
+    "jsxImportSource": "vani-local"
   },
-  "include": ["../src/**/*.ts", "../frameworks/vani/**/*", "../../src/vani/index.ts"]
+  "include": ["../src/**/*.ts", "../src/**/*.tsx", "../frameworks/vani/**/*"]
 }

@@ -1,0 +1,9 @@
+{
+  "name": "vani-local",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./local.ts",
+    "./*": "./local.ts"
+  }
+}

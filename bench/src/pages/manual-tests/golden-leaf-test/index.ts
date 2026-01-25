@@ -44,7 +44,7 @@ import {
   tr,
   type Handle,
   type RenderFn,
-} from 'vani'
+} from 'vani-local'
 
 // ─────────────────────────────────────────────
 // Render counter helper

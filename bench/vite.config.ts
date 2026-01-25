@@ -27,8 +27,6 @@ export default defineConfig({
     alias: {
       '@/bench': path.resolve(__dirname, 'src'),
       '@/bench/*': path.resolve(__dirname, 'src/*'),
-      vani: path.resolve(__dirname, '../src/vani'),
-      'vani/*': path.resolve(__dirname, '../src/vani/*'),
     },
   },
 })

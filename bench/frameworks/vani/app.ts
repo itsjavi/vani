@@ -31,7 +31,8 @@ import {
   type ComponentRef,
   type DomRef,
   type Handle,
-} from 'vani'
+  type HtmlProps,
+} from 'vani-local'
 
 export const name = 'vani'
 
@@ -373,7 +374,7 @@ const BoxCard = component<{ boxIndex: number; entry: BoxEntry }>((props) => {
       div(
         { className: 'bench-pokebox-cells' },
         ...props.entry.box.cells.map((cell, cellIndex) => {
-          const attrs: Record<string, unknown> = {
+          const attrs: HtmlProps<'button'> = {
             type: 'button',
             className: 'bench-pokebox-cell',
             'data-box-index': String(props.boxIndex),

@@ -1,6 +1,7 @@
 packages:
   - ./
   - ./bench
+  - ./src/vani
 
 catalog:
   '@types/bun': ^1.3.6

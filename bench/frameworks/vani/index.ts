@@ -1,4 +1,4 @@
-import { renderToDOM } from 'vani'
+import { renderToDOM } from 'vani-local'
 import App from './app'
 
 const rootNode: HTMLElement | null = document.querySelector('#main')

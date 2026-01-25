@@ -9,7 +9,7 @@ export default function vitePluginVani(): Plugin {
         return transformWithOxc(code, id, {
           jsx: {
             runtime: 'automatic',
-            importSource: 'vani',
+            importSource: 'vani-local',
           },
         })
       }
