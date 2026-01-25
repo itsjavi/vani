@@ -125,7 +125,7 @@ jobs:
         run: pnpm build:pages
 
       - name: Verify dist structure
-        run: ./tests/postbuild.sh dist/client
+        run: ./tests/postbuild.sh dist
 
       - name: Lint
         run: pnpm lint
