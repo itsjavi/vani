@@ -12,6 +12,7 @@ import {
   type RenderMode,
   type TextNode,
 } from './common'
+import { createEffect } from './signals'
 
 // ─────────────────────────────────────────────
 // Types
@@ -113,7 +114,15 @@ type ComponentMetaProps = {
   clientOnly?: boolean
 }
 
-export type VChild = VNode | ComponentInstance<any> | string | number | null | undefined | false
+export type VChild =
+  | VNode
+  | ComponentInstance<any>
+  | string
+  | number
+  | null
+  | undefined
+  | false
+  | VChild[]
 
 export type DataAttribute = `data-${string}` | `data${Capitalize<string>}`
 
@@ -218,6 +227,68 @@ export function component<Props>(fn: Component<Props>) {
   ;(wrapper as any).$$vaniWrapped = true
 
   return wrapper
+}
+
+/**
+ * Creates a reactive component that auto-tracks signal reads and re-renders when signals change.
+ *
+ * This is the only "magic" in Vani - signals read during render are automatically tracked,
+ * and when any tracked signal changes, the component re-renders.
+ *
+ * @example
+ * ```tsx
+ * const [count, setCount] = signal(0)
+ *
+ * const Counter = reactive((props, handle) => {
+ *   return () => <div>Count: {count()}</div>
+ * })
+ * ```
+ */
+export function reactive(
+  fn: Component<void>,
+): (props?: ComponentMetaProps) => ComponentInstance<void>
+export function reactive<Props>(
+  fn: Component<Props>,
+): (props: Props & ComponentMetaProps) => ComponentInstance<Props>
+export function reactive<Props>(fn: Component<Props>) {
+  const reactiveComponent: Component<Props> = (props, handle) => {
+    const render = fn(props, handle)
+
+    // Handle async components
+    if (render instanceof Promise) {
+      return render.then((renderFn) => {
+        return wrapRenderWithEffect(renderFn, handle)
+      })
+    }
+
+    return wrapRenderWithEffect(render, handle)
+  }
+
+  return component(reactiveComponent)
+}
+
+function wrapRenderWithEffect(render: RenderFn, handle: Handle): RenderFn {
+  let disposeEffect: (() => void) | undefined
+  let isFirstRun = true
+
+  handle.onBeforeMount(() => {
+    disposeEffect = createEffect(() => {
+      // Run render to track signal dependencies
+      render()
+
+      if (isFirstRun) {
+        isFirstRun = false
+        return
+      }
+
+      // On subsequent runs, trigger component update
+      handle.update()
+    })
+
+    return disposeEffect
+  })
+
+  return render
 }
 
 // ─────────────────────────────────────────────
@@ -858,9 +929,25 @@ function mountKeyedRecord(
   return record
 }
 
+// Flatten nested arrays recursively
+function flattenChildren(children: VChild[]): VChild[] {
+  const result: VChild[] = []
+  for (const child of children) {
+    if (Array.isArray(child)) {
+      result.push(...flattenChildren(child as VChild[]))
+    } else {
+      result.push(child)
+    }
+  }
+  return result
+}
+
 function appendChildren(parent: VNode, children: VChild[]) {
+  // Auto-flatten arrays so users don't need fragment() for mapped children
+  const flatChildren = flattenChildren(children)
+
   if (getRenderMode() === 'ssr') {
-    for (const child of children) {
+    for (const child of flatChildren) {
       if (child == null || child === false || child === undefined) continue
 
       if (isComponentInstance(child)) {
@@ -873,6 +960,9 @@ function appendChildren(parent: VNode, children: VChild[]) {
         continue
       }
 
+      // Arrays are flattened above, this is just for type safety
+      if (Array.isArray(child)) continue
+
       if (isSsrNode(child)) {
         appendChildNode(parent, child)
         continue
@@ -883,7 +973,7 @@ function appendChildren(parent: VNode, children: VChild[]) {
   }
 
   const domParent = parent as Node
-  for (const child of children) {
+  for (const child of flatChildren) {
     if (child == null || child === false || child === undefined) continue
 
     if (isComponentInstance(child)) {
@@ -942,6 +1032,9 @@ function appendChildren(parent: VNode, children: VChild[]) {
       domParent.appendChild(document.createTextNode(String(child)))
       continue
     }
+
+    // Arrays are flattened above, this is just for type safety
+    if (Array.isArray(child)) continue
 
     domParent.appendChild(child as Node)
   }
@@ -1056,6 +1149,13 @@ configureSignalDom({
 })
 
 function setProps(el: VNode, props: Record<string, any>) {
+  // Check for class/className conflict
+  if ('class' in props && 'className' in props) {
+    throw new Error(
+      '[vani] Cannot use both "class" and "className" on the same element. Use one or the other.',
+    )
+  }
+
   const isSvg = isSsrElement(el) ? svgTags.has(el.tag) : isSvgElement(el)
   for (const key in props) {
     const value = props[key]
@@ -1064,7 +1164,8 @@ function setProps(el: VNode, props: Record<string, any>) {
       continue
     }
 
-    if (key === 'className') {
+    // Handle both class and className (class is alias for className)
+    if (key === 'className' || key === 'class') {
       const classValue = classNames(value)
       if (isSsrElement(el)) {
         el.props.class = classValue

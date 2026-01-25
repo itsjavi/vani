@@ -12,7 +12,7 @@ import {
   normalizeSnapshot,
 } from '@/bench/core'
 import { cn } from '@/bench/lib/utils'
-import { component, fragment, renderToDOM, signal, createEffect, type Handle } from 'vani-local'
+import { component, reactive, renderToDOM, signal, type Handle } from 'vani-local'
 
 type SnapshotPayloadLike = SnapshotPayload | LegacySnapshotPayload
 
@@ -228,26 +228,8 @@ const buildImplementationLink = (path: string, view: string) => {
 // ─────────────────────────────────────────────
 // Components
 // ─────────────────────────────────────────────
-const ResultsHeader = component((_, handle: Handle) => {
-  // React to signal changes
-  handle.onBeforeMount(() => {
-    let isFirstRun = true
-    return createEffect(() => {
-      // Track signals used by this component
-      loading()
-      snapshot()
-      index()
-      selectedId()
-      compareId()
-      // Skip first run (during setup), only update on subsequent changes
-      if (isFirstRun) {
-        isFirstRun = false
-        return
-      }
-      handle.update()
-    })
-  })
-
+const ResultsHeader = reactive((_, handle: Handle) => {
+  // Signals read in render are auto-tracked via reactive()
   return () => {
     const currentSnapshot = snapshot()
     const entries = index()?.entries ?? []
@@ -265,18 +247,21 @@ const ResultsHeader = component((_, handle: Handle) => {
             <p className={cn('text-base text-slate-600')}>
               Duration in milliseconds +/- 95% confidence interval.
             </p>
-            {currentSnapshot?.machine ? (
-              <p className={cn('text-sm font-semibold text-slate-700')}>
-                Machine: {currentSnapshot.machine}
-              </p>
-            ) : null}
+{/* Example of JSX fragment shorthand <>...</> */}
             {currentSnapshot ? (
-              <p className={cn('text-sm text-slate-500')}>
-                Generated at {new Date(currentSnapshot.generatedAt).toLocaleString()} | CPU
-                throttling {currentSnapshot.cpuThrottling}x | {currentSnapshot.warmups} warmups |{' '}
-                {currentSnapshot.runs} runs | headless {currentSnapshot.headless ? 'yes' : 'no'} |
-                preflight {(currentSnapshot.preflightUsed ?? true) ? 'yes' : 'no'}
-              </p>
+              <>
+                {currentSnapshot.machine ? (
+                  <p className={cn('text-sm font-semibold text-slate-700')}>
+                    Machine: {currentSnapshot.machine}
+                  </p>
+                ) : null}
+                <p className={cn('text-sm text-slate-500')}>
+                  Generated at {new Date(currentSnapshot.generatedAt).toLocaleString()} | CPU
+                  throttling {currentSnapshot.cpuThrottling}x | {currentSnapshot.warmups} warmups |{' '}
+                  {currentSnapshot.runs} runs | headless {currentSnapshot.headless ? 'yes' : 'no'} |
+                  preflight {(currentSnapshot.preflightUsed ?? true) ? 'yes' : 'no'}
+                </p>
+              </>
             ) : null}
           </div>
           <a
@@ -308,13 +293,11 @@ const ResultsHeader = component((_, handle: Handle) => {
                 void selectRun(nextId || null, null)
               }}
             >
-              {fragment(
-                ...entries.map((entry) => (
-                  <option key={entry.id} value={entry.id}>
-                    {getRunLabel(entry)}
-                  </option>
-                )),
-              )}
+              {entries.map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {getRunLabel(entry)}
+                </option>
+              ))}
             </select>
           </label>
           <label className={cn('space-y-1 text-sm font-medium text-slate-700')}>
@@ -331,13 +314,11 @@ const ResultsHeader = component((_, handle: Handle) => {
               }}
             >
               <option value="">None</option>
-              {fragment(
-                ...entries.map((entry) => (
-                  <option key={entry.id} value={entry.id}>
-                    {getRunLabel(entry)}
-                  </option>
-                )),
-              )}
+              {entries.map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {getRunLabel(entry)}
+                </option>
+              ))}
             </select>
           </label>
         </div>
@@ -346,25 +327,8 @@ const ResultsHeader = component((_, handle: Handle) => {
   }
 })
 
-const ResultsBody = component((_, handle: Handle) => {
-  // React to signal changes
-  handle.onBeforeMount(() => {
-    let isFirstRun = true
-    return createEffect(() => {
-      // Track signals used by this component
-      loading()
-      error()
-      snapshot()
-      compareSnapshot()
-      // Skip first run (during setup), only update on subsequent changes
-      if (isFirstRun) {
-        isFirstRun = false
-        return
-      }
-      handle.update()
-    })
-  })
-
+const ResultsBody = reactive((_, handle: Handle) => {
+  // Signals read in render are auto-tracked via reactive()
   return () => {
     const isLoading = loading()
     const currentError = error()
@@ -493,8 +457,7 @@ const ResultsBody = component((_, handle: Handle) => {
 
     return (
       <div className={cn('space-y-6')}>
-        {fragment(
-          ...suites.map((suite) => {
+        {suites.map((suite) => {
             const compareSuite = compareCalculated?.suiteScores?.[suite.id]
             const compareOverallScores =
               compareSuite?.overallScores ?? compareCalculated?.overallScores ?? {}
@@ -519,16 +482,14 @@ const ResultsBody = component((_, handle: Handle) => {
                         <br />
                         <small className={cn('text-slate-500')}>Duration for...</small>
                       </th>
-                      {fragment(
-                        ...suite.frameworks.map((fw) => (
+                      {suite.frameworks.map((fw) => (
                           <th
                             key={fw.id}
                             className={cn('border border-slate-200 px-3 py-2 text-center')}
                           >
                             {renderHeaderCell(fw)}
                           </th>
-                        )),
-                      )}
+                        ))}
                     </tr>
                   </thead>
                   <tbody>
@@ -536,8 +497,7 @@ const ResultsBody = component((_, handle: Handle) => {
                       <td className={cn('border border-slate-200 px-3 py-2')}>
                         Implementation notes
                       </td>
-                      {fragment(
-                        ...suite.frameworks.map((framework) => {
+                      {suite.frameworks.map((framework) => {
                           const notes = framework.implementationNotes?.trim()
                           return (
                             <td
@@ -549,15 +509,13 @@ const ResultsBody = component((_, handle: Handle) => {
                               {notes || '-'}
                             </td>
                           )
-                        }),
-                      )}
+                        })}
                     </tr>
                     <tr>
                       <td className={cn('border border-slate-200 px-3 py-2')}>
                         Implementation link
                       </td>
-                      {fragment(
-                        ...suite.frameworks.map((fw) => (
+                      {suite.frameworks.map((fw) => (
                           <td
                             key={fw.id}
                             className={cn('border border-slate-200 px-3 py-2 text-center')}
@@ -573,8 +531,7 @@ const ResultsBody = component((_, handle: Handle) => {
                               view
                             </a>
                           </td>
-                        )),
-                      )}
+                        ))}
                     </tr>
                     <tr>
                       <td className={cn('border border-slate-200 px-3 py-2')}>
@@ -582,8 +539,7 @@ const ResultsBody = component((_, handle: Handle) => {
                         <br />
                         <small className={cn('text-slate-500')}>average total time (ms).</small>
                       </td>
-                      {fragment(
-                        ...suite.overallScores.map((score, idx) => {
+                      {suite.overallScores.map((score, idx) => {
                           if (score === null) {
                             return (
                               <td
@@ -614,11 +570,9 @@ const ResultsBody = component((_, handle: Handle) => {
                               {renderComparison(score, compareScore)}
                             </td>
                           )
-                        }),
-                      )}
+                        })}
                     </tr>
-                    {fragment(
-                      ...suite.operations.map((operation) => {
+                    {suite.operations.map((operation) => {
                         const label = OPERATION_LABELS[operation]
                         const operationResults = calculated.operationResults[operation] ?? {}
                         const compareOperationResults =
@@ -650,8 +604,7 @@ const ResultsBody = component((_, handle: Handle) => {
                                 operation
                               )}
                             </td>
-                            {fragment(
-                              ...suite.frameworkIds.map((frameworkId) => {
+                            {suite.frameworkIds.map((frameworkId) => {
                                 const result = operationResults[frameworkId]
                                 if (!result) {
                                   return (
@@ -695,18 +648,15 @@ const ResultsBody = component((_, handle: Handle) => {
                                     {renderComparison(result.mean, compareResult?.mean)}
                                   </td>
                                 )
-                              }),
-                            )}
+                              })}
                           </tr>
                         )
-                      }),
-                    )}
+                      })}
                   </tbody>
                 </table>
               </div>
             )
-          }),
-        )}
+          })}
 
         {currentSnapshot.resourceMetrics && currentSnapshot.resourceMetrics.length > 0 ? (
           <div className={cn('overflow-hidden rounded-xl border border-slate-200 bg-white')}>
@@ -718,136 +668,130 @@ const ResultsBody = component((_, handle: Handle) => {
                     <br />
                     <small className={cn('text-slate-500')}>CDP Performance.getMetrics</small>
                   </th>
-                  {fragment(
-                    ...globalFrameworks.map((fw) => (
+                  {globalFrameworks.map((fw) => (
                       <th
                         key={fw.id}
                         className={cn('border border-slate-200 px-3 py-2 text-center')}
                       >
                         {renderHeaderCell(fw)}
                       </th>
-                    )),
-                  )}
+                    ))}
                 </tr>
               </thead>
               <tbody>
-                {fragment(
-                  ...[
-                    {
-                      label: 'Heap used (first render, MB)',
-                      values: globalFrameworkIds.map(
-                        (frameworkId) =>
-                          resourceMetricsByFramework.get(frameworkId)?.firstRender.jsHeapUsedSize ??
-                          Number.NaN,
-                      ),
-                      formatter: formatBytesToMB,
-                    },
-                    {
-                      label: 'Heap used (after suite, MB)',
-                      values: globalFrameworkIds.map(
-                        (frameworkId) =>
-                          resourceMetricsByFramework.get(frameworkId)?.afterSuite.jsHeapUsedSize ??
-                          Number.NaN,
-                      ),
-                      formatter: formatBytesToMB,
-                    },
-                    {
-                      label: 'Heap used delta (MB)',
-                      values: globalFrameworkIds.map(
-                        (frameworkId) =>
-                          resourceMetricsByFramework.get(frameworkId)?.delta.jsHeapUsedSize ??
-                          Number.NaN,
-                      ),
-                      formatter: formatBytesToMB,
-                    },
-                    {
-                      label: 'CPU task duration delta (ms)',
-                      values: globalFrameworkIds.map(
-                        (frameworkId) =>
-                          resourceMetricsByFramework.get(frameworkId)?.delta.taskDuration ??
-                          Number.NaN,
-                      ),
-                      formatter: formatSecondsToMs,
-                    },
-                    {
-                      label: 'CPU script duration delta (ms)',
-                      values: globalFrameworkIds.map(
-                        (frameworkId) =>
-                          resourceMetricsByFramework.get(frameworkId)?.delta.scriptDuration ??
-                          Number.NaN,
-                      ),
-                      formatter: formatSecondsToMs,
-                    },
-                    {
-                      label: 'CPU task duration (after suite, ms)',
-                      values: globalFrameworkIds.map(
-                        (frameworkId) =>
-                          resourceMetricsByFramework.get(frameworkId)?.afterSuite.taskDuration ??
-                          Number.NaN,
-                      ),
-                      formatter: formatSecondsToMs,
-                    },
-                    {
-                      label: 'CPU script duration (after suite, ms)',
-                      values: globalFrameworkIds.map(
-                        (frameworkId) =>
-                          resourceMetricsByFramework.get(frameworkId)?.afterSuite.scriptDuration ??
-                          Number.NaN,
-                      ),
-                      formatter: formatSecondsToMs,
-                    },
-                    {
-                      label: 'CPU layout duration delta (ms)',
-                      values: globalFrameworkIds.map(
-                        (frameworkId) =>
-                          resourceMetricsByFramework.get(frameworkId)?.delta.layoutDuration ??
-                          Number.NaN,
-                      ),
-                      formatter: formatSecondsToMs,
-                    },
-                    {
-                      label: 'CPU recalc style duration delta (ms)',
-                      values: globalFrameworkIds.map(
-                        (frameworkId) =>
-                          resourceMetricsByFramework.get(frameworkId)?.delta.recalcStyleDuration ??
-                          Number.NaN,
-                      ),
-                      formatter: formatSecondsToMs,
-                    },
-                    {
-                      label: 'CPU layout duration (after suite, ms)',
-                      values: globalFrameworkIds.map(
-                        (frameworkId) =>
-                          resourceMetricsByFramework.get(frameworkId)?.afterSuite.layoutDuration ??
-                          Number.NaN,
-                      ),
-                      formatter: formatSecondsToMs,
-                    },
-                    {
-                      label: 'CPU recalc style duration (after suite, ms)',
-                      values: globalFrameworkIds.map(
-                        (frameworkId) =>
-                          resourceMetricsByFramework.get(frameworkId)?.afterSuite
-                            .recalcStyleDuration ?? Number.NaN,
-                      ),
-                      formatter: formatSecondsToMs,
-                    },
-                  ].map((row) => (
-                    <tr key={row.label}>
-                      <td className={cn('border border-slate-200 px-3 py-2')}>{row.label}</td>
-                      {fragment(
-                        ...row.values.map((value, idx) => (
-                          <td
-                            key={`${row.label}-${globalFrameworkIds[idx]}`}
-                            className={cn('border border-slate-200 px-3 py-2 text-center')}
-                          >
-                            {Number.isFinite(value) ? row.formatter(value) : '-'}
-                          </td>
-                        )),
-                      )}
-                    </tr>
-                  )),
-                )}
+                {[
+                  {
+                    label: 'Heap used (first render, MB)',
+                    values: globalFrameworkIds.map(
+                      (frameworkId) =>
+                        resourceMetricsByFramework.get(frameworkId)?.firstRender.jsHeapUsedSize ??
+                        Number.NaN,
+                    ),
+                    formatter: formatBytesToMB,
+                  },
+                  {
+                    label: 'Heap used (after suite, MB)',
+                    values: globalFrameworkIds.map(
+                      (frameworkId) =>
+                        resourceMetricsByFramework.get(frameworkId)?.afterSuite.jsHeapUsedSize ??
+                        Number.NaN,
+                    ),
+                    formatter: formatBytesToMB,
+                  },
+                  {
+                    label: 'Heap used delta (MB)',
+                    values: globalFrameworkIds.map(
+                      (frameworkId) =>
+                        resourceMetricsByFramework.get(frameworkId)?.delta.jsHeapUsedSize ??
+                        Number.NaN,
+                    ),
+                    formatter: formatBytesToMB,
+                  },
+                  {
+                    label: 'CPU task duration delta (ms)',
+                    values: globalFrameworkIds.map(
+                      (frameworkId) =>
+                        resourceMetricsByFramework.get(frameworkId)?.delta.taskDuration ??
+                        Number.NaN,
+                    ),
+                    formatter: formatSecondsToMs,
+                  },
+                  {
+                    label: 'CPU script duration delta (ms)',
+                    values: globalFrameworkIds.map(
+                      (frameworkId) =>
+                        resourceMetricsByFramework.get(frameworkId)?.delta.scriptDuration ??
+                        Number.NaN,
+                    ),
+                    formatter: formatSecondsToMs,
+                  },
+                  {
+                    label: 'CPU task duration (after suite, ms)',
+                    values: globalFrameworkIds.map(
+                      (frameworkId) =>
+                        resourceMetricsByFramework.get(frameworkId)?.afterSuite.taskDuration ??
+                        Number.NaN,
+                    ),
+                    formatter: formatSecondsToMs,
+                  },
+                  {
+                    label: 'CPU script duration (after suite, ms)',
+                    values: globalFrameworkIds.map(
+                      (frameworkId) =>
+                        resourceMetricsByFramework.get(frameworkId)?.afterSuite.scriptDuration ??
+                        Number.NaN,
+                    ),
+                    formatter: formatSecondsToMs,
+                  },
+                  {
+                    label: 'CPU layout duration delta (ms)',
+                    values: globalFrameworkIds.map(
+                      (frameworkId) =>
+                        resourceMetricsByFramework.get(frameworkId)?.delta.layoutDuration ??
+                        Number.NaN,
+                    ),
+                    formatter: formatSecondsToMs,
+                  },
+                  {
+                    label: 'CPU recalc style duration delta (ms)',
+                    values: globalFrameworkIds.map(
+                      (frameworkId) =>
+                        resourceMetricsByFramework.get(frameworkId)?.delta.recalcStyleDuration ??
+                        Number.NaN,
+                    ),
+                    formatter: formatSecondsToMs,
+                  },
+                  {
+                    label: 'CPU layout duration (after suite, ms)',
+                    values: globalFrameworkIds.map(
+                      (frameworkId) =>
+                        resourceMetricsByFramework.get(frameworkId)?.afterSuite.layoutDuration ??
+                        Number.NaN,
+                    ),
+                    formatter: formatSecondsToMs,
+                  },
+                  {
+                    label: 'CPU recalc style duration (after suite, ms)',
+                    values: globalFrameworkIds.map(
+                      (frameworkId) =>
+                        resourceMetricsByFramework.get(frameworkId)?.afterSuite
+                          .recalcStyleDuration ?? Number.NaN,
+                    ),
+                    formatter: formatSecondsToMs,
+                  },
+                ].map((row) => (
+                  <tr key={row.label}>
+                    <td className={cn('border border-slate-200 px-3 py-2')}>{row.label}</td>
+                    {row.values.map((value, idx) => (
+                      <td
+                        key={`${row.label}-${globalFrameworkIds[idx]}`}
+                        className={cn('border border-slate-200 px-3 py-2 text-center')}
+                      >
+                        {Number.isFinite(value) ? row.formatter(value) : '-'}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

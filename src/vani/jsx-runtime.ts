@@ -16,11 +16,13 @@ import {
   type VChild,
   type VNode,
 } from './runtime'
+import type { ClassName } from './common'
 
 type ElementTagName = Extract<keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap, string>
 type IntrinsicElementProps<Tag extends ElementTagName> = ElementProps<Tag> & {
   children?: VChild | VChild[]
   key?: string | number
+  class?: ClassName // Alias for className, for HTML compatibility
 }
 type Key = string | number | null | undefined
 
