@@ -122,7 +122,7 @@ jobs:
           key: bench-results-${{ runner.os }}-${{ github.sha }}
 
       - name: Build
-        run: pnpm build:pages
+        run: pnpm build:all
 
       - name: Verify dist structure
         run: ./tests/postbuild.sh dist

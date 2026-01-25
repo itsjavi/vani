@@ -83,8 +83,8 @@
     "lint:unused": "pnpm knip --exclude exports",
     "prepublishOnly": "pnpm format && pnpm lint && pnpm run build:lib && pnpm publint",
     "preview": "pnpm run build:pages && vite preview",
-    "typecheck": "tsc --noEmit && cd bench && pnpm run typecheck",
-    "test": "./tests/postbuild.sh dist"
+    "test": "./tests/postbuild.sh dist",
+    "typecheck": "tsc --noEmit && cd bench && pnpm run typecheck"
   },
   "devDependencies": {
     "@babel/runtime": "^7.28.6",
