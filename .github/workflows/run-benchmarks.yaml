@@ -1,0 +1,62 @@
+# Workflow for running benchmarks manually
+# Note: CI benchmarks on shared runners have high variance (20-50%).
+# Use this for relative comparisons, not absolute numbers.
+name: Run Benchmarks
+
+on:
+  # Manual trigger only
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.1
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Install Playwright
+        run: |
+          export PLAYWRIGHT_BROWSERS_PATH="${{ github.workspace }}/.cache/ms-playwright"
+          pnpm exec playwright install
+
+      - name: Run benchmarks
+        run: |
+          export PLAYWRIGHT_BROWSERS_PATH="${{ github.workspace }}/.cache/ms-playwright"
+          pnpm bench --headless --cpu 4 --runs 5 --warmups 2
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: bench/results/
+          retention-days: 30
