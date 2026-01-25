@@ -247,7 +247,7 @@ const ResultsHeader = reactive((_, handle: Handle) => {
             <p className={cn('text-base text-slate-600')}>
               Duration in milliseconds +/- 95% confidence interval.
             </p>
-{/* Example of JSX fragment shorthand <>...</> */}
+            {/* Example of JSX fragment shorthand <>...</> */}
             {currentSnapshot ? (
               <>
                 {currentSnapshot.machine ? (
@@ -458,205 +458,192 @@ const ResultsBody = reactive((_, handle: Handle) => {
     return (
       <div className={cn('space-y-6')}>
         {suites.map((suite) => {
-            const compareSuite = compareCalculated?.suiteScores?.[suite.id]
-            const compareOverallScores =
-              compareSuite?.overallScores ?? compareCalculated?.overallScores ?? {}
+          const compareSuite = compareCalculated?.suiteScores?.[suite.id]
+          const compareOverallScores =
+            compareSuite?.overallScores ?? compareCalculated?.overallScores ?? {}
 
-            return (
-              <div
-                key={suite.id}
-                className={cn('overflow-hidden rounded-xl border border-slate-200 bg-white')}
-              >
-                <div className={cn('border-b border-slate-200 bg-slate-50 px-5 py-3')}>
-                  <h2
-                    className={cn('text-xs font-semibold tracking-wide text-slate-700 uppercase')}
-                  >
-                    {suite.title}
-                  </h2>
-                </div>
-                <table className={cn('w-full border-collapse text-sm')}>
-                  <thead>
-                    <tr>
-                      <th className={cn('border border-slate-200 px-3 py-2 text-left')}>
-                        Name
-                        <br />
-                        <small className={cn('text-slate-500')}>Duration for...</small>
+          return (
+            <div
+              key={suite.id}
+              className={cn('overflow-hidden rounded-xl border border-slate-200 bg-white')}
+            >
+              <div className={cn('border-b border-slate-200 bg-slate-50 px-5 py-3')}>
+                <h2 className={cn('text-xs font-semibold tracking-wide text-slate-700 uppercase')}>
+                  {suite.title}
+                </h2>
+              </div>
+              <table className={cn('w-full border-collapse text-sm')}>
+                <thead>
+                  <tr>
+                    <th className={cn('border border-slate-200 px-3 py-2 text-left')}>
+                      Name
+                      <br />
+                      <small className={cn('text-slate-500')}>Duration for...</small>
+                    </th>
+                    {suite.frameworks.map((fw) => (
+                      <th
+                        key={fw.id}
+                        className={cn('border border-slate-200 px-3 py-2 text-center')}
+                      >
+                        {renderHeaderCell(fw)}
                       </th>
-                      {suite.frameworks.map((fw) => (
-                          <th
-                            key={fw.id}
-                            className={cn('border border-slate-200 px-3 py-2 text-center')}
-                          >
-                            {renderHeaderCell(fw)}
-                          </th>
-                        ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className={cn('bg-slate-50')}>
-                      <td className={cn('border border-slate-200 px-3 py-2')}>
-                        Implementation notes
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className={cn('bg-slate-50')}>
+                    <td className={cn('border border-slate-200 px-3 py-2')}>
+                      Implementation notes
+                    </td>
+                    {suite.frameworks.map((framework) => {
+                      const notes = framework.implementationNotes?.trim()
+                      return (
+                        <td
+                          key={framework.id}
+                          className={cn('border border-slate-200 px-3 py-2 text-center text-sm')}
+                        >
+                          {notes || '-'}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                  <tr>
+                    <td className={cn('border border-slate-200 px-3 py-2')}>Implementation link</td>
+                    {suite.frameworks.map((fw) => (
+                      <td
+                        key={fw.id}
+                        className={cn('border border-slate-200 px-3 py-2 text-center')}
+                      >
+                        <a
+                          className={cn(
+                            'inline-flex items-center justify-center rounded px-2 py-1 text-slate-700 hover:bg-slate-100',
+                          )}
+                          target="_blank"
+                          rel="noreferrer"
+                          href={buildImplementationLink(fw.path, suite.id)}
+                        >
+                          view
+                        </a>
                       </td>
-                      {suite.frameworks.map((framework) => {
-                          const notes = framework.implementationNotes?.trim()
-                          return (
-                            <td
-                              key={framework.id}
-                              className={cn(
-                                'border border-slate-200 px-3 py-2 text-center text-sm',
-                              )}
-                            >
-                              {notes || '-'}
-                            </td>
-                          )
-                        })}
-                    </tr>
-                    <tr>
-                      <td className={cn('border border-slate-200 px-3 py-2')}>
-                        Implementation link
-                      </td>
-                      {suite.frameworks.map((fw) => (
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className={cn('border border-slate-200 px-3 py-2')}>
+                      <strong>overall score</strong>
+                      <br />
+                      <small className={cn('text-slate-500')}>average total time (ms).</small>
+                    </td>
+                    {suite.overallScores.map((score, idx) => {
+                      if (score === null) {
+                        return (
                           <td
-                            key={fw.id}
+                            key={`overall-${suite.frameworkIds[idx]}`}
                             className={cn('border border-slate-200 px-3 py-2 text-center')}
                           >
-                            <a
-                              className={cn(
-                                'inline-flex items-center justify-center rounded px-2 py-1 text-slate-700 hover:bg-slate-100',
-                              )}
-                              target="_blank"
-                              rel="noreferrer"
-                              href={buildImplementationLink(fw.path, suite.id)}
-                            >
-                              view
-                            </a>
+                            -
                           </td>
-                        ))}
-                    </tr>
-                    <tr>
-                      <td className={cn('border border-slate-200 px-3 py-2')}>
-                        <strong>overall score</strong>
-                        <br />
-                        <small className={cn('text-slate-500')}>average total time (ms).</small>
-                      </td>
-                      {suite.overallScores.map((score, idx) => {
-                          if (score === null) {
+                        )
+                      }
+                      const ratio =
+                        Number.isFinite(suite.bestOverallScore) && suite.bestOverallScore > 0
+                          ? score / suite.bestOverallScore
+                          : Number.NaN
+                      const cellClass = Number.isFinite(ratio) ? getCellClass(ratio) : null
+                      const className = cellClass ? `bench-cell-${cellClass}` : ''
+                      const frameworkId = suite.frameworkIds[idx]
+                      const compareScore = compareOverallScores[frameworkId]
+                      return (
+                        <td
+                          key={`overall-${frameworkId}`}
+                          className={cn('border border-slate-200 px-3 py-2 text-center', className)}
+                        >
+                          <div className={cn('font-semibold')}>{formatNumber(score)} ms</div>
+                          {renderComparison(score, compareScore)}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                  {suite.operations.map((operation) => {
+                    const label = OPERATION_LABELS[operation]
+                    const operationResults = calculated.operationResults[operation] ?? {}
+                    const compareOperationResults =
+                      compareCalculated?.operationResults?.[operation] ?? {}
+                    const bestRatio = Math.min(
+                      ...Object.values(operationResults)
+                        .map((result) => result.ratio)
+                        .filter((ratio) => Number.isFinite(ratio)),
+                    )
+                    const worstRatio = Math.max(
+                      ...Object.values(operationResults)
+                        .map((result) => result.ratio)
+                        .filter((ratio) => Number.isFinite(ratio)),
+                    )
+
+                    return (
+                      <tr key={operation}>
+                        <td className={cn('border border-slate-200 px-3 py-2')}>
+                          {label ? (
+                            <div className={cn('space-y-1')}>
+                              <div className={cn('font-semibold text-slate-900')}>
+                                {label.title}
+                              </div>
+                              <small className={cn('text-slate-500')}>{label.description}</small>
+                            </div>
+                          ) : (
+                            operation
+                          )}
+                        </td>
+                        {suite.frameworkIds.map((frameworkId) => {
+                          const result = operationResults[frameworkId]
+                          if (!result) {
                             return (
                               <td
-                                key={`overall-${suite.frameworkIds[idx]}`}
+                                key={`${operation}-${frameworkId}`}
                                 className={cn('border border-slate-200 px-3 py-2 text-center')}
                               >
                                 -
                               </td>
                             )
                           }
-                          const ratio =
-                            Number.isFinite(suite.bestOverallScore) && suite.bestOverallScore > 0
-                              ? score / suite.bestOverallScore
-                              : Number.NaN
-                          const cellClass = Number.isFinite(ratio) ? getCellClass(ratio) : null
+                          const isBest =
+                            Number.isFinite(bestRatio) && result.ratio <= bestRatio + 1e-6
+                          const isWorst =
+                            Number.isFinite(worstRatio) && result.ratio >= worstRatio - 1e-6
+                          const cellClass = getCellClass(result.ratio)
                           const className = cellClass ? `bench-cell-${cellClass}` : ''
-                          const frameworkId = suite.frameworkIds[idx]
-                          const compareScore = compareOverallScores[frameworkId]
+                          const compareResult = compareOperationResults?.[frameworkId]
                           return (
                             <td
-                              key={`overall-${frameworkId}`}
+                              key={`${operation}-${frameworkId}`}
                               className={cn(
                                 'border border-slate-200 px-3 py-2 text-center',
                                 className,
+                                {
+                                  'bench-cell-best': isBest,
+                                  'bench-cell-worst': isWorst,
+                                  'font-semibold': isBest,
+                                },
                               )}
                             >
-                              <div className={cn('font-semibold')}>{formatNumber(score)} ms</div>
-                              {renderComparison(score, compareScore)}
+                              <div>
+                                {formatNumber(result.mean)}{' '}
+                                <small>+/- {formatNumber(result.ci)}</small>
+                              </div>
+                              <small className={cn('text-slate-500')}>
+                                ({result.ratio.toFixed(2)})
+                              </small>
+                              {renderComparison(result.mean, compareResult?.mean)}
                             </td>
                           )
                         })}
-                    </tr>
-                    {suite.operations.map((operation) => {
-                        const label = OPERATION_LABELS[operation]
-                        const operationResults = calculated.operationResults[operation] ?? {}
-                        const compareOperationResults =
-                          compareCalculated?.operationResults?.[operation] ?? {}
-                        const bestRatio = Math.min(
-                          ...Object.values(operationResults)
-                            .map((result) => result.ratio)
-                            .filter((ratio) => Number.isFinite(ratio)),
-                        )
-                        const worstRatio = Math.max(
-                          ...Object.values(operationResults)
-                            .map((result) => result.ratio)
-                            .filter((ratio) => Number.isFinite(ratio)),
-                        )
-
-                        return (
-                          <tr key={operation}>
-                            <td className={cn('border border-slate-200 px-3 py-2')}>
-                              {label ? (
-                                <div className={cn('space-y-1')}>
-                                  <div className={cn('font-semibold text-slate-900')}>
-                                    {label.title}
-                                  </div>
-                                  <small className={cn('text-slate-500')}>
-                                    {label.description}
-                                  </small>
-                                </div>
-                              ) : (
-                                operation
-                              )}
-                            </td>
-                            {suite.frameworkIds.map((frameworkId) => {
-                                const result = operationResults[frameworkId]
-                                if (!result) {
-                                  return (
-                                    <td
-                                      key={`${operation}-${frameworkId}`}
-                                      className={cn(
-                                        'border border-slate-200 px-3 py-2 text-center',
-                                      )}
-                                    >
-                                      -
-                                    </td>
-                                  )
-                                }
-                                const isBest =
-                                  Number.isFinite(bestRatio) && result.ratio <= bestRatio + 1e-6
-                                const isWorst =
-                                  Number.isFinite(worstRatio) && result.ratio >= worstRatio - 1e-6
-                                const cellClass = getCellClass(result.ratio)
-                                const className = cellClass ? `bench-cell-${cellClass}` : ''
-                                const compareResult = compareOperationResults?.[frameworkId]
-                                return (
-                                  <td
-                                    key={`${operation}-${frameworkId}`}
-                                    className={cn(
-                                      'border border-slate-200 px-3 py-2 text-center',
-                                      className,
-                                      {
-                                        'bench-cell-best': isBest,
-                                        'bench-cell-worst': isWorst,
-                                        'font-semibold': isBest,
-                                      },
-                                    )}
-                                  >
-                                    <div>
-                                      {formatNumber(result.mean)}{' '}
-                                      <small>+/- {formatNumber(result.ci)}</small>
-                                    </div>
-                                    <small className={cn('text-slate-500')}>
-                                      ({result.ratio.toFixed(2)})
-                                    </small>
-                                    {renderComparison(result.mean, compareResult?.mean)}
-                                  </td>
-                                )
-                              })}
-                          </tr>
-                        )
-                      })}
-                  </tbody>
-                </table>
-              </div>
-            )
-          })}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )
+        })}
 
         {currentSnapshot.resourceMetrics && currentSnapshot.resourceMetrics.length > 0 ? (
           <div className={cn('overflow-hidden rounded-xl border border-slate-200 bg-white')}>
@@ -669,13 +656,10 @@ const ResultsBody = reactive((_, handle: Handle) => {
                     <small className={cn('text-slate-500')}>CDP Performance.getMetrics</small>
                   </th>
                   {globalFrameworks.map((fw) => (
-                      <th
-                        key={fw.id}
-                        className={cn('border border-slate-200 px-3 py-2 text-center')}
-                      >
-                        {renderHeaderCell(fw)}
-                      </th>
-                    ))}
+                    <th key={fw.id} className={cn('border border-slate-200 px-3 py-2 text-center')}>
+                      {renderHeaderCell(fw)}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
