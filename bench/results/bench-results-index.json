@@ -1,14 +1,90 @@
 {
-  "latestId": "latest",
+  "latestId": "2026-01-25T04-49-00-300Z",
   "entries": [
     {
-      "id": "latest",
-      "file": "bench-results.json",
-      "generatedAt": "2026-01-25T00:16:49.699Z",
+      "id": "2026-01-25T04-49-00-300Z",
+      "file": "bench-results-2026-01-25T04-49-00-300Z.json",
+      "generatedAt": "2026-01-25T04:49:00.300Z",
       "cpuThrottling": 4,
       "runs": 5,
       "warmups": 2,
       "headless": false,
+      "preflightUsed": true,
+      "frameworks": [
+        {
+          "id": "vanilla",
+          "name": "Vanilla JS",
+          "version": "4.0.2",
+          "path": "frameworks/vanilla",
+          "implementationNotes": "no-keyed, no-vdom, no-jsx, no-memo, dom-caching",
+          "package": ""
+        },
+        {
+          "id": "vani",
+          "name": "Vani",
+          "package": "@vanijs/vani",
+          "path": "frameworks/vani",
+          "implementationNotes": "keyed, no-vdom, no-jsx, no-memo, attr-only-updates",
+          "version": "0.4.0-dev"
+        },
+        {
+          "id": "react",
+          "name": "React",
+          "package": "react",
+          "path": "frameworks/react",
+          "implementationNotes": "keyed, vdom, jsx, no-memo, use-state",
+          "version": "19.2.3"
+        },
+        {
+          "id": "preact",
+          "name": "Preact",
+          "package": "preact",
+          "path": "frameworks/preact",
+          "implementationNotes": "keyed, vdom, jsx, no-memo, use-state",
+          "version": "10.28.2"
+        },
+        {
+          "id": "remix",
+          "name": "Remix",
+          "package": "remix",
+          "path": "frameworks/remix",
+          "implementationNotes": "keyed, vdom, jsx, no-memo",
+          "version": "3.0.0-alpha.0"
+        },
+        {
+          "id": "solid",
+          "name": "Solid",
+          "package": "solid-js",
+          "path": "frameworks/solid",
+          "implementationNotes": "keyed, no-vdom, jsx, no-memo, signals, selectors",
+          "version": "1.9.11"
+        },
+        {
+          "id": "svelte",
+          "name": "Svelte",
+          "package": "svelte",
+          "path": "frameworks/svelte",
+          "implementationNotes": "keyed, no-vdom, no-jsx, no-memo, runes, state-raw",
+          "version": "5.48.2"
+        },
+        {
+          "id": "vue",
+          "name": "Vue",
+          "package": "vue",
+          "path": "frameworks/vue",
+          "implementationNotes": "keyed, vdom, no-jsx, no-memo, shallow-refs",
+          "version": "3.5.27"
+        }
+      ]
+    },
+    {
+      "id": "20260125-003453",
+      "file": "bench-results-20260125-003453.json",
+      "generatedAt": "2026-01-25T00:34:53.477Z",
+      "cpuThrottling": 4,
+      "runs": 5,
+      "warmups": 2,
+      "headless": true,
       "preflightUsed": true,
       "frameworks": [
         {
@@ -78,13 +154,13 @@
       ]
     },
     {
-      "id": "20260125-003453",
-      "file": "bench-results-20260125-003453.json",
-      "generatedAt": "2026-01-25T00:34:53.477Z",
+      "id": "latest",
+      "file": "bench-results.json",
+      "generatedAt": "2026-01-25T00:16:49.699Z",
       "cpuThrottling": 4,
       "runs": 5,
       "warmups": 2,
-      "headless": true,
+      "headless": false,
       "preflightUsed": true,
       "frameworks": [
         {

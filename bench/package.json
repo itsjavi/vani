@@ -12,7 +12,7 @@
     "preview": "pnpm run serve",
     "serve": "sirv ./dist",
     "start": "pnpm run serve",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "./typecheck.sh"
   },
   "dependencies": {
     "preact": "^10.28.2",

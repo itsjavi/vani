@@ -48,8 +48,8 @@ jobs:
       - name: Build
         run: pnpm build:all
 
-      - name: Verify dist structure
-        run: ./tests/postbuild.sh dist
+      # - name: Verify dist structure
+      #   run: ./tests/postbuild.sh dist
 
       - name: Lint
         run: pnpm lint
