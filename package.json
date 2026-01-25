@@ -70,6 +70,7 @@
     "bench:wide": "BENCH_VIEWPORT_WIDTH=1280 BENCH_VIEWPORT_HEIGHT=740 pnpm run --filter benchmarks bench",
     "build": "vite build && pnpm run build:lib",
     "build:all": "pnpm run build && pnpm run build:pages",
+    "postbuild:all": "./tests/postbuild.sh dist",
     "build:lib": "pnpm tsdown src/vani/index.ts src/vani/jsx-runtime.ts src/vani/jsx-dev-runtime.ts --minify --out-dir dist/lib --dts --sourcemap",
     "build:pages": "vite build && pnpm run bench:build && cp -r bench/dist ./dist/client/benchmarks && cp -r bench/results ./dist/client/benchmarks/data",
     "cleanup": "rm -rf dist node_modules/.vite node_modules/.vite-temp bench/dist bench/frameworks/*/dist",
@@ -83,7 +84,7 @@
     "prepublishOnly": "pnpm format && pnpm lint && pnpm run build:lib && pnpm publint",
     "preview": "pnpm run build:pages && vite preview",
     "typecheck": "tsc --noEmit && cd bench && pnpm run typecheck",
-    "postbuild:all": "./tests/postbuild.sh dist"
+    "test": "./tests/postbuild.sh dist"
   },
   "devDependencies": {
     "@babel/runtime": "^7.28.6",

@@ -1,81 +1,18 @@
 import benchResults from '../../../results/bench-results.json' with { type: 'json' }
-
-type SnapshotFramework = {
-  id: string
-  name: string
-  version: string
-  path: string
-  implementationNotes?: string
-}
-
-type LegacySnapshotFramework = {
-  name: string
-  version: string
-  path: string
-  benchmarkNotes?: string
-}
-
-type SnapshotOperationCell = {
-  mean: number
-  ci: number
-  ratio: number
-}
-
-type SnapshotStats = {
-  times: number[]
-  mean: number
-  median: number
-  min: number
-  max: number
-}
-
-type SnapshotResult = {
-  framework: string
-  operation: string
-  scripting: SnapshotStats
-  total: SnapshotStats
-}
-
-type SnapshotResourceMetrics = {
-  framework: string
-  firstRender: ResourceMetrics
-  afterSuite: ResourceMetrics
-  delta: ResourceMetrics
-}
-
-type ResourceMetrics = {
-  jsHeapUsedSize: number
-  jsHeapTotalSize: number
-  taskDuration: number
-  scriptDuration: number
-  layoutDuration: number
-  recalcStyleDuration: number
-}
-
-type SnapshotPayload = {
-  generatedAt: string
-  cpuThrottling: number
-  runs: number
-  warmups: number
-  headless: boolean
-  preflightUsed?: boolean
-  frameworks: SnapshotFramework[]
-  results: SnapshotResult[]
-  resourceMetrics?: SnapshotResourceMetrics[]
-  calculated?: SnapshotCalculated
-}
-
-type LegacySnapshotPayload = Omit<SnapshotPayload, 'frameworks'> & {
-  frameworks: LegacySnapshotFramework[]
-}
-
-type SnapshotCalculated = {
-  operations: string[]
-  frameworkOrder: string[]
-  overallScores: Record<string, number | null>
-  operationResults: Record<string, Record<string, SnapshotOperationCell>>
-  operationSuites?: Record<string, string>
-}
+import {
+  type LegacySnapshotPayload,
+  type SnapshotCalculated,
+  type SnapshotFramework,
+  type SnapshotPayload,
+  type SuiteCalculated,
+  formatNumber,
+  formatBytesToMB,
+  formatSecondsToMs,
+  getCellClass,
+  normalizeSnapshot,
+  sortFrameworksByScore,
+  getBestScore,
+} from '../../core'
 
 const OPERATION_LABELS: Record<
   string,
@@ -168,19 +105,10 @@ const appRoot = app
 
 const mainTitle = 'Frontend Framework Benchmarks - Results Snapshot'
 
-function formatNumber(value: number): string {
-  if (Number.isNaN(value)) return '-'
-  return value.toFixed(1)
-}
-
-function formatBytesToMB(value: number): string {
-  if (!Number.isFinite(value)) return '-'
-  return (value / (1024 * 1024)).toFixed(1)
-}
-
-function formatSecondsToMs(value: number): string {
-  if (!Number.isFinite(value)) return '-'
-  return (value * 1000).toFixed(1)
+function cellClass(ratio: number): string {
+  const cls = getCellClass(ratio)
+  if (!cls) return ''
+  return `bench-cell-${cls}`
 }
 
 function buildMetricCells(values: number[], formatter: (value: number) => string): string {
@@ -198,13 +126,6 @@ function buildMetricCells(values: number[], formatter: (value: number) => string
     .join('')
 }
 
-function cellClass(ratio: number): string {
-  if (ratio <= 1.1) return 'bench-cell-good'
-  if (ratio <= 1.3) return 'bench-cell-ok'
-  if (ratio <= 1.7) return 'bench-cell-warn'
-  return 'bench-cell-bad'
-}
-
 function buildHeaderCell(framework: SnapshotFramework): string {
   return `${framework.name}<br /><small>v${framework.version}</small>`
 }
@@ -213,35 +134,6 @@ function buildImplementationLink(path: string, view: string): string {
   const url = new URL(`../${path}`, window.location.href)
   url.searchParams.set('view', view)
   return url.toString()
-}
-
-function normalizeFramework(
-  framework: SnapshotFramework | LegacySnapshotFramework,
-): SnapshotFramework {
-  const id =
-    'id' in framework && framework.id
-      ? framework.id
-      : framework.path.split('/').pop() || framework.name
-  const implementationNotes =
-    'implementationNotes' in framework
-      ? framework.implementationNotes
-      : 'benchmarkNotes' in framework
-        ? framework.benchmarkNotes
-        : undefined
-  return {
-    id,
-    name: framework.name,
-    version: framework.version,
-    path: framework.path,
-    implementationNotes,
-  }
-}
-
-function normalizeSnapshot(snapshot: SnapshotPayload | LegacySnapshotPayload): SnapshotPayload {
-  return {
-    ...snapshot,
-    frameworks: snapshot.frameworks.map((framework) => normalizeFramework(framework)),
-  }
 }
 
 function render(snapshot: SnapshotPayload): void {
@@ -277,50 +169,81 @@ function render(snapshot: SnapshotPayload): void {
 
   const calculated = snapshot.calculated
   let frameworkMap = new Map(snapshot.frameworks.map((framework) => [framework.id, framework]))
-  let frameworks =
-    calculated.frameworkOrder.length > 0
-      ? calculated.frameworkOrder
-          .map((frameworkId) => frameworkMap.get(frameworkId))
-          .filter((framework): framework is SnapshotFramework => Boolean(framework))
-      : snapshot.frameworks
   let operations = calculated.operations
-  let scoredFrameworks = frameworks.map((framework, index) => ({
-    framework,
-    score: calculated.overallScores[framework.id] ?? null,
-    index,
-  }))
-  scoredFrameworks.sort((a, b) => {
-    let aScore = a.score ?? Number.POSITIVE_INFINITY
-    let bScore = b.score ?? Number.POSITIVE_INFINITY
-    if (aScore === bScore) return a.index - b.index
-    return aScore - bScore
-  })
-  frameworks = scoredFrameworks.map((item) => item.framework)
-  let frameworkIds = frameworks.map((fw) => fw.id)
-  let overallScores = frameworkIds.map(
-    (frameworkId) => calculated.overallScores[frameworkId] ?? null,
-  )
-  let bestOverallScore = Math.min(
-    ...overallScores.filter((score): score is number => Number.isFinite(score)),
-  )
   let resourceMetricsByFramework = new Map(
     (snapshot.resourceMetrics ?? []).map((entry) => [entry.framework, entry]),
   )
   let operationSuites = calculated.operationSuites ?? {}
+  let suiteScores = calculated.suiteScores ?? {}
   let suiteOrder = ['datatable', 'pokeboxes']
   let suiteTitles: Record<string, string> = {
     datatable: 'Data Table Benchmarks',
     pokeboxes: 'Pokeboxes Benchmarks',
   }
-  let suites = suiteOrder
-    .map((suiteId) => ({
-      id: suiteId,
-      title: suiteTitles[suiteId] ?? suiteId,
-      operations: operations.filter(
-        (operation) => (operationSuites[operation] ?? 'datatable') === suiteId,
-      ),
+
+  // Helper to get frameworks for a suite, sorted by that suite's scores
+  function getFrameworksForSuite(suiteId: string): SnapshotFramework[] {
+    let suiteData = suiteScores[suiteId]
+    let frameworkOrder = suiteData?.frameworkOrder ?? calculated.frameworkOrder
+    let suiteOverallScores = suiteData?.overallScores ?? calculated.overallScores
+
+    let frameworks =
+      frameworkOrder.length > 0
+        ? frameworkOrder
+            .map((frameworkId) => frameworkMap.get(frameworkId))
+            .filter((framework): framework is SnapshotFramework => Boolean(framework))
+        : snapshot.frameworks
+
+    // Sort by suite scores
+    let scoredFrameworks = frameworks.map((framework, index) => ({
+      framework,
+      score: suiteOverallScores[framework.id] ?? null,
+      index,
     }))
+    scoredFrameworks.sort((a, b) => {
+      let aScore = a.score ?? Number.POSITIVE_INFINITY
+      let bScore = b.score ?? Number.POSITIVE_INFINITY
+      if (aScore === bScore) return a.index - b.index
+      return aScore - bScore
+    })
+    return scoredFrameworks.map((item) => item.framework)
+  }
+
+  let suites = suiteOrder
+    .map((suiteId) => {
+      let suiteFrameworks = getFrameworksForSuite(suiteId)
+      let suiteData = suiteScores[suiteId]
+      let suiteOverallScores = suiteData?.overallScores ?? calculated.overallScores
+      let frameworkIds = suiteFrameworks.map((fw) => fw.id)
+      let overallScoresArray = frameworkIds.map(
+        (frameworkId) => suiteOverallScores[frameworkId] ?? null,
+      )
+      let bestOverallScore = Math.min(
+        ...overallScoresArray.filter((score): score is number => Number.isFinite(score)),
+      )
+
+      return {
+        id: suiteId,
+        title: suiteTitles[suiteId] ?? suiteId,
+        operations: operations.filter(
+          (operation) => (operationSuites[operation] ?? 'datatable') === suiteId,
+        ),
+        frameworks: suiteFrameworks,
+        frameworkIds,
+        overallScores: overallScoresArray,
+        bestOverallScore,
+      }
+    })
     .filter((suite) => suite.operations.length > 0)
+
+  // For resource metrics table, use global framework order
+  let globalFrameworks =
+    calculated.frameworkOrder.length > 0
+      ? calculated.frameworkOrder
+          .map((frameworkId) => frameworkMap.get(frameworkId))
+          .filter((framework): framework is SnapshotFramework => Boolean(framework))
+      : snapshot.frameworks
+  let globalFrameworkIds = globalFrameworks.map((fw) => fw.id)
 
   let html = `
     <div class="bench-container bench-section">
@@ -362,13 +285,13 @@ function render(snapshot: SnapshotPayload): void {
             <thead>
               <tr>
                 <th style="width: 32%">Name<br /><small class="text-muted">Duration for...</small></th>
-                ${frameworks.map((fw) => `<th class="text-center">${buildHeaderCell(fw)}</th>`).join('')}
+                ${suite.frameworks.map((fw) => `<th class="text-center">${buildHeaderCell(fw)}</th>`).join('')}
               </tr>
             </thead>
             <tbody>
               <tr class="bench-results-row-header">
                 <td>Implementation notes</td>
-              ${frameworks
+              ${suite.frameworks
                 .map((framework) => {
                   const notes = framework.implementationNotes?.trim()
                   return `<td class="text-center text-sm">${notes ? notes : '-'}</td>`
@@ -377,7 +300,7 @@ function render(snapshot: SnapshotPayload): void {
               </tr>
               <tr>
                 <td>Implementation link</td>
-                ${frameworks
+                ${suite.frameworks
                   .map(
                     (fw) =>
                       `<td class="text-center"><a class="bench-data-link" target="_blank" href="${buildImplementationLink(
@@ -389,14 +312,14 @@ function render(snapshot: SnapshotPayload): void {
               </tr>
               <tr>
                 <td><strong>overall score</strong><br /><small class="text-muted">average total time (ms).</small></td>
-                ${overallScores
+                ${suite.overallScores
                   .map((score) => {
                     if (score === null) {
                       return `<td class="text-center">-</td>`
                     }
                     const ratio =
-                      Number.isFinite(bestOverallScore) && bestOverallScore > 0
-                        ? score / bestOverallScore
+                      Number.isFinite(suite.bestOverallScore) && suite.bestOverallScore > 0
+                        ? score / suite.bestOverallScore
                         : Number.NaN
                     const className = Number.isFinite(ratio) ? ` ${cellClass(ratio)}` : ''
                     return `
@@ -428,7 +351,7 @@ function render(snapshot: SnapshotPayload): void {
                   return `
                     <tr>
                       <td>${prettyLabel}</td>
-                      ${frameworkIds
+                      ${suite.frameworkIds
                         .map((frameworkId) => {
                           let result = operationResults[frameworkId]
                           if (!result) {
@@ -469,14 +392,14 @@ function render(snapshot: SnapshotPayload): void {
           <thead>
             <tr>
               <th style="width: 32%">Resource metrics<br /><small class="text-muted">CDP Performance.getMetrics</small></th>
-              ${frameworks.map((fw) => `<th class="text-center">${buildHeaderCell(fw)}</th>`).join('')}
+              ${globalFrameworks.map((fw) => `<th class="text-center">${buildHeaderCell(fw)}</th>`).join('')}
             </tr>
           </thead>
           <tbody>
             <tr>
               <td><strong>Heap used (first render, MB)</strong></td>
               ${buildMetricCells(
-                frameworkIds.map(
+                globalFrameworkIds.map(
                   (frameworkId) =>
                     resourceMetricsByFramework.get(frameworkId)?.firstRender.jsHeapUsedSize ??
                     Number.NaN,
@@ -487,7 +410,7 @@ function render(snapshot: SnapshotPayload): void {
             <tr>
               <td>Heap used (after suite, MB)</td>
               ${buildMetricCells(
-                frameworkIds.map(
+                globalFrameworkIds.map(
                   (frameworkId) =>
                     resourceMetricsByFramework.get(frameworkId)?.afterSuite.jsHeapUsedSize ??
                     Number.NaN,
@@ -498,7 +421,7 @@ function render(snapshot: SnapshotPayload): void {
             <tr>
               <td>Heap used delta (MB)</td>
               ${buildMetricCells(
-                frameworkIds.map(
+                globalFrameworkIds.map(
                   (frameworkId) =>
                     resourceMetricsByFramework.get(frameworkId)?.delta.jsHeapUsedSize ?? Number.NaN,
                 ),
@@ -508,7 +431,7 @@ function render(snapshot: SnapshotPayload): void {
             <tr>
               <td><strong>CPU task duration delta (ms)</strong></td>
               ${buildMetricCells(
-                frameworkIds.map(
+                globalFrameworkIds.map(
                   (frameworkId) =>
                     resourceMetricsByFramework.get(frameworkId)?.delta.taskDuration ?? Number.NaN,
                 ),
@@ -518,7 +441,7 @@ function render(snapshot: SnapshotPayload): void {
             <tr>
               <td>CPU script duration delta (ms)</td>
               ${buildMetricCells(
-                frameworkIds.map(
+                globalFrameworkIds.map(
                   (frameworkId) =>
                     resourceMetricsByFramework.get(frameworkId)?.delta.scriptDuration ?? Number.NaN,
                 ),
@@ -528,7 +451,7 @@ function render(snapshot: SnapshotPayload): void {
             <tr>
               <td>CPU task duration (after suite, ms)</td>
               ${buildMetricCells(
-                frameworkIds.map(
+                globalFrameworkIds.map(
                   (frameworkId) =>
                     resourceMetricsByFramework.get(frameworkId)?.afterSuite.taskDuration ??
                     Number.NaN,
@@ -539,7 +462,7 @@ function render(snapshot: SnapshotPayload): void {
             <tr>
               <td>CPU script duration (after suite, ms)</td>
               ${buildMetricCells(
-                frameworkIds.map(
+                globalFrameworkIds.map(
                   (frameworkId) =>
                     resourceMetricsByFramework.get(frameworkId)?.afterSuite.scriptDuration ??
                     Number.NaN,
@@ -550,7 +473,7 @@ function render(snapshot: SnapshotPayload): void {
             <tr>
               <td><strong>CPU layout duration delta (ms)</strong></td>
               ${buildMetricCells(
-                frameworkIds.map(
+                globalFrameworkIds.map(
                   (frameworkId) =>
                     resourceMetricsByFramework.get(frameworkId)?.delta.layoutDuration ?? Number.NaN,
                 ),
@@ -560,7 +483,7 @@ function render(snapshot: SnapshotPayload): void {
             <tr>
               <td>CPU recalc style duration delta (ms)</td>
               ${buildMetricCells(
-                frameworkIds.map(
+                globalFrameworkIds.map(
                   (frameworkId) =>
                     resourceMetricsByFramework.get(frameworkId)?.delta.recalcStyleDuration ??
                     Number.NaN,
@@ -571,7 +494,7 @@ function render(snapshot: SnapshotPayload): void {
             <tr>
               <td>CPU layout duration (after suite, ms)</td>
               ${buildMetricCells(
-                frameworkIds.map(
+                globalFrameworkIds.map(
                   (frameworkId) =>
                     resourceMetricsByFramework.get(frameworkId)?.afterSuite.layoutDuration ??
                     Number.NaN,
@@ -582,7 +505,7 @@ function render(snapshot: SnapshotPayload): void {
             <tr>
               <td>CPU recalc style duration (after suite, ms)</td>
               ${buildMetricCells(
-                frameworkIds.map(
+                globalFrameworkIds.map(
                   (frameworkId) =>
                     resourceMetricsByFramework.get(frameworkId)?.afterSuite.recalcStyleDuration ??
                     Number.NaN,
