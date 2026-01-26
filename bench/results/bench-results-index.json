@@ -1,10 +1,11 @@
 {
-  "latestId": "2026-01-25T04-49-00-300Z",
+  "latestId": "2026-01-26T05-20-20-015Z",
   "entries": [
     {
-      "id": "2026-01-25T04-49-00-300Z",
-      "file": "bench-results-2026-01-25T04-49-00-300Z.json",
-      "generatedAt": "2026-01-25T04:49:00.300Z",
+      "id": "2026-01-26T05-20-20-015Z",
+      "file": "bench-results-2026-01-26T05-20-20-015Z.json",
+      "generatedAt": "2026-01-26T05:20:20.015Z",
+      "machine": "MacBook Pro Apple M1 Max 32GB, macOS 26.2",
       "cpuThrottling": 4,
       "runs": 5,
       "warmups": 2,
@@ -81,6 +82,7 @@
       "id": "20260125-003453",
       "file": "bench-results-20260125-003453.json",
       "generatedAt": "2026-01-25T00:34:53.477Z",
+      "machine": "MacBook Pro Apple M1 Max 32GB, macOS 26.2",
       "cpuThrottling": 4,
       "runs": 5,
       "warmups": 2,
@@ -154,9 +156,10 @@
       ]
     },
     {
-      "id": "latest",
-      "file": "bench-results.json",
+      "id": "20260125-001649",
+      "file": "bench-results-20260125-001649.json",
       "generatedAt": "2026-01-25T00:16:49.699Z",
+      "machine": "MacBook Pro Apple M1 Max 32GB, macOS 26.2",
       "cpuThrottling": 4,
       "runs": 5,
       "warmups": 2,

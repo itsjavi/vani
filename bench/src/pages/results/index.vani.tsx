@@ -111,19 +111,31 @@ const fetchIndex = async (): Promise<SnapshotIndex | null> => {
   }
 }
 
-const fetchSnapshot = async (entry: SnapshotIndexEntry): Promise<SnapshotPayload | null> => {
-  try {
-    const response = await fetch(`${dataBaseUrl}${entry.file}`, { cache: 'no-store' })
-    if (!response.ok) {
-      if (entry.file === 'bench-results.json') return fallbackSnapshot
-      return null
+const fetchSnapshot = async (
+  entry: SnapshotIndexEntry,
+  currentIndex: SnapshotIndex,
+): Promise<{ snapshot: SnapshotPayload | null; missing: boolean }> => {
+  const isLatestAlias = entry.file === 'bench-results.json'
+  const latestId = currentIndex.latestId ?? null
+  const candidateFiles =
+    isLatestAlias && entry.id !== latestId
+      ? [`bench-results-${entry.id}.json`, entry.file]
+      : [entry.file]
+
+  for (const file of candidateFiles) {
+    try {
+      const response = await fetch(`${dataBaseUrl}${file}`, { cache: 'no-store' })
+      if (!response.ok) {
+        continue
+      }
+      const data = (await response.json()) as SnapshotPayloadLike
+      return { snapshot: normalizeSnapshot(data), missing: false }
+    } catch {
+      // Try next candidate
     }
-    const data = (await response.json()) as SnapshotPayloadLike
-    return normalizeSnapshot(data)
-  } catch {
-    if (entry.file === 'bench-results.json') return fallbackSnapshot
-    return null
   }
+
+  return { snapshot: null, missing: true }
 }
 
 const selectRun = async (id: string | null, newCompareId?: string | null) => {
@@ -136,10 +148,14 @@ const selectRun = async (id: string | null, newCompareId?: string | null) => {
   setLoading(true)
   setError(null)
 
-  const snapshotData = await fetchSnapshot(entry)
-  if (!snapshotData) {
+  const snapshotResult = await fetchSnapshot(entry, currentIndex)
+  if (!snapshotResult.snapshot) {
     setLoading(false)
-    setError('Failed to load the selected snapshot.')
+    setError(
+      snapshotResult.missing
+        ? 'Snapshot data not found for this run.'
+        : 'Failed to load the selected snapshot.',
+    )
     return
   }
 
@@ -148,10 +164,10 @@ const selectRun = async (id: string | null, newCompareId?: string | null) => {
   const compareEntry = resolvedCompareId
     ? currentIndex.entries.find((item) => item.id === resolvedCompareId)
     : null
-  const compareData = compareEntry ? await fetchSnapshot(compareEntry) : null
+  const compareResult = compareEntry ? await fetchSnapshot(compareEntry, currentIndex) : null
 
-  setSnapshot(snapshotData)
-  setCompareSnapshot(compareData)
+  setSnapshot(snapshotResult.snapshot)
+  setCompareSnapshot(compareResult?.snapshot ?? null)
   setSelectedId(id)
   setCompareId(compareEntry ? compareEntry.id : null)
   setLoading(false)
@@ -606,12 +622,15 @@ const ResultsBody = reactive((_, handle: Handle) => {
                     <td class={cn('border border-slate-200 px-3 py-2')}>Implementation notes</td>
                     {suite.frameworks.map((framework) => {
                       const notes = framework.implementationNotes?.trim()
+                      const displayNotes = notes ? notes.replace(/-/g, '\u2011') : null
                       return (
                         <td
                           key={framework.id}
-                          class={cn('border border-slate-200 px-3 py-2 text-center text-sm')}
+                          class={cn(
+                            'border border-slate-200 px-3 py-2 text-center text-sm break-keep hyphens-none',
+                          )}
                         >
-                          {notes || '-'}
+                          {displayNotes ?? '-'}
                         </td>
                       )
                     })}

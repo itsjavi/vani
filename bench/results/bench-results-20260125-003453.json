@@ -1,5 +1,6 @@
 {
   "generatedAt": "2026-01-25T00:34:53.477Z",
+  "machine": "MacBook Pro Apple M1 Max 32GB, macOS 26.2",
   "cpuThrottling": 4,
   "runs": 5,
   "warmups": 2,
