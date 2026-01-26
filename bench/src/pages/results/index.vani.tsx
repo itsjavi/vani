@@ -1,18 +1,18 @@
-import benchResults from '../../../results/bench-results.json' with { type: 'json' }
 import {
-  type LegacySnapshotPayload,
-  type SnapshotFramework,
-  type SnapshotIndex,
-  type SnapshotIndexEntry,
-  type SnapshotPayload,
   formatBytesToMB,
   formatNumber,
   formatSecondsToMs,
   getCellClass,
   normalizeSnapshot,
+  type LegacySnapshotPayload,
+  type SnapshotFramework,
+  type SnapshotIndex,
+  type SnapshotIndexEntry,
+  type SnapshotPayload,
 } from '@/bench/core'
 import { cn } from '@/bench/lib/utils'
-import { component, reactive, renderToDOM, signal, type Handle } from 'vani-local'
+import { component, createRoot, reactive, signal, type Handle } from 'vani-local'
+import benchResults from '../../../results/bench-results.json' with { type: 'json' }
 
 type SnapshotPayloadLike = SnapshotPayload | LegacySnapshotPayload
 
@@ -80,9 +80,6 @@ const OPERATION_LABELS: Record<string, { title: string; description: string }> =
   },
 }
 
-const app = document.querySelector('#app')
-if (!app) throw new Error('#app not found')
-
 const mainTitle = 'Frontend Framework Benchmarks - Results Snapshot'
 const basePath = (import.meta.env.BASE_URL ?? '/').replace(/\/?$/, '/')
 const dataBaseUrl = `${basePath}data/`
@@ -146,7 +143,8 @@ const selectRun = async (id: string | null, newCompareId?: string | null) => {
     return
   }
 
-  const resolvedCompareId = newCompareId ?? compareId()
+  // undefined = use current, null = explicitly clear
+  const resolvedCompareId = newCompareId === undefined ? compareId() : newCompareId
   const compareEntry = resolvedCompareId
     ? currentIndex.entries.find((item) => item.id === resolvedCompareId)
     : null
@@ -197,7 +195,7 @@ const init = async () => {
 // ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
-const getRunLabel = (entry: SnapshotIndexEntry) => {
+const getRunLabel = (entry: SnapshotIndexEntry, isLatest: boolean) => {
   const date = new Date(entry.generatedAt)
   const label = Number.isNaN(date.getTime())
     ? entry.generatedAt
@@ -208,14 +206,14 @@ const getRunLabel = (entry: SnapshotIndexEntry) => {
         hour: '2-digit',
         minute: '2-digit',
       })
-  return `${label} • ${entry.frameworks.map((fw) => fw.name).join(', ')}`
+  return `Results from ${label}${isLatest ? ' (latest)' : ''}`
 }
 
 const renderHeaderCell = (framework: SnapshotFramework) => (
   <span>
     {framework.name}
     <br />
-    <small className={cn('text-slate-500')}>v{framework.version}</small>
+    <small class={cn('text-slate-500')}>v{framework.version}</small>
   </span>
 )
 
@@ -232,7 +230,12 @@ const ResultsHeader = reactive((_, handle: Handle) => {
   // Signals read in render are auto-tracked via reactive()
   return () => {
     const currentSnapshot = snapshot()
-    const entries = index()?.entries ?? []
+    const currentIndex = index()
+    const latestId = currentIndex?.latestId ?? null
+    // Sort entries newest first (by generatedAt descending)
+    const entries = [...(currentIndex?.entries ?? [])].sort(
+      (a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime(),
+    )
     const hasEntries = entries.length > 0
     const isLoading = loading()
     const currentSelectedId = selectedId()
@@ -240,22 +243,22 @@ const ResultsHeader = reactive((_, handle: Handle) => {
     const disabled = isLoading || !hasEntries
 
     return (
-      <div className={cn('rounded-xl border border-slate-200 bg-white p-6')}>
-        <div className={cn('flex flex-wrap items-start justify-between gap-4')}>
-          <div className={cn('space-y-2')}>
-            <h1 className={cn('text-3xl font-bold text-slate-900')}>{mainTitle}</h1>
-            <p className={cn('text-base text-slate-600')}>
+      <div class={cn('rounded-xl border border-slate-200 bg-white p-6')}>
+        <div class={cn('flex flex-wrap items-start justify-between gap-4')}>
+          <div class={cn('space-y-2')}>
+            <h1 class={cn('text-3xl font-bold text-slate-900')}>{mainTitle}</h1>
+            <p class={cn('text-base text-slate-600')}>
               Duration in milliseconds +/- 95% confidence interval.
             </p>
             {/* Example of JSX fragment shorthand <>...</> */}
             {currentSnapshot ? (
               <>
                 {currentSnapshot.machine ? (
-                  <p className={cn('text-sm font-semibold text-slate-700')}>
+                  <p class={cn('text-sm font-semibold text-slate-700')}>
                     Machine: {currentSnapshot.machine}
                   </p>
                 ) : null}
-                <p className={cn('text-sm text-slate-500')}>
+                <p class={cn('text-sm text-slate-500')}>
                   Generated at {new Date(currentSnapshot.generatedAt).toLocaleString()} | CPU
                   throttling {currentSnapshot.cpuThrottling}x | {currentSnapshot.warmups} warmups |{' '}
                   {currentSnapshot.runs} runs | headless {currentSnapshot.headless ? 'yes' : 'no'} |
@@ -265,7 +268,7 @@ const ResultsHeader = reactive((_, handle: Handle) => {
             ) : null}
           </div>
           <a
-            className={cn(
+            class={cn(
               'inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-900',
             )}
             href="https://github.com/itsjavi/vani/tree/main/bench"
@@ -279,11 +282,11 @@ const ResultsHeader = reactive((_, handle: Handle) => {
             </svg>
           </a>
         </div>
-        <div className={cn('mt-4 grid gap-4 lg:grid-cols-2')}>
-          <label className={cn('space-y-1 text-sm font-medium text-slate-700')}>
-            Run
+        <div class={cn('mt-4 grid gap-4 lg:grid-cols-2')}>
+          <label class={cn('space-y-1 text-sm font-medium text-slate-700')}>
+            Snapshot
             <select
-              className={cn(
+              class={cn(
                 'mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm',
               )}
               value={currentSelectedId ?? ''}
@@ -295,15 +298,15 @@ const ResultsHeader = reactive((_, handle: Handle) => {
             >
               {entries.map((entry) => (
                 <option key={entry.id} value={entry.id}>
-                  {getRunLabel(entry)}
+                  {getRunLabel(entry, entry.id === latestId)}
                 </option>
               ))}
             </select>
           </label>
-          <label className={cn('space-y-1 text-sm font-medium text-slate-700')}>
+          <label class={cn('space-y-1 text-sm font-medium text-slate-700')}>
             Compare to
             <select
-              className={cn(
+              class={cn(
                 'mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm',
               )}
               value={currentCompareId ?? ''}
@@ -316,7 +319,7 @@ const ResultsHeader = reactive((_, handle: Handle) => {
               <option value="">None</option>
               {entries.map((entry) => (
                 <option key={entry.id} value={entry.id}>
-                  {getRunLabel(entry)}
+                  {getRunLabel(entry, entry.id === latestId)}
                 </option>
               ))}
             </select>
@@ -335,9 +338,10 @@ const ResultsBody = reactive((_, handle: Handle) => {
     const currentSnapshot = snapshot()
     const currentCompareSnapshot = compareSnapshot()
 
-    if (isLoading) {
+    // Only show loading state on initial load; keep existing data visible during transitions
+    if (isLoading && !currentSnapshot) {
       return (
-        <div className={cn('rounded-xl border border-slate-200 bg-white p-6 text-slate-700')}>
+        <div class={cn('rounded-xl border border-slate-200 bg-white p-6 text-slate-700')}>
           Loading benchmark results...
         </div>
       )
@@ -345,7 +349,7 @@ const ResultsBody = reactive((_, handle: Handle) => {
 
     if (currentError) {
       return (
-        <div className={cn('rounded-xl border border-red-200 bg-red-50 p-6 text-red-700')}>
+        <div class={cn('rounded-xl border border-red-200 bg-red-50 p-6 text-red-700')}>
           {currentError}
         </div>
       )
@@ -353,7 +357,7 @@ const ResultsBody = reactive((_, handle: Handle) => {
 
     if (!currentSnapshot) {
       return (
-        <div className={cn('rounded-xl border border-slate-200 bg-white p-6 text-slate-700')}>
+        <div class={cn('rounded-xl border border-slate-200 bg-white p-6 text-slate-700')}>
           No results available yet. Run the benchmark runner to generate a snapshot.
         </div>
       )
@@ -364,7 +368,7 @@ const ResultsBody = reactive((_, handle: Handle) => {
 
     if (!calculated) {
       return (
-        <div className={cn('rounded-xl border border-slate-200 bg-white p-6 text-slate-700')}>
+        <div class={cn('rounded-xl border border-slate-200 bg-white p-6 text-slate-700')}>
           This snapshot is missing calculated data. Re-run the benchmark runner to regenerate it.
         </div>
       )
@@ -452,11 +456,11 @@ const ResultsBody = reactive((_, handle: Handle) => {
       const deltaPct = compareValue ? (delta / compareValue) * 100 : 0
       const isPositive = delta > 0
       const text = `${isPositive ? '+' : ''}${formatNumber(delta)} ms (${isPositive ? '+' : ''}${formatNumber(deltaPct)}%)`
-      return <small className={cn('text-xs text-slate-500')}>{text}</small>
+      return <small class={cn('text-xs text-slate-500')}>{text}</small>
     }
 
     return (
-      <div className={cn('space-y-6')}>
+      <div class={cn('space-y-6')}>
         {suites.map((suite) => {
           const compareSuite = compareCalculated?.suiteScores?.[suite.id]
           const compareOverallScores =
@@ -465,80 +469,41 @@ const ResultsBody = reactive((_, handle: Handle) => {
           return (
             <div
               key={suite.id}
-              className={cn('overflow-hidden rounded-xl border border-slate-200 bg-white')}
+              class={cn('overflow-hidden rounded-xl border border-slate-200 bg-white')}
             >
-              <div className={cn('border-b border-slate-200 bg-slate-50 px-5 py-3')}>
-                <h2 className={cn('text-xs font-semibold tracking-wide text-slate-700 uppercase')}>
+              <div class={cn('border-b border-slate-200 bg-slate-50 px-5 py-3')}>
+                <h2 class={cn('text-xs font-semibold tracking-wide text-slate-700 uppercase')}>
                   {suite.title}
                 </h2>
               </div>
-              <table className={cn('w-full border-collapse text-sm')}>
+              <table class={cn('w-full border-collapse text-sm')}>
                 <thead>
                   <tr>
-                    <th className={cn('border border-slate-200 px-3 py-2 text-left')}>
+                    <th class={cn('border border-slate-200 px-3 py-2 text-left')}>
                       Name
                       <br />
-                      <small className={cn('text-slate-500')}>Duration for...</small>
+                      <small class={cn('text-slate-500')}>Duration for...</small>
                     </th>
                     {suite.frameworks.map((fw) => (
-                      <th
-                        key={fw.id}
-                        className={cn('border border-slate-200 px-3 py-2 text-center')}
-                      >
+                      <th key={fw.id} class={cn('border border-slate-200 px-3 py-2 text-center')}>
                         {renderHeaderCell(fw)}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className={cn('bg-slate-50')}>
-                    <td className={cn('border border-slate-200 px-3 py-2')}>
-                      Implementation notes
-                    </td>
-                    {suite.frameworks.map((framework) => {
-                      const notes = framework.implementationNotes?.trim()
-                      return (
-                        <td
-                          key={framework.id}
-                          className={cn('border border-slate-200 px-3 py-2 text-center text-sm')}
-                        >
-                          {notes || '-'}
-                        </td>
-                      )
-                    })}
-                  </tr>
                   <tr>
-                    <td className={cn('border border-slate-200 px-3 py-2')}>Implementation link</td>
-                    {suite.frameworks.map((fw) => (
-                      <td
-                        key={fw.id}
-                        className={cn('border border-slate-200 px-3 py-2 text-center')}
-                      >
-                        <a
-                          className={cn(
-                            'inline-flex items-center justify-center rounded px-2 py-1 text-slate-700 hover:bg-slate-100',
-                          )}
-                          target="_blank"
-                          rel="noreferrer"
-                          href={buildImplementationLink(fw.path, suite.id)}
-                        >
-                          view
-                        </a>
-                      </td>
-                    ))}
-                  </tr>
-                  <tr>
-                    <td className={cn('border border-slate-200 px-3 py-2')}>
+                    <td class={cn('border border-slate-200 px-3 py-2')}>
                       <strong>overall score</strong>
                       <br />
-                      <small className={cn('text-slate-500')}>average total time (ms).</small>
+                      <small class={cn('text-slate-500')}>average total time (ms).</small>
                     </td>
                     {suite.overallScores.map((score, idx) => {
                       if (score === null) {
                         return (
                           <td
                             key={`overall-${suite.frameworkIds[idx]}`}
-                            className={cn('border border-slate-200 px-3 py-2 text-center')}
+                            class={cn('border border-slate-200 px-3 py-2 text-center')}
                           >
                             -
                           </td>
@@ -555,9 +520,9 @@ const ResultsBody = reactive((_, handle: Handle) => {
                       return (
                         <td
                           key={`overall-${frameworkId}`}
-                          className={cn('border border-slate-200 px-3 py-2 text-center', className)}
+                          class={cn('border border-slate-200 px-3 py-2 text-center', className)}
                         >
-                          <div className={cn('font-semibold')}>{formatNumber(score)} ms</div>
+                          <div class={cn('font-semibold')}>{formatNumber(score)} ms</div>
                           {renderComparison(score, compareScore)}
                         </td>
                       )
@@ -581,13 +546,11 @@ const ResultsBody = reactive((_, handle: Handle) => {
 
                     return (
                       <tr key={operation}>
-                        <td className={cn('border border-slate-200 px-3 py-2')}>
+                        <td class={cn('border border-slate-200 px-3 py-2')}>
                           {label ? (
-                            <div className={cn('space-y-1')}>
-                              <div className={cn('font-semibold text-slate-900')}>
-                                {label.title}
-                              </div>
-                              <small className={cn('text-slate-500')}>{label.description}</small>
+                            <div class={cn('space-y-1')}>
+                              <div class={cn('font-semibold text-slate-900')}>{label.title}</div>
+                              <small class={cn('text-slate-500')}>{label.description}</small>
                             </div>
                           ) : (
                             operation
@@ -599,7 +562,7 @@ const ResultsBody = reactive((_, handle: Handle) => {
                             return (
                               <td
                                 key={`${operation}-${frameworkId}`}
-                                className={cn('border border-slate-200 px-3 py-2 text-center')}
+                                class={cn('border border-slate-200 px-3 py-2 text-center')}
                               >
                                 -
                               </td>
@@ -615,7 +578,7 @@ const ResultsBody = reactive((_, handle: Handle) => {
                           return (
                             <td
                               key={`${operation}-${frameworkId}`}
-                              className={cn(
+                              class={cn(
                                 'border border-slate-200 px-3 py-2 text-center',
                                 className,
                                 {
@@ -629,7 +592,7 @@ const ResultsBody = reactive((_, handle: Handle) => {
                                 {formatNumber(result.mean)}{' '}
                                 <small>+/- {formatNumber(result.ci)}</small>
                               </div>
-                              <small className={cn('text-slate-500')}>
+                              <small class={cn('text-slate-500')}>
                                 ({result.ratio.toFixed(2)})
                               </small>
                               {renderComparison(result.mean, compareResult?.mean)}
@@ -639,6 +602,37 @@ const ResultsBody = reactive((_, handle: Handle) => {
                       </tr>
                     )
                   })}
+                  <tr class={cn('bg-slate-50')}>
+                    <td class={cn('border border-slate-200 px-3 py-2')}>Implementation notes</td>
+                    {suite.frameworks.map((framework) => {
+                      const notes = framework.implementationNotes?.trim()
+                      return (
+                        <td
+                          key={framework.id}
+                          class={cn('border border-slate-200 px-3 py-2 text-center text-sm')}
+                        >
+                          {notes || '-'}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                  <tr>
+                    <td class={cn('border border-slate-200 px-3 py-2')}>Implementation link</td>
+                    {suite.frameworks.map((fw) => (
+                      <td key={fw.id} class={cn('border border-slate-200 px-3 py-2 text-center')}>
+                        <a
+                          class={cn(
+                            'inline-flex items-center justify-center rounded px-2 py-1 text-slate-700 hover:bg-slate-100',
+                          )}
+                          target="_blank"
+                          rel="noreferrer"
+                          href={buildImplementationLink(fw.path, suite.id)}
+                        >
+                          view
+                        </a>
+                      </td>
+                    ))}
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -646,17 +640,17 @@ const ResultsBody = reactive((_, handle: Handle) => {
         })}
 
         {currentSnapshot.resourceMetrics && currentSnapshot.resourceMetrics.length > 0 ? (
-          <div className={cn('overflow-hidden rounded-xl border border-slate-200 bg-white')}>
-            <table className={cn('w-full border-collapse text-sm')}>
+          <div class={cn('overflow-hidden rounded-xl border border-slate-200 bg-white')}>
+            <table class={cn('w-full border-collapse text-sm')}>
               <thead>
                 <tr>
-                  <th className={cn('border border-slate-200 px-3 py-2 text-left')}>
+                  <th class={cn('border border-slate-200 px-3 py-2 text-left')}>
                     Resource metrics
                     <br />
-                    <small className={cn('text-slate-500')}>CDP Performance.getMetrics</small>
+                    <small class={cn('text-slate-500')}>CDP Performance.getMetrics</small>
                   </th>
                   {globalFrameworks.map((fw) => (
-                    <th key={fw.id} className={cn('border border-slate-200 px-3 py-2 text-center')}>
+                    <th key={fw.id} class={cn('border border-slate-200 px-3 py-2 text-center')}>
                       {renderHeaderCell(fw)}
                     </th>
                   ))}
@@ -765,11 +759,11 @@ const ResultsBody = reactive((_, handle: Handle) => {
                   },
                 ].map((row) => (
                   <tr key={row.label}>
-                    <td className={cn('border border-slate-200 px-3 py-2')}>{row.label}</td>
+                    <td class={cn('border border-slate-200 px-3 py-2')}>{row.label}</td>
                     {row.values.map((value, idx) => (
                       <td
                         key={`${row.label}-${globalFrameworkIds[idx]}`}
-                        className={cn('border border-slate-200 px-3 py-2 text-center')}
+                        class={cn('border border-slate-200 px-3 py-2 text-center')}
                       >
                         {Number.isFinite(value) ? row.formatter(value) : '-'}
                       </td>
@@ -792,13 +786,15 @@ const ResultsPage = component((_, handle: Handle) => {
   })
 
   return () => (
-    <div className={cn('mx-auto max-w-6xl px-4 py-6')}>
+    <div class={cn('mx-auto max-w-6xl px-4 py-6')}>
       <ResultsHeader key="results-header" />
-      <div className={cn('mt-6')}>
+      <div class={cn('mt-6')}>
         <ResultsBody key="results-body" />
       </div>
     </div>
   )
 })
 
-renderToDOM(ResultsPage, app as HTMLElement)
+const app = document.getElementById('app')
+if (!app) throw new Error('#app not found')
+createRoot(app).render(ResultsPage())

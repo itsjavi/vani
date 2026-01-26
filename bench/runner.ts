@@ -4,26 +4,21 @@ import * as path from 'node:path'
 import { parseArgs } from 'node:util'
 
 import { chromium, type Browser, type CDPSession, type Page } from 'playwright'
-import { getFrameworks, pkgJson } from './src/metadata'
 import {
+  aggregateProfiles,
+  buildCalculatedSnapshot,
+  calcStats,
+  DEFAULT_VIEW,
   type BenchmarkResult,
   type FunctionProfile,
   type OperationView,
   type ResourceMetrics,
-  type SnapshotCalculated,
-  type SnapshotFramework,
   type SnapshotFrameworkMetrics,
   type SnapshotIndex,
   type SnapshotIndexEntry,
   type SnapshotPayload,
-  type Stats,
-  type SuiteCalculated,
-  calcStats,
-  calcConfidenceInterval,
-  buildCalculatedSnapshot,
-  aggregateProfiles,
-  DEFAULT_VIEW,
 } from './src/core'
+import { getFrameworks, pkgJson } from './src/metadata'
 
 const PORT = process.env.PORT ?? pkgJson.benchmarks.port ?? 8778
 const BASE_URL = `http://localhost:${PORT}/frameworks`
@@ -136,7 +131,13 @@ if (isRepeat) {
 let cpuThrottling = parseInt(args.cpu!, 10)
 let benchmarkRuns = parseInt(args.runs!, 10)
 let warmupRuns = parseInt(args.warmups!, 10)
-let machine = (args.machine ?? '').trim()
+let machine = (args.machine || process.env.BENCH_MACHINE || '').trim()
+
+if (!machine) {
+  console.error('Error: BENCH_MACHINE is not set or not passed as --machine')
+  process.exit(1)
+}
+
 let headless = args.headless!
 let useTable = args.table!
 let showProfile = args.profile!

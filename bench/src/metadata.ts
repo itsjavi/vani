@@ -4,6 +4,11 @@ import indexNotes from './notes'
 
 export { indexNotes, pkgJson, vaniPkgJson }
 
+export const manualTestPages: Array<{ name: string; path: string }> = [
+  { name: 'Todo App (JSX + Signals)', path: 'todo-app' },
+  { name: 'Golden Leaf Test', path: 'manual-tests/golden-leaf-test' },
+]
+
 export type BenchPackageJson = {
   name: string
   dependencies: Record<string, string>
