@@ -8,13 +8,13 @@ type DemoButtonProps = {
 
 export const DemoButton = component<DemoButtonProps>((props, handle: Handle) => {
   let clicks = 0
-  const { label, children, className, disabled, ...rest } = props
+  const { label, children, className, class: _class, disabled, ...rest } = props
 
   return () => (
     <button
       {...rest}
       disabled={disabled}
-      className={cn('rounded-md bg-blue-500 px-3 py-2 text-white', className, {
+      class={cn('rounded-md bg-blue-500 px-3 py-2 text-white', className ?? _class, {
         'opacity-80': disabled === true,
       })}
       onclick={() => {

@@ -3,6 +3,26 @@
 This changelog documents important changes done to the `vani` runtime library, and the reason behind
 the decisions made.
 
+## 2026-01-26
+
+- **Fixed DOM insertion bug in `updateSync`**: The call `end.before(node, end)` incorrectly passed
+  `end` as a second argument, which attempted to insert the anchor before itself. This could corrupt
+  the DOM structure in certain edge cases. Fixed to `end.before(node)`.
+
+- **Added `createRoot` helper**: A React-like API for mounting components with automatic container
+  management:
+  - `createRoot(container)` returns a `Root` object with `render()` and `unmount()` methods.
+  - `root.render(component)` clears the container and disposes existing handles before mounting,
+    eliminating the need for manual `innerHTML = ''` cleanup (especially useful for HMR).
+  - `root.unmount()` properly disposes all component handles and clears the container.
+  - Calling `render()` multiple times on the same root replaces the previous content cleanly.
+  - Reasoning: Provides a familiar API for React developers, prevents double-rendering issues during
+    HMR, and ensures proper cleanup of component resources.
+
+- **Fixed JSX `ref` for DOM elements**: `jsx-runtime` now forwards `ref` to `el()` so DOM refs are
+  assigned correctly. Previously, `ref` was stripped in the JSX split props step, leaving DOM refs
+  `null` in JSX code.
+
 ## 2026-01-24 (Benchmark Suite Modernization)
 
 - **Migrated benchmark tooling from Bun + mixed bundlers to Vite as the central bundler**:

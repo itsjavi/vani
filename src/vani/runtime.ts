@@ -140,11 +140,20 @@ export type SvgProps<T extends SvgTagName = SvgTagName> = BaseProps<T> & {
   [key: string]: unknown
 }
 
-type BaseProps<T extends ElementTagName> = {
-  className?: ClassName
-  style?: string
-  ref?: DomRef<ElementByTag<T>>
-} & {
+type BaseProps<T extends ElementTagName> = (
+  | {
+      class?: ClassName
+      className?: never
+      style?: string
+      ref?: DomRef<ElementByTag<T>>
+    }
+  | {
+      class?: never
+      className?: ClassName
+      style?: string
+      ref?: DomRef<ElementByTag<T>>
+    }
+) & {
   [key: DataAttribute]: string | number | boolean | undefined | null
 }
 
@@ -581,7 +590,7 @@ function mountComponent<Props>(
       clearBetween(start, end)
       const node = normalizeDomChild(render())
       const nextElement = getSingleElementFromNode(node)
-      end.before(node, end)
+      end.before(node)
       currentRootElement = nextElement
 
       if (!hasMounted) {
@@ -783,6 +792,100 @@ export function renderToDOM(components: Renderable | Renderable[], root: HTMLEle
   }
 
   return handles
+}
+
+// ─────────────────────────────────────────────
+// createRoot helper
+// ─────────────────────────────────────────────
+
+export type Root = {
+  /**
+   * Renders a component into the root container.
+   * Clears any existing content before rendering.
+   * Can be called multiple times to replace the rendered content.
+   */
+  render(component: Renderable): void
+  /**
+   * Unmounts the rendered content and cleans up all resources.
+   * After calling unmount(), the root cannot be used again.
+   */
+  unmount(): void
+}
+
+/**
+ * Creates a root for rendering Vani components.
+ *
+ * Similar to React's createRoot API, this provides a clean way to manage
+ * component lifecycle with automatic container clearing and proper cleanup.
+ *
+ * @example
+ * ```ts
+ * const root = createRoot(document.getElementById('app')!)
+ * root.render(App())
+ *
+ * // Later, to unmount:
+ * root.unmount()
+ * ```
+ */
+export function createRoot(container: HTMLElement): Root {
+  if (!container) {
+    throw new Error('[vani] container element not found')
+  }
+
+  // flag to indicate that Vani is being used in the browser
+  ;(globalThis as any).Vani$$ = true
+
+  let handles: Handle[] = []
+  let unmounted = false
+
+  const root: Root = {
+    render(component: Renderable) {
+      if (unmounted) {
+        throw new Error('[vani] Cannot render to an unmounted root. Create a new root instead.')
+      }
+
+      // Dispose existing handles
+      for (const handle of handles) {
+        handle.dispose()
+      }
+      handles = []
+
+      // Clear container content
+      container.innerHTML = ''
+
+      // Mount the new component
+      const normalized = normalizeRenderables(component)
+      for (const Comp of normalized) {
+        if (typeof Comp === 'function') {
+          if ((Comp as any).$$vaniWrapped) {
+            const instance = (Comp as WrappedComponent)()
+            const handle = mountComponent(instance.component, getMountProps(instance), container)
+            handles.push(handle)
+            continue
+          }
+          const handle = mountComponent(Comp as Component<any>, {} as any, container)
+          handles.push(handle)
+          continue
+        }
+
+        const handle = mountComponent(Comp.component, getMountProps(Comp), container)
+        handles.push(handle)
+      }
+    },
+
+    unmount() {
+      if (unmounted) return
+
+      unmounted = true
+      for (const handle of handles) {
+        handle.dispose()
+      }
+      handles = []
+      container.innerHTML = ''
+    },
+  }
+
+  return root
 }
 
 // ─────────────────────────────────────────────

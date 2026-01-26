@@ -89,8 +89,10 @@ export function jsx(type: JsxElementType, props: Record<string, any> | null, key
   }
 
   if (typeof type === 'string') {
-    if (cleanProps) {
-      return el(type as ElementTagName, cleanProps, ...children)
+    const elementProps =
+      ref == null ? cleanProps : ({ ...(cleanProps ?? {}), ref } as Record<string, any>)
+    if (elementProps) {
+      return el(type as ElementTagName, elementProps, ...children)
     }
     return el(type as ElementTagName, null, ...children)
   }
