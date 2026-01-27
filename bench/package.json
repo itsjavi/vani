@@ -16,12 +16,12 @@
   },
   "dependencies": {
     "preact": "^10.28.2",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
-    "remix": "3.0.0-alpha.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "remix": "3.0.0-alpha.1",
     "sirv-cli": "^3.0.1",
     "solid-js": "^1.9.11",
-    "svelte": "^5.48.2",
+    "svelte": "^5.48.3",
     "vani-local": "workspace:*",
     "vue": "^3.5.27"
   },
