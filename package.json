@@ -40,6 +40,42 @@
         "default": "./dist/lib/index.mjs"
       }
     },
+    "./common": {
+      "import": {
+        "types": "./dist/lib/common.d.mts",
+        "default": "./dist/lib/common.mjs"
+      }
+    },
+    "./html": {
+      "import": {
+        "types": "./dist/lib/html.d.mts",
+        "default": "./dist/lib/html.mjs"
+      }
+    },
+    "./runtime": {
+      "import": {
+        "types": "./dist/lib/runtime.d.mts",
+        "default": "./dist/lib/runtime.mjs"
+      }
+    },
+    "./signals": {
+      "import": {
+        "types": "./dist/lib/signals.d.mts",
+        "default": "./dist/lib/signals.mjs"
+      }
+    },
+    "./ssr": {
+      "import": {
+        "types": "./dist/lib/ssr.d.mts",
+        "default": "./dist/lib/ssr.mjs"
+      }
+    },
+    "./svg": {
+      "import": {
+        "types": "./dist/lib/svg.d.mts",
+        "default": "./dist/lib/svg.mjs"
+      }
+    },
     "./jsx-runtime": {
       "import": {
         "types": "./dist/lib/jsx-runtime.d.mts",

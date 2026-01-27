@@ -4,6 +4,9 @@
 
 import { el, type ElementProps, type VChild } from './runtime'
 
+// Re-export Fragment from jsx-runtime for convenience
+export { Fragment } from './jsx-runtime'
+
 type ElementTagName = keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap
 
 function createElementFn<E extends ElementTagName>(tag: E) {
