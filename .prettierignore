@@ -21,3 +21,4 @@ package.json
 LICENSE
 
 public/
+/bench

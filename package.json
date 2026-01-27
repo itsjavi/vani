@@ -100,10 +100,10 @@
     "LICENSE"
   ],
   "scripts": {
-    "bench": "pnpm cleanup && pnpm run --filter benchmarks bench",
-    "bench:build": "pnpm run --filter benchmarks build:prod",
-    "bench:dev": "pnpm run --filter benchmarks dev",
-    "bench:wide": "BENCH_VIEWPORT_WIDTH=1280 BENCH_VIEWPORT_HEIGHT=740 pnpm run --filter benchmarks bench",
+    "bench": "pnpm cleanup && pnpm run --filter frontend-framework-benchmarks bench",
+    "bench:build": "pnpm run --filter frontend-framework-benchmarks build:prod",
+    "bench:dev": "pnpm run --filter frontend-framework-benchmarks dev",
+    "bench:wide": "BENCH_VIEWPORT_WIDTH=1280 BENCH_VIEWPORT_HEIGHT=740 pnpm run --filter frontend-framework-benchmarks bench",
     "build": "vite build && pnpm run build:lib",
     "build:all": "pnpm run build && pnpm run build:pages",
     "postbuild:all": "./tests/postbuild.sh dist",
@@ -112,7 +112,7 @@
     "cleanup": "rm -rf dist node_modules/.vite node_modules/.vite-temp bench/dist bench/frameworks/*/dist",
     "dev": "vite",
     "format": "prettier --write . && pnpm run format:pkg",
-    "format:pkg": "pnpm sort-package-json package.json bench/package.json",
+    "format:pkg": "pnpm sort-package-json package.json",
     "lint": "pnpm run typecheck && pnpm run lint:eslint && pnpm run lint:circular",
     "lint:circular": "pnpm madge --circular --extensions ts src/",
     "lint:eslint": "eslint .",

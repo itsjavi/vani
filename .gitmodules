@@ -1,0 +1,3 @@
+[submodule "bench"]
+	path = bench
+	url = git@github.com:itsjavi/frontend-framework-benchmarks.git
